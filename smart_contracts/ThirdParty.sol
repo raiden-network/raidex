@@ -1,4 +1,4 @@
-pragma solidity ^0.4.0;
+//pragma solidity ^0.4.0;
 
 contract ThirdParty {
 
@@ -8,8 +8,13 @@ contract ThirdParty {
 
     event ContractCreated(address trader, address ThirdParty, uint deposit);
 
+    modifier onlyOwner(address _owner) {
+        if(_owner != owner) throw;
+        _;
+    }
+
     // constructor
-    function ThirdParty(address _thirdParty) {
+    function ThirdParty(address _thirdParty) payable {
         owner = msg.sender;
         thirdParty = _thirdParty;
         commitmentDeposit = msg.value;
@@ -17,11 +22,23 @@ contract ThirdParty {
     }
 
     // burn function in case exchange does not go through
-    function burn() private returns (bool) {return true;}
+    function burn(uint amount) private returns (bool) {
+        return true;
+    }
 
     // pay back function in case exchange goes through
-    function payBack() private returns (bool) {return true;}
+    function payBack() private returns (bool) {
+        return true;
+    }
 
-    function disputeSettlement() returns (bool) {}
+    // if dispute in settle
+    function disputeSettlement() private returns (bool) {
+
+    }
+
+    // settle
+    function settle() public onlyOwner {
+
+    }
 
 }
