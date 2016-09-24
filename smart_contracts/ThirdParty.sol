@@ -5,12 +5,21 @@ contract ThirdParty {
     address owner;
     address thirdParty;
     uint commitmentDeposit;
+    uint claimableDeposit;
+    address burnAddress = 0x0;
 
     event ContractCreated(address trader, address ThirdParty, uint deposit);
+    event PaidBack(uint balance);
+    event Burned(uint amount);
 
-    modifier onlyOwner(address _owner) {
-        if(_owner != owner) throw;
-        _;
+    modifier onlyOwner() {
+        if(msg.sender != owner) throw;
+        _//;
+    }
+
+    modifier hasBalance(uint amount) {
+        if(this.balance < amount) throw;
+        _//;
     }
 
     // constructor
@@ -22,23 +31,27 @@ contract ThirdParty {
     }
 
     // burn function in case exchange does not go through
-    function burn(uint amount) private returns (bool) {
+    function burnCommitment(uint amount) private hasBalance(amount) returns (bool) {
+        burnAddress.send(amount);
+        Burned(amount);
         return true;
     }
 
     // pay back function in case exchange goes through
-    function payBack() private returns (bool) {
-        return true;
+    function payBack(uint amount) private hasBalance(amount) returns (uint) {
+        claimableDeposit = amount;
+        return claimableDeposit;
     }
 
-    // if dispute in settle
-    function disputeSettlement() private returns (bool) {
-
+    function claimDeposit() onlyOwner {
+        owner.send(claimableDeposit);
+        PaidBack(claimableDeposit);
     }
 
     // settle
-    function settle() public onlyOwner {
-
+    function settle(bytes message) public onlyOwner {
+        // decode message and recover
+        // if swap unsuccessfull burnCommitment(someAmount)
+        // if swap successfull payBack(someAmount)
     }
-
 }
