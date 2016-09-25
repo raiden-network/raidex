@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Note: We don't have floats.
 Therefore the amount is expressed in the smallest denomination (e.g. Wei in Ethereum)
