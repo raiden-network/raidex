@@ -32,9 +32,7 @@ def gen_orders(start_price=10, max_amount=1000 * ETH, num_entries=10, max_deviat
 def gen_orderbook(start_price=10, max_amount=1000 * ETH, num_entries=100, max_deviation=0.01):
     orders = gen_orders(start_price, max_amount, num_entries * 2, max_deviation)
     orders.sort()
-    bids = [dict(price=p, amount=a) for p, a in reversed(orders[:num_entries])]
-    asks = [dict(price=p, amount=a) for p, a in orders[num_entries:]]
-    return dict(bids=bids, asks=asks)
+    return orders
 
 
 def gen_orderhistory(start_price=10, max_amount=1000 * ETH, num_entries=100, max_deviation=0.01):
