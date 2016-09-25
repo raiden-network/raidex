@@ -3,7 +3,7 @@
 contract ThirdParty {
 
     address owner;
-    address thirdParty;
+    address public thirdParty;
     uint commitmentDeposit;
     uint claimableDeposit;
     address burnAddress = 0x0;
