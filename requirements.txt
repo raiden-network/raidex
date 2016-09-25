@@ -1,2 +1,5 @@
 pytest
 ethereum
+bottle
+zmq
+gevent
