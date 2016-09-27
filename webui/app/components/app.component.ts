@@ -22,7 +22,7 @@ export class AppComponent implements OnInit{
         {   headerName: "Timestamp", 
             field: "timestamp"
             cellRenderer: function (params: any) {
-                return (new Date(params.value)).toUTCString()
+                return (new Date(params.value)).toUTCString();
                 }
             },
         {   headerName: "Amount", 
