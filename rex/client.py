@@ -52,6 +52,27 @@ class OfferView(object):
         pass
 
 
+class Order(object):
+
+    def __init__(self):
+        self.order_id = None
+
+
+class LimitOrder(Order):
+
+    def __init__(self, amount, price):
+        super(LimitOrder, self).__init__()
+        self.amount = amount
+        self.price = price
+
+
+class MarketOrder(Order):
+
+    def __init__(self, amount):
+        super(MarketOrder, self).__init__()
+        self.amount = amount
+
+
 class OrderBook(object):
 
     def __init__(self):
@@ -94,7 +115,7 @@ class OrderBook(object):
 
 class OrderTask(gevent.Greenlet):
 
-    def __init__(self, offerviews, order_id):
+    def __init__(self, offerviews, orderbook, order_id):
         super(OrderTask, self).__init__()
         self.offerviews = offerviews
         self.order_id = order_id
@@ -104,10 +125,8 @@ class OrderTask(gevent.Greenlet):
         stop = None
 
         while stop is None:
-            # TODO
-            # tries to match 
-            for _address, price, amount in self.book.orders:
-                # look for amount asked with a maximum of price
+            order = self.orderbook[order_id]
+            for _address, price, amount in self.offerviews:
                 if 
                 pass
 
