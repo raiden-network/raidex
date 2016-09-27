@@ -25,8 +25,19 @@ def handle_websocket():
 
 class ClientService(object):
 
-    def __init__(self):
-        self.orderbooks = dict() # key: asset_pair, value: OrderBook instance
+    def __init__(self, raiden, order_manager, commitment_manager, api):
+        self.raiden = raiden
+        self.commitment_manager = commitment_manager
+        self.order_manager = order_manager
+        self.api = api
+
+    @property
+    def assets(self):
+        return NotImplementedError
+        # returns assets and balances tradeable from raiden
+        # requirement: have an open channel + deposit for that asset
+        #TODO: get from the raiden instance
+        pass
 
     def get_orderbook_by_asset_pair(self, asset_pair):
         if asset_pair not in self.orderbooks.keys():
@@ -38,6 +49,44 @@ class ClientService(object):
             return mocked_orderbook
         else:
             return self.orderbooks[asset_pair]
+
+class CommitmentManager(object):
+
+    def __init__(self, raiden):
+        self.raiden = raiden
+        self.commitment_services = dict()
+
+
+    def commit(self, commitment_service_address, offer_id, commitment_deposit, timeout):
+        # the client needs to have a channel with both assets with a CS to trade on that asset pair,
+        # although it is not required for doing a commitment, which is only done in ether
+        raise NotImplementedError
+        if successful:
+            notify_success(commitment_service_address, offer_id)
+            signed_commitment = True
+            return signed_commitment
+        else:
+            return False
+
+    def notify_success(self, commitment_service_address, offer_id):
+        raise NotImplementedError
+
+    def make_commitment_deposit(self, commitment_service_address, deposit_amount):
+        if commitment_service_address not in self.commitment_services:
+            # TODO: initiate first commit
+            successful = True  # XXX mock success return value, always successful
+            if successful is True:
+                self.commitment_services[commitment_service_address] = dict(balance=deposit_amount)
+            else:
+                return False
+        else:
+            # TODO: extend commitment_deposit
+            successful = True  # XXX mock success return value, always successful
+            if successful is True:
+                self.commitment_services[commitment_service_address][balance] += deposit_amount
+            else:
+                return False
+            # returns raiden receipt
 
 
 class OfferView(object):
@@ -73,7 +122,19 @@ class MarketOrder(Order):
         self.amount = amount
 
 
-class OrderBook(object):
+
+class OrderBook:
+
+    def __init__(self, asset_pair):
+        ask_currency, bid_currency = asset_pair
+        self.asks = get_orderbook_by_asset_pair(ask_currency, bid_currency)# cpair = (ETH/BTC)
+        assert isinstance(self.asks, OfferView)
+        assert self.asks.currencypair == (ask_currency, bid_currency)
+        self.bids = get_orderbook_by_asset_pair(bid_currency, ask_currency)# cpair = (BTC/ETH)
+        assert isinstance(self.bids, OfferView)
+        assert self.bids.currencypair == (bid_currency, ask_currency)
+
+class OfferView(object):
 
     def __init__(self):
         self.ordersindex = FastRBTree()
@@ -127,7 +188,7 @@ class OrderTask(gevent.Greenlet):
         while stop is None:
             order = self.orderbook[order_id]
             for _address, price, amount in self.offerviews:
-                if 
+                if
                 pass
 
             stop = self.stop_event.wait(0)
@@ -154,13 +215,13 @@ class OrderManager(object):
         assert pair in self.trades
         return self.trades[pair]
 
-    def limit_order(pair, type_, num_tokens, price) # returns internal order_id
+    def limit_order(pair, type_, num_tokens, price):  # returns internal order_id
         return order_id
 
-    def market_order(pair, type_, num_tokens) # returns internal order_id
+    def market_order(pair, type_, num_tokens):  # returns internal order_id
         return order_id
 
-    def get_order_status(pair, order_id)
+    def get_order_status(pair, order_id):
         pass
 
     def cancel_order(self, order_id):
