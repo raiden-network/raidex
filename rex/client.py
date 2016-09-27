@@ -1,4 +1,5 @@
 import gevent
+import time
 from bintrees import FastRBTree
 from bottle import request, Bottle, abort
 from gevent.pywsgi import WSGIServer
@@ -89,37 +90,49 @@ class CommitmentManager(object):
             # returns raiden receipt
 
 
-class OfferView(object):
-
-    def __init__(self):
-        self.offer_id = 0
-
-    def add_offer(offer_message):
-        return self.offer_id
-
-    def remove_offer(offer_id):
-        pass
-
-
 class Order(object):
 
-    def __init__(self):
-        self.order_id = None
+    def __init__(self, amount, order_id=None, ttl=600):
+        self.order_id = order_id
+        self.amount = amount
+        self.timeout = time.time() + ttl
+
+    def __eq__(self, other):
+        return self.amount == other.amount
+
+    def __lt__(self, other):
+        return self.amount < other.amount
 
 
 class LimitOrder(Order):
 
-    def __init__(self, amount, price):
-        super(LimitOrder, self).__init__()
-        self.amount = amount
+    def __init__(self, amount, price, order_id=None, ttl=600):
+        super(LimitOrder, self).__init__(amount=amount, order_id=order_id, ttl=ttl)
         self.price = price
 
 
 class MarketOrder(Order):
 
-    def __init__(self, amount):
-        super(MarketOrder, self).__init__()
-        self.amount = amount
+    def __init__(self, amount, order_id=None, ttl=600):
+        super(MarketOrder, self).__init__(amount=amount, order_id=order_id, ttl=ttl)
+
+
+class OfferView(object):
+
+    def __init__(self):
+        self.orders = FastRBTree()
+
+    def add_offer(offer_message):
+        amount = offer_message['amount']
+        price = offer_message.get('price')
+        ttl = offer_message['ttl']
+        order = Order(amount=amount, price=price, ttl=ttl)
+        order.order_id = self.manager.get_next_id()
+        self.orders.append(order)
+        return order.order_id
+
+    def remove_offer(offer_id):
+        self.orders.remove(
 
 
 
@@ -137,6 +150,8 @@ class OrderBook:
 class OfferView(object):
 
     def __init__(self):
+        self.bids = OfferView()
+        self.asks = OfferView()
         self.ordersindex = FastRBTree()
         self.orders = dict()
 
@@ -157,6 +172,9 @@ class OfferView(object):
         assert len(self.orders) % 2 == 0
         half_list = int(len(self.orders) / 2)
         return self.orders[half_list:]
+
+    def set_manager(self, manager):
+        self.manager = manager
 
     def __iter__(self):
         return iter(self.ordersindex)
@@ -187,8 +205,9 @@ class OrderTask(gevent.Greenlet):
 
         while stop is None:
             order = self.orderbook[order_id]
-            for _address, price, amount in self.offerviews:
-                if
+            bids = self.orderbook.bids
+            asks = self.orderbook.asks
+            for _address, price, amount in bids:
                 pass
 
             stop = self.stop_event.wait(0)
@@ -204,8 +223,13 @@ class OrderManager(object):
         self.trades = dict()
         self.order_id = 0  # increment per new order
 
+    def get_next_id(self):
+        self.order_id = self.order_id + 1
+        return self.order_id
+
     def add_orderbook(self, pair, orderbook):
         self.orderbooks[pair] = orderbook
+        orderbook.set_manager(self)
 
     def get_order_book(self, pair):
         assert pair in self.orderbooks
