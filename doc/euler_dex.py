@@ -2,7 +2,15 @@
 Based on an idea by Nick Johnson
 https://www.reddit.com/r/ethereum/comments/54l32y/euler_the_simplest_exchange_and_currency/
 Modification: using linear price increase.
+
+
+Exchange should probably have some way to specify the minimum number of tokens
+you are willing to accept due to price changes.
+
+And there does not seem to be any way to sell tokens to the exchange :)
+
 """
+import math
 
 
 class TokenAccount(object):
@@ -57,11 +65,41 @@ class TokenAccount(object):
 
     def buy_tokens(self, num_eulers):
         "tokens bought from the exchange, Eulers destroyed"
-        assert num_eulers < self.num_eulers
+        assert num_eulers <= self.num_eulers
         num_tokens = self.quote_euler(num_eulers)
+        assert num_tokens <= self.num_tokens, (num_tokens, self.num_tokens)
         self.num_eulers -= num_eulers
         self.num_tokens -= num_tokens
         return num_tokens
+
+
+class TokenAccountE(TokenAccount):
+    """
+    The quantity of Euler a user gets for selling a token to the exchange depends on the
+    number of tokens the exchange already holds of that type.
+
+    The cost of the nth Euler (counting from zero) is n.
+    So the first Euler issued costs 1 token, the second 2 tokens, the third 3, and so forth.
+    """
+
+    def quote_euler(self, num_eulers=1):
+        "returns the number of tokens required to buy num_eulers"
+        pre_num = self.num_eulers
+        post_num = self.num_eulers + num_eulers
+        a = 1 / (pre_num + 1) * math.e ** (pre_num + 1)
+        b = 1 / (post_num + 1) * math.e ** (post_num + 1)
+        return b - a  # number of tokens
+
+    def quote_token(self, num_tokens=1):
+        "returns the number of euler required to buy num_tokens"
+        """
+        n = log(e*t - t + 1) - 1  # value of the first t tokens in eulers
+        nd = log(e*(a+b) - (a+b) + 1) - log(e*a - a + 1)
+        nd = log(e*(a+b) - (a+b) + 1) - log(e*a - a + 1)
+        """
+        a = self.num_tokens
+        b = self.num_tokens + num_tokens
+        return math.log(math.e * (a + b) - (a + b) + 1) - math.log(math.e * a - a + 1)
 
 
 class Exchange(object):
@@ -106,6 +144,61 @@ def test_token():
     n_tokens = t.quote_euler(num_eulers=1.)
     assert n_tokens == (9. - 4.) / 2
     assert t.quote_token(n_tokens) == 1.
+
+
+def test_token_prices():
+    t = TokenAccount('any')
+    for i in range(8):
+        nt = t.quote_euler(num_eulers=1.)
+        ne = t.sell_tokens(nt)
+        assert ne == 1.
+        print i, nt, t.num_eulers, t.num_tokens, t.num_tokens / t.num_eulers
+
+"""
+def sqrt(x):
+    z = (x + 1) / 2
+    y = x
+    i = 0
+    while (z < y):
+        y = z
+        z = (x / z + z) / 2
+        i += 1
+    return y, i
+
+for x in (4., 2312312., 752624562.2565):
+    print sqrt(x)
+
+
+def e2t(x):
+    return 1 / (x + 1) * math.e ** (x + 1)
+
+
+def t2e(x):
+    return math.log(math.e * x - x + 1) - 1
+
+x = .5
+nt = e2t(x)
+ne = t2e(nt)
+print nt, ne
+assert ne == x
+"""
+
+
+def test_tokenE():
+    t = TokenAccountE('any')
+    t.num_eulers = 10
+    t.num_tokens = 10
+    # buy an euler w/ tokens
+    nt = t.quote_euler(num_eulers=1.)
+    ne = t.sell_tokens(nt)
+    print nt, ne, t.num_tokens, t.num_eulers
+
+    # sell an euler for tokens
+    ne2 = t.quote_token(num_tokens=nt)
+    nes = t.buy_tokens(ne)
+    print ne2, nes, t.num_tokens, t.num_eulers
+
+    assert False
 
 
 def test_exchange():
@@ -175,5 +268,7 @@ def test_exchange():
 
 
 if __name__ == '__main__':
+    # test_token_prices()
+    # test_tokenE()
     test_token()
     test_exchange()
