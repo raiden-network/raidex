@@ -1,8 +1,5 @@
-﻿#Sample code for ag-grid using angular2 RC with typescript
+﻿#This is the UI for Decentralized Exchange in Angular2
 
-Angular 2.0.0-rc.5
+Angular 2.0.0-rc.6
 ag-grid	5.x.x
 
-Thanks to all who supplied snips and of course ceolter for creating the ag-grid
-
-This package has had a little interest, so I decided to upgrade from beta to RC
