@@ -1,0 +1,7 @@
+<h1>Order Books</h1>
+<ag-grid-ng2 #orderbidgrid class="ag-fresh" style="height: 300px; width: 400px;" 
+[columnDefs]="orderBidColumns"  
+[rowData] = "bids"></ag-grid-ng2>
+<ag-grid-ng2 #orderaskgrid class="ag-fresh" style="height: 300px; width: 400px;" 
+[columnDefs]="orderAskColumns"  
+[rowData] = "asks"></ag-grid-ng2>
