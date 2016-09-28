@@ -95,13 +95,8 @@ class Order(object):
     def __init__(self, amount, order_id=None, ttl=600):
         self.order_id = order_id
         self.amount = amount
+        # TODO: add removal of expired orders
         self.timeout = time.time() + ttl
-
-    def __eq__(self, other):
-        return self.amount == other.amount
-
-    def __lt__(self, other):
-        return self.amount < other.amount
 
 
 class LimitOrder(Order):
@@ -110,48 +105,93 @@ class LimitOrder(Order):
         super(LimitOrder, self).__init__(amount=amount, order_id=order_id, ttl=ttl)
         self.price = price
 
+    def __cmp__(self, other):
+        if self.price == other.price and self.timeout == other.timeout and \
+                self.order_id == other.order_id:
+            return 0
+        elif self.price < other.price or (
+            self.price == other.price and self.timeout < other.timeout) or (
+                self.price == other.price and self.timeout == other.timeout and \
+                        self.order_id < other.order_id):
+            return -1
+        else:
+            return 1
+
+    def __repr__(self):
+        return "LimitOrder<order_id={} amount={} price={} timeout={}>".format(
+                self.order_id, self.amount, self.price, self.timeout)
+
 
 class MarketOrder(Order):
 
     def __init__(self, amount, order_id=None, ttl=600):
         super(MarketOrder, self).__init__(amount=amount, order_id=order_id, ttl=ttl)
 
+    def __cmp__(self, other):
+        if self.timeout == other.timeout and self.order_id == other.order_id:
+            return 0
+        elif self.timeout < other.timeout or (
+                self.timeout == other.timeout and self.order_id < other.order_id):
+            return -1
+        else:
+            return 1
+
 
 class OfferView(object):
 
-    def __init__(self):
+    def __init__(self, manager):
         self.orders = FastRBTree()
+        self.offer_by_id = dict()
+        self.manager = manager
 
-    def add_offer(offer_message):
+    def add_offer(self, offer_message):
+        # TODO: using mock format, must define offer_message
+        message_type = offer_message['message_type']
+        type_ = offer_message['type']
         amount = offer_message['amount']
         price = offer_message.get('price')
-        ttl = offer_message['ttl']
-        order = Order(amount=amount, price=price, ttl=ttl)
+        ttl = offer_message.get('ttl')
+
+        if message_type == 'limit':
+            order = self.manager.limit_order(pair=None, type_=type_, amount=amount, price=price, ttl=ttl)
+        else:
+            order = self.manager.market_order(pair=None, type_=type_, amount=amount, ttl=ttl)
+
         order.order_id = self.manager.get_next_id()
-        self.orders.append(order)
+        self.orders.insert(order, order)
+        self.offer_by_id[order.order_id] = order
+
         return order.order_id
 
-    def remove_offer(offer_id):
-        self.orders.remove(
+    def remove_offer(self, offer_id):
+        if offer_id in self.offer_by_id:
+            order = self.offer_by_id[offer_id]
+            self.orders.remove(order)
+            del self.offer_by_id[offer_id]
+            # TODO: publish removal?
+
+    def __len__(self):
+        return len(self.orders)
+
+    def __iter__(self):
+        return iter(self.orders)
 
 
+class OrderBook(object):
 
-class OrderBook:
-
-    def __init__(self, asset_pair):
+    def __init__(self, manager, asset_pair):
+        # FIXME: just for silver bullet
         ask_currency, bid_currency = asset_pair
-        self.asks = get_orderbook_by_asset_pair(ask_currency, bid_currency)# cpair = (ETH/BTC)
+        self.asks = get_orderbook_by_asset_pair(ask_currency, bid_currency)
         assert isinstance(self.asks, OfferView)
         assert self.asks.currencypair == (ask_currency, bid_currency)
         self.bids = get_orderbook_by_asset_pair(bid_currency, ask_currency)# cpair = (BTC/ETH)
         assert isinstance(self.bids, OfferView)
         assert self.bids.currencypair == (bid_currency, ask_currency)
 
-class OfferView(object):
-
-    def __init__(self):
-        self.bids = OfferView()
-        self.asks = OfferView()
+        self.manager = manager
+        self.bids = OfferView(self.manager)
+        self.asks = OfferView(self.manager)
         self.ordersindex = FastRBTree()
         self.orders = dict()
 
@@ -194,9 +234,9 @@ class OfferView(object):
 
 class OrderTask(gevent.Greenlet):
 
-    def __init__(self, offerviews, orderbook, order_id):
+    def __init__(self, orderbook, order_id):
         super(OrderTask, self).__init__()
-        self.offerviews = offerviews
+        self.orderbook = orderbook
         self.order_id = order_id
         self.stop_event = AsyncResult()
 
@@ -239,17 +279,37 @@ class OrderManager(object):
         assert pair in self.trades
         return self.trades[pair]
 
-    def limit_order(pair, type_, num_tokens, price):  # returns internal order_id
+    def _spawn_order(self, order):
+        order_id = order.order_id = self.get_next_id()
+        gevent.spawn(OrderTask, self.orderbooks[pair], order_id)
         return order_id
 
-    def market_order(pair, type_, num_tokens):  # returns internal order_id
-        return order_id
+    def limit_order(self, pair, type_, amount, price, ttl):
+        '''
+        @param pair: Market.
+        @param type_: buy/sell.
+        @param amount: The number of tokens to buy/sell.
+        @param price: Maximum acceptable value for buy, minimum for sell.
+        @param ttl: Time-to-live.
+        '''
+        order = LimitOrder(amount=amount, price=price, ttl=ttl)
+        return _spawn_order(order)
 
-    def get_order_status(pair, order_id):
-        pass
+    def market_order(self, pair, type_, amount, ttl):
+        '''
+        @param pair: Market
+        @param type_: buy/sell
+        @param amount: The number of tokens to buy/sell
+        @param ttl: Time-to-live.
+        '''
+        order = MarketOrder(amount=amount, ttl=ttl)
+        return _spawn_order(order)
+
+    def get_order_status(self, pair, order_id):
+        self.orderbooks[pair].get_order_status(order_id)
 
     def cancel_order(self, order_id):
-        pass
+        self.orderbooks[pair].cancel_order(order_id)
 
 
 if __name__ == "__main__":
