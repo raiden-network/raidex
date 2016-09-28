@@ -3,3 +3,4 @@ ethereum
 bottle
 zmq
 gevent
+bintrees
