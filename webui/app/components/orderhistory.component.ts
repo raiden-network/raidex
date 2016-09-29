@@ -33,7 +33,7 @@ export class OrderHistoryComponent implements OnInit{
         {
             headerName: "Price",
             field: "price",
-            cellClass: 'centerJustify'
+            width: 100
         }
     ];
 

@@ -28,7 +28,7 @@ export class OrderBookComponent implements OnInit{
         {
             headerName: "Price",
             field: "price",
-            cellClass: 'centerJustify'
+            width: 100
         }
     ];
 
@@ -43,7 +43,7 @@ export class OrderBookComponent implements OnInit{
         {
             headerName: "Price",
             field: "price",
-            cellClass: 'centerJustify'
+            width: 100
         }
     ];
 
@@ -60,7 +60,6 @@ export class OrderBookComponent implements OnInit{
             data => { 
             	this.bids = data.order_book.bids;
             	this.asks = data.order_book.asks;
-            	console.log(this.asks);
             }
         );
     }
