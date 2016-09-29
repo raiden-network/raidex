@@ -242,32 +242,43 @@ class OrderBook(object):
 
 class OrderTask(gevent.Greenlet):
 
-    def __init__(self, orderbook, order_id):
+    def __init__(self, orderbook, order):
         super(OrderTask, self).__init__()
         self.orderbook = orderbook
-        self.order_id = order_id
+        self.order = order
         self.stop_event = gevent.event.AsyncResult()
 
     def _run(self):  # pylint: disable=method-hidden
         stop = None
 
-        order = self.orderbook.get_order_by_id(self.order_id)
-        if order is None:
-            return
-
-        if order.type_ == Order.BUY:
-            offers = self.orderbook.bids
-        else:
-            offers = self.orderbook.asks
-
+        offers = self.orderbook.asks
+        total_amount = total_price = 0
+        remaining = self.order.amount
+        orders_to_buy = []
         while stop is None:
-            order = self.orderbook.get_order_by_id(self.order_id)
-            print("order={}".format(order))
-            print("orderbook={}".format(self.orderbook))
-            #for _address, price, amount in bids:
-            #    pass
+            for offer in offers:
+                if offer.price <= self.order.price:
+                    amount = min(remaining, offer.amount)
+                    total_amount += amount
+                    total_price += amount * offer.price
+                    remaining -= amount
+                    orders_to_buy.append((offer, amount))
+                    if total_amount == self.order.amount:
+                        self._try_buy_operation(orders_to_buy)
+                        break
+            total_amount = total_price = 0
+            remaining = self.order.amount
+            orders_to_buy = []
             #stop = self.stop_event.wait(0)
-            gevent.sleep(3)
+            gevent.sleep(1)
+
+    def _try_buy_operation(self, orders_with_amount):
+        print("Will try to buy: {}".format(
+            " + ".join("{}*{}={}".format(
+                order_with_amount[0].price,
+                order_with_amount[1],
+                order_with_amount[0].price * order_with_amount[1])
+                for order_with_amount in orders_with_amount)))
 
     def stop(self):
         self.stop_event.set(True)
@@ -296,10 +307,6 @@ class OrderManager(object):
         assert pair in self.trades
         return self.trades[pair]
 
-    def _create_task(self, pair, order):
-        order.order_id = self.get_next_id()
-        return OrderTask(self.orderbooks[pair], order.order_id)
-
     def limit_order(self, pair, type_, amount, price, ttl):
         '''
         @param pair: Market.
@@ -309,8 +316,11 @@ class OrderManager(object):
         @param ttl: Time-to-live.
         '''
         order = LimitOrder(amount=amount, price=price, ttl=ttl, type_=type_)
-        order.task = self._create_task(pair, order)
-        order.task.start()
+        order.order_id = self.get_next_id()
+        order.task = None
+        if type_ == Order.BUY:
+            order.task = OrderTask(self.orderbooks[pair], order)
+            order.task.start()
         return order
 
     def market_order(self, pair, type_, amount, ttl):
@@ -321,8 +331,11 @@ class OrderManager(object):
         @param ttl: Time-to-live.
         '''
         order = MarketOrder(amount=amount, ttl=ttl, type_=type_)
-        order.task = self._create_task(pair, order)
-        order.task.start()
+        order.order_id = self.get_next_id()
+        order.task = None
+        if type_ == Order.BUY:
+            order.task = OrderTask(self.orderbooks[pair], order)
+            order.task.start()
         return order
 
     def get_order_status(self, pair, order_id):
