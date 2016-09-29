@@ -60,6 +60,12 @@ def test_matching():
     manager = OrderManager()
     pair = (Currency.ETH, Currency.BTC)
     orderbook = OrderBook(manager, pair)
-    offers = orderbook.bids
-    offer_ids = [offers.add_offer(offer) for offer in offerview_data]
-    gevent.sleep(20)
+    offer_ids = [orderbook.asks.add_offer(offer) for offer in offerview_data]
+    gevent.sleep(2)
+
+    # try to buy from the previous sell data
+    buy_data = {
+        'message_type': 'limit', 'type': 'buy', 'amount': 150, 'price': 15., 'ttl': 300
+    }
+    offer_id = orderbook.bids.add_offer(buy_data)
+    gevent.sleep(3)
