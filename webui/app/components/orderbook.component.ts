@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import { Component, OnInit, OnDestroy } from "@angular/core";
 import {AgGridNg2} from 'ag-grid-ng2/main';
 import {GridOptions} from 'ag-grid/main';
 import { OnInit } from '@angular/core';
@@ -16,6 +16,8 @@ export class OrderBookComponent implements OnInit{
 	public bids: any[];
 
 	public asks: any[];
+
+    private orderbookSubscription: Subscription;
 
 	orderBidColumns = [
         {   headerName: "Amount", 
@@ -55,8 +57,12 @@ export class OrderBookComponent implements OnInit{
     	this.getOrderBook();
 	}
 
+    public ngOnDestroy(): void {
+        this.orderbookSubscription.unsubscribe();
+    }
+
 	getOrderBook(): void {
-        this.orderService.getOrderBook().subscribe(
+        this.orderbookSubscription = this.orderService.getOrderBook().subscribe(
             data => { 
             	this.bids = data.order_book.bids;
             	this.asks = data.order_book.asks;

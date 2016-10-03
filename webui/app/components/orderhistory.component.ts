@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import { Component, OnInit, OnDestroy } from "@angular/core";
 import {AgGridNg2} from 'ag-grid-ng2/main';
 import {GridOptions} from 'ag-grid/main';
 import { OnInit } from '@angular/core';
@@ -15,6 +15,8 @@ declare var BigNumber: any;
 export class OrderHistoryComponent implements OnInit{
 	
 	public orderHistory = [];
+
+    private orderhistorySubscription: Subscription;
 
 	orderHistoryColumns = [
         {   headerName: "Timestamp", 
@@ -45,9 +47,15 @@ export class OrderHistoryComponent implements OnInit{
     	this.getOrderHistory();
 	}
 
+    public ngOnDestroy(): void {
+        this.orderhistorySubscription.unsubscribe();
+    }
+
 	getOrderHistory(): void {
-        this.orderService.getOrderHistory()
-        .then((order_history) => this.orderHistory = order_history)
+        this.orderhistorySubscription = this.orderService.getOrderHistory().subscribe(
+            data => { this.orderHistory = data; }
+        );
+
     }
 
 }

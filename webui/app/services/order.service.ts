@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Http, Response} from "@angular/http";
 import {Observable} from 'rxjs/Rx';
+import { TimerObservable} from "rxjs/observable/TimerObservable";
 import "rxjs/add/operator/map";
 import "rxjs/add/operator/toPromise";
 import "rxjs/add/observable/throw";
@@ -18,17 +19,19 @@ export class OrderService{
 
 	 }
 
-	 
-	public getOrderHistory(): Promise<any>{
-        return this.http.get('app/services/order-history.json')
-                    .toPromise()
-                    .then(response => response.json().order_history)
-                    .catch((error) => this.handleError(error));
+	
+	public getOrderHistory(): Observable<any>{
+        return TimerObservable.create(0, 10000)
+                .flatMap(()=>  this.http.get('app/services/order-history.json')
+                    .map((response) => response.json().order_history))
+                .retryWhen((errors) => this.printErrorAndRetry("Could not get OrderBook", errors));
     }	
 
     public getOrderBook(): Observable<any> {
-        return this.http.get('app/services/order-book.json')
-        .map((res: Response) => res.json());
+        return TimerObservable.create(0, 10000)
+                .flatMap(()=>  this.http.get('app/services/order-book.json')
+                    .map((response) => response.json()))
+                .retryWhen((errors) => this.printErrorAndRetry("Could not get OrderBook", errors));
     }
 
     private extractData(res: Response) {
@@ -39,4 +42,9 @@ export class OrderService{
         return Promise.reject(error.json().message || error);
     }
 
+    private printErrorAndRetry(message: string, errors: Observable<any>): Observable<any> {
+        return errors
+            .map(error => console.error(message + (error.json().message || error)))
+            .delay(config.pollIntervall);
+    }
 }
