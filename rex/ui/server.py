@@ -54,7 +54,7 @@ def register_type_converters(app):
 
 
 if __name__ == '__main__':
-    client = ClientService()
+    client = ClientService(None, None, None, None)
     api = API(client)
     register_type_converters(app)
     register_api_instance(app, api)

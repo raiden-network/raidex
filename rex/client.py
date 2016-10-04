@@ -5,7 +5,10 @@ from bottle import request, Bottle, abort
 from gevent.pywsgi import WSGIServer
 from geventwebsocket import WebSocketError
 from geventwebsocket.handler import WebSocketHandler
+
+
 from rex.gen_orderbook_mock import gen_orderbook
+
 
 
 app = Bottle()
@@ -57,13 +60,28 @@ class CommitmentManager(object):
         self.raiden = raiden
         self.commitment_services = dict()
 
-
     def commit(self, commitment_service_address, offer_id, commitment_deposit, timeout):
-        # the client needs to have a channel with both assets with a CS to trade on that asset pair,
-        # although it is not required for doing a commitment, which is only done in ether
+        """
+            cs = <commitment service ethereum address>
+            offer = rlp([ask_token, ask_amount, bid_token, bid_amount, offer_id])
+            offer_sig = sign(sha3(offer), maker)
+            commitment = rlp([sha3(offer), amount, timeout])
+            commitment_sig = sign(sha3(commitment), maker)
+            commitment_proof = sign(commitment_sig, cs)
+        """
+
         raise NotImplementedError
+        #TODO: send signed maker commitment message and wait for signed answer from CS
+
+        offer = get_offer_from_id(offer_id)
+        bid_token, ask_token = offer.asset_pair
+        offer_msg = rlp([ask_token, ask_amount, bid_token, bid_amount, offer_id])
+        offer_msg_sig = sign(sha3(offer), maker)
+        commitment_msg = rlp([sha3(offer), amount, timeout])
+        commitment_msg_sig = sign(sha3(commitment), maker)
+        self.send_msg(commitment_service_address, commitment_msg, commitment_msg_sig)
         if successful:
-            notify_success(commitment_service_address, offer_id)
+            self.notify_success(commitment_service_address, offer_id)
             signed_commitment = True
             return signed_commitment
         else:
@@ -74,17 +92,24 @@ class CommitmentManager(object):
 
     def make_commitment_deposit(self, commitment_service_address, deposit_amount):
         if commitment_service_address not in self.commitment_services:
-            # TODO: initiate first commit
-            successful = True  # XXX mock success return value, always successful
-            if successful is True:
+            # TODO: make raiden work with ether deposits
+            asset_address = sha3('ETH') # XXX mock asset_address for now
+            self.raiden.api.open(asset_address, commitment_service_address)
+            successful = self.raiden.deposit(asset_address, commitment_service_address, deposit_amount)
+            # assert isinstance(successful, NettingChannel)
+            # TODO improve success checking
+            if successful:
                 self.commitment_services[commitment_service_address] = dict(balance=deposit_amount)
+                return True
             else:
                 return False
         else:
-            # TODO: extend commitment_deposit
-            successful = True  # XXX mock success return value, always successful
-            if successful is True:
+            successful = self.raiden.deposit(asset_address, commitment_service_address, deposit_amount)
+            # assert isinstance(successful, NettingChannel)
+            # TODO improve success checking
+            if successful:
                 self.commitment_services[commitment_service_address][balance] += deposit_amount
+                return True
             else:
                 return False
             # returns raiden receipt
@@ -219,6 +244,18 @@ class OrderBook(object):
         if order is None:
             order = self.asks.get_offer_by_id(order_id)
         return order
+
+    # @property
+    # def bids(self): # TODO: implement __iter__() and next() for the data structure chosen for list() representation
+    #     assert len(self.orders) % 2 == 0
+    #     half_list = int(len(self.orders) / 2)
+    #     return reversed(self.orders[:half_list])
+
+    # @property
+    # def asks(self):
+    #     assert len(self.orders) % 2 == 0
+    #     half_list = int(len(self.orders) / 2)
+    #     return self.orders[half_list:]
 
     def set_manager(self, manager):
         self.manager = manager
