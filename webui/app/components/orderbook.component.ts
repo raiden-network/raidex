@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
+import { Subscription } from "rxjs/Subscription";
 import {AgGridNg2} from 'ag-grid-ng2/main';
 import {GridOptions} from 'ag-grid/main';
-import { OnInit } from '@angular/core';
 import { OrderService } from '../services/order.service';
 
 declare var BigNumber: any;

@@ -13,7 +13,7 @@ import { OrderService } from '../services/order.service';
 })
 export class AppComponent implements OnInit{
 
-    title = 'Decentralized Exchange';  
+    title = 'Raidex Decentralized Exchange';  
     ngOnInit(): void {
         
     }
