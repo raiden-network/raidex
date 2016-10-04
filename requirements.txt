@@ -3,4 +3,5 @@ ethereum
 bottle
 zmq
 gevent
+gevent-websocket
 bintrees
