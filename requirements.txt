@@ -3,3 +3,4 @@ ethereum
 bottle
 zmq
 gevent
+git+https://github.com/raiden-network/raiden.git@master

@@ -1,0 +1,18 @@
+Flow of REX
+
+1. Maker opens a raiden channel with commitment service
+    The amount of the channel is the total amount the maker can use to make commitment deposits
+    Third party can verify the total possible spending amount
+2. CS receives message with offer O from maker. Offer should include address of raiden channel too
+    With address of payment channel, we can verify that channel has been created and a deposit exists
+3. CS listens for commitments received and keeps a total balance of commitments received
+    If no commitment is received corresponding to an offer within a timeout period, the offer is invalid
+    This way we always know if current commitment deposits match the standing orders
+4. If the commitment is received in time, CS signs the offer and sends it back to the maker
+5. Receive a taker commit message stating what offer, channel address and commitment amount
+6. Listen for commit to happen like in 3
+7. Check if offer has already been taken or timedout, if so, refund the commitment
+8. Receive message from one of the participants that the transfer went through.
+    If this does not happen within timeout for trade, the funds will be burned
+9. CS sends back commitment to maker and taker, minus a small fee that CS keeps
+10. Notify broadcaster than order is no longer available
