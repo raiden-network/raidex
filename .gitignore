@@ -26,3 +26,9 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Webclient Angular 2
+webui/app/**/*.js
+webui/app/**/*.map
+webui/node_modules
+webui/typings

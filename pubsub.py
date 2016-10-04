@@ -6,14 +6,13 @@ import json
 from contextlib import contextmanager
 
 from gevent.pywsgi import WSGIServer
-from gevent import monkey
+from gevent import monkey; monkey.patch_all()
 import bottle
 
 # You *must* import the green version of zmq or things will
 # block and nothing we will work and you will be sad.
 from zmq import green as zmq
 
-monkey.patch_all()
 # This lets us track how many clients are currently connected.
 polling = 0
 
@@ -76,10 +75,9 @@ def wait_for_message(rfile, timeout):
         poll.register(subsock, zmq.POLLIN)
         poll.register(rfile, zmq.POLLIN)
 
-        events = dict(poll.poll())
-        # events = dict(poll.poll(timeout))
-        # if not events:
-        #     return
+        events = dict(poll.poll(timeout))
+        if not events:
+            return
 
         # A POLLIN event on rfile indicates that the client
         # has disconnected.
@@ -109,6 +107,8 @@ def sub():
             message = wait_for_message(rfile, 1000)
             if message:
                 yield json.dumps(message) + '\n'
+            else:
+                pass
 
 
 @app.route('/debug')
