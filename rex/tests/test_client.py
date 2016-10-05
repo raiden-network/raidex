@@ -1,13 +1,14 @@
-from rex.client import LimitOrder, OfferView, OrderManager, OrderBook, Currency
+from rex.client import Order, OfferView, OrderManager, OrderBook, Currency
 from gen_orderbook_mock import gen_orderbook, gen_orderhistory
 import gevent
 
 
-def test_limitorder_comparison():
-    order1 = LimitOrder(amount=50, price=5.)
-    order2 = LimitOrder(amount=100, price=1.)
-    order3 = LimitOrder(amount=100, price=2.)
-    order4 = LimitOrder(amount=100, price=1.)
+def test_order_comparison():
+    pair = (Currency.ETH, Currency.BTC)
+    order1 = Order(pair=pair, amount=50, price=5.)
+    order2 = Order(pair=pair, amount=100, price=1.)
+    order3 = Order(pair=pair, amount=100, price=2.)
+    order4 = Order(pair=pair, amount=100, price=1.)
 
     assert order1 == order1
     assert order2 != order4
@@ -19,32 +20,32 @@ class MockManager(object):
     id_ = 0
 
     def limit_order(self, pair, type_, amount, price, ttl=600):
-        return LimitOrder(
-            amount=amount, price=price, order_id=self.get_next_id(), ttl=ttl)
+        return Order(
+            amount=amount, price=price, order_id=self.get_next_id(), ttl=ttl, type_=type_)
 
     def get_next_id(self):
         self.id_ = self.id_ + 1
         return self.id_
 
 
-offerview_data = [
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 100, 'price': 15., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 120, 'price': 20., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 130, 'price': 18., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 90,  'price': 13., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 80,  'price': 18., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 80,  'price': 20., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 100, 'price': 16., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 20,  'price': 14., 'ttl': 300 },
+offer_messages = [
+    { 'bid_token': 'ETH', 'bid_amount': 10, 'ask_token': 'BTC', 'ask_amount': 100, 'offer_id': 0, 'timeout': 300 },
+    { 'bid_token': 'ETH', 'bid_amount': 12, 'ask_token': 'BTC', 'ask_amount': 120, 'offer_id': 1, 'timeout': 300 },
+    { 'bid_token': 'ETH', 'bid_amount': 13, 'ask_token': 'BTC', 'ask_amount': 130, 'offer_id': 2, 'timeout': 300 },
+    { 'bid_token': 'ETH', 'bid_amount': 9,  'ask_token': 'BTC', 'ask_amount': 90,  'offer_id': 3, 'timeout': 300 },
+    { 'bid_token': 'ETH', 'bid_amount': 8,  'ask_token': 'BTC', 'ask_amount': 80,  'offer_id': 4, 'timeout': 300 },
+    { 'bid_token': 'ETH', 'bid_amount': 8,  'ask_token': 'BTC', 'ask_amount': 80,  'offer_id': 5, 'timeout': 300 },
+    { 'bid_token': 'ETH', 'bid_amount': 10, 'ask_token': 'BTC', 'ask_amount': 100, 'offer_id': 6, 'timeout': 300 },
+    { 'bid_token': 'ETH', 'bid_amount': 2,  'ask_token': 'BTC', 'ask_amount': 20,  'offer_id': 7, 'timeout': 300 },
 ]
 
 
 def test_offerview_ordering():
     manager = MockManager()
     offers = OfferView(manager, (Currency.ETH, Currency.BTC))
-    offer_ids = [offers.add_offer(offer) for offer in offerview_data]
+    offer_ids = [offers.add_offer(offer) for offer in offer_messages]
 
-    assert len(offers) == len(offerview_data)
+    assert len(offers) == len(offer_messages)
     assert all(first <= second for first, second in zip(list(offers)[:-1], list(offers)[1:]))
 
     # test removal
@@ -52,7 +53,7 @@ def test_offerview_ordering():
     offers.remove_offer(offers.orders.min_item()[0].order_id)
     offers.remove_offer(offers.orders.min_item()[0].order_id)
 
-    assert len(offers) == len(offerview_data) - 3
+    assert len(offers) == len(offer_messages) - 3
     assert all(first <= second for first, second in zip(list(offers)[:-1], list(offers)[1:]))
 
 
@@ -60,12 +61,12 @@ def test_matching():
     manager = OrderManager()
     pair = (Currency.ETH, Currency.BTC)
     orderbook = OrderBook(manager, pair)
-    offer_ids = [orderbook.asks.add_offer(offer) for offer in offerview_data]
+    offer_ids = [orderbook.asks.add_offer(offer) for offer in offer_messages]
     gevent.sleep(2)
 
     # try to buy from the previous sell data
     buy_data = {
-        'message_type': 'limit', 'type': 'buy', 'amount': 150, 'price': 15., 'ttl': 300
+        'bid_token': 'BTC', 'bid_amount': 20,  'ask_token': 'ETH', 'ask_amount': 2,  'offer_id': 7, 'timeout': 300,
     }
     offer_id = orderbook.bids.add_offer(buy_data)
     gevent.sleep(3)
