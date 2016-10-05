@@ -29,19 +29,17 @@ def handle_websocket():
 
 class ClientService(object):
 
-    def __init__(self, raiden, order_manager, commitment_manager, api):
+    def __init__(self, raiden, order_manager, commitment_manager):
         self.raiden = raiden
         self.commitment_manager = commitment_manager
         self.order_manager = order_manager
-        self.api = api
 
     @property
     def assets(self):
-        return NotImplementedError
+        raise NotImplementedError
         # returns assets and balances tradeable from raiden
         # requirement: have an open channel + deposit for that asset
         #TODO: get from the raiden instance
-        pass
 
     def get_orderbook_by_asset_pair(self, asset_pair):
         if asset_pair not in self.orderbooks.keys():
@@ -53,6 +51,7 @@ class ClientService(object):
             return mocked_orderbook
         else:
             return self.orderbooks[asset_pair]
+
 
 class CommitmentManager(object):
 
