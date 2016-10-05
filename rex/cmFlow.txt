@@ -1,18 +1,24 @@
-Flow of REX
+The commitment service `CS` acts as a trusted third party that help two parties to commit to a Raiden based token swap prior to its execution. This helps to bring down the "free option" from minutes to a few seconds. In order for a client (maker or taker), to interact with the `CS`, it needs to open a direct raiden channel with the `CS`. Only the client needs to deposit into this raiden channel. The client now has an amount of credit that it can use as commitments to the `CS`. As an initial suggestion the commitment amount should be 1/100 of the value the maker wants to trade. When the commitment service has received commitments from both the taker and the maker, it is up to the two parties to carry out the token exchange and report back to the `CS`. The `CS` will only redeem the commitment deposits if either the maker or the taker reports back that the transfer was successful within a specified timeout period.
+
+
+Flow of raidex Commitment Service:
 
 1. Maker opens a raiden channel with commitment service
     The amount of the channel is the total amount the maker can use to make commitment deposits
-    Third party can verify the total possible spending amount
-2. CS receives message with offer O from maker. Offer should include address of raiden channel too
-    With address of payment channel, we can verify that channel has been created and a deposit exists
-3. CS listens for commitments received and keeps a total balance of commitments received
+    CS can verify the total possible spending amount
+2. CS receives message with offer `O` from maker. 
+    CS can check open raiden channels with address of maker for given token
+3. CS listens for commitments events on raiden
     If no commitment is received corresponding to an offer within a timeout period, the offer is invalid
-    This way we always know if current commitment deposits match the standing orders
 4. If the commitment is received in time, CS signs the offer and sends it back to the maker
-5. Receive a taker commit message stating what offer, channel address and commitment amount
-6. Listen for commit to happen like in 3
-7. Check if offer has already been taken or timedout, if so, refund the commitment
+5. CS receives a taker commit message stating what offer and commitment amount to match
+6. CS listens for commit to happen like in 3
+7. CS checks if offer has already been taken or timed out, if so, refund the commitment
 8. Receive message from one of the participants that the transfer went through.
     If this does not happen within timeout for trade, the funds will be burned
 9. CS sends back commitment to maker and taker, minus a small fee that CS keeps
-10. Notify broadcaster than order is no longer available
+10. Notify broadcaster that order is no longer available
+
+
+Open questions: 
+    Do we need to check that a client has enough credit left in the payment channel to actually be able to make the desired commit?
