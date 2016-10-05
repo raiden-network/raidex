@@ -11,7 +11,6 @@ class API(object):
     def __init__(self, client):
         self.client = client
 
-
     def get_order_book(self, asset_pair, count=None):
         assert isinstance(asset_pair, tuple)
         assert len(asset_pair) == 2
@@ -38,4 +37,4 @@ class API(object):
         raise NotImplementedError
 
     def get_available_assets(self):
-        return NotImplementedError
+        raise NotImplementedError
