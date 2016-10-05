@@ -2,13 +2,17 @@ import rlp
 from rlp.sedes import binary
 from ethereum.utils import (address, int256, hash32, sha3, big_endian_to_int)
 from raiden.utils import pex
-from secp256k1 import PublicKey, ALL_FLAGS, PrivateKey
+from raiden.encoding.signing import recover_publickey, GLOBAL_CTX
+from raiden.encoding.signing import sign as _sign
+from secp256k1 import PrivateKey, ALL_FLAGS
 
-# FIXME: use state of the art shared context to avoid initialization overhead
-pubkey = PublicKey(flags=ALL_FLAGS)
-privkey = PrivateKey(flags=ALL_FLAGS)
-c_ecdsa_recover_compact = pubkey.ecdsa_recover
-c_ecdsa_sign_compact = privkey.ecdsa_sign_recoverable
+
+def sign(messagedata, private_key):
+    if not isinstance(private_key, PrivateKey):
+        privkey_instance = PrivateKey(privkey=private_key, flags=ALL_FLAGS, ctx=GLOBAL_CTX)
+    else:
+        privkey_instance = private_key
+    return _sign(messagedata, privkey_instance)
 
 
 class RLPHashable(rlp.Serializable):
@@ -59,7 +63,7 @@ class Signed(RLPHashable):
     def sign(self, privkey):
         assert self.is_mutable()
         assert isinstance(privkey, bytes) and len(privkey) == 32
-        self.signature = c_ecdsa_sign_compact(self._hash_without_signature, privkey)
+        self.signature = sign(self._hash_without_signature, privkey)
         self.make_immutable()
         return self
 
@@ -68,7 +72,7 @@ class Signed(RLPHashable):
         if not self._sender:
             if not self.signature:
                 raise SignatureMissingError()
-            pub = c_ecdsa_recover_compact(self._hash_without_signature, self.signature)
+            pub = recover_publickey(self._hash_without_signature, self.signature)
             self._sender = sha3(pub[1:])[-20:]
         return self._sender
 
