@@ -1,7 +1,7 @@
 import rlp
 from rlp.sedes import binary
 from ethereum.utils import (address, int256, hash32, sha3, big_endian_to_int)
-
+from raiden.utils import pex
 from secp256k1 import PublicKey, ALL_FLAGS, PrivateKey
 
 # FIXME: use state of the art shared context to avoid initialization overhead
@@ -32,7 +32,7 @@ class RLPHashable(rlp.Serializable):
             h = self.hash
         except Exception:
             h = ''
-        return '<%s(%s)>' % (self.__class__.__name__, h.encode('hex'))
+        return '<%s(%s)>' % (self.__class__.__name__, pex(h))
 
 
 class SignatureMissingError(Exception):
@@ -89,3 +89,23 @@ class Offer(Signed):
                  offer_id, timeout):
         super(Offer, self).__init__(ask_token, ask_amount,
                  bid_token, bid_amount, offer_id, timeout)
+
+    def __repr__(self):
+        try:
+            h = self.hash
+        except Exception:
+            h = ''
+        try:
+            sender = self.sender
+        except SignatureMissingError:
+            sender = ''
+        return '<%s(%s) ask: %s[%s] bid %s[%s] h:%s sender:%s>' % (
+            self.__class__.__name__,
+            pex(self.offer_id),
+            pex(self.ask_token),
+            self.ask_amount,
+            pex(self.bid_token),
+            self.bid_amount,
+            pex(h),
+            pex(sender)
+        )
