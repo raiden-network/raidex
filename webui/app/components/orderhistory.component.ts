@@ -26,21 +26,25 @@ export class OrderHistoryComponent implements OnInit{
             sort:'asc',
             cellRenderer: function (params: any) {
                 return (new Date(params.value)).toTimeString();
-                }
-            },
+            }
+        },
         {   headerName: "Amount", 
             field: "amount",
             sort:'asc',
             cellRenderer: function (params: any) {
                 var wei = String(params.value);
                 return new BigNumber(wei).dividedBy(new BigNumber('1000000000000000000'));
-                }
-            },
+            }
+        },
         {
             headerName: "Price",
             field: "price",
             sort:'asc',
-            width: 100
+            width: 100,
+            cellRenderer: function(params){ 
+                return '<div style="text-align: center;">'+params.value+'</div>';
+            } 
+            
         }
     ];
 

@@ -31,7 +31,10 @@ export class OrderBookComponent implements OnInit{
         {
             headerName: "Price",
             field: "price",
-            width: 100
+            width: 100,
+            cellRenderer: function(params){ 
+                return '<div style="text-align: center;">'+params.value+'</div>';
+            } 
         }
     ];
 
@@ -47,7 +50,10 @@ export class OrderBookComponent implements OnInit{
         {
             headerName: "Price",
             field: "price",
-            width: 100
+            width: 100,
+            cellRenderer: function(params){ 
+                return '<div style="text-align: center;">'+params.value+'</div>';
+            } 
         }
     ];
 

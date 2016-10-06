@@ -45,6 +45,6 @@ export class OrderService{
     private printErrorAndRetry(message: string, errors: Observable<any>): Observable<any> {
         return errors
             .map(error => console.error(message + (error.json().message || error)))
-            .delay(config.pollIntervall);
+            .delay(10000);
     }
 }
