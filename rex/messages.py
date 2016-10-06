@@ -7,6 +7,9 @@ from raiden.encoding.signing import sign as _sign
 from secp256k1 import PrivateKey, ALL_FLAGS
 
 
+sig65 = binary.fixed_length(65)
+
+
 def sign(messagedata, private_key):
     if not isinstance(private_key, PrivateKey):
         privkey_instance = PrivateKey(privkey=private_key, flags=ALL_FLAGS, ctx=GLOBAL_CTX)
@@ -47,7 +50,7 @@ class Signed(RLPHashable):
 
     _sender = ''
     signature = ''
-    fields = [('signature', binary)]
+    fields = [('signature', sig65)]
 
     # def __init__(self, sender=''):
     #     assert not sender or isaddress(sender)
@@ -130,11 +133,11 @@ class Commitment(Signed):
 class CommitmentProof(Signed):
 
     fields = [
-        ('commitment_hash', hash32)
+        ('commitment_sig', sig65)
     ]
 
-    def __init__(self, commitment_hash):
-        super(CommitmentProof, self).__init__(commitment_hash)
+    def __init__(self, commitment_sig):
+        super(CommitmentProof, self).__init__(commitment_sig)
 
 
 class ProvenOffer(Signed):

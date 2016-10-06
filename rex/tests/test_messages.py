@@ -29,7 +29,7 @@ def test_commitments(offers, accounts):
     commitment = Commitment(offer.offer_id, offer.timeout, 42)
     commitment.sign(maker.privatekey)
 
-    commitment_proof = CommitmentProof(commitment.hash)
+    commitment_proof = CommitmentProof(commitment.signature)
     commitment_proof.sign(commitment_service.privatekey)
     assert commitment_proof.sender == commitment_service.address
 
