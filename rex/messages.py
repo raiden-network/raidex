@@ -194,7 +194,9 @@ class Envelope(object):
             envelope = json.loads(data)
         except ValueError:
             raise ValueError("JSON-Envelope could not be decoded")
-        assert envelope['version'] == cls.version
+        if envelope['version'] != cls.version:
+            raise ValueError("Message version mismatch! want:{} got:{}".format(
+                Envelope.version, envelope['msg']))
         klass = msg_types_map[envelope['msg']]
         message = klass.deserialize(cls.decode(envelope['data']))
 
