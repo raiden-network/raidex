@@ -61,12 +61,25 @@ def gen_orderhistory(start_price=10, max_amount=1000 * ETH, num_entries=100, max
         ))
     return orders
 
-
-def main():
-    data = dict(order_book=gen_orderbook(num_entries=50),
-                order_history=gen_orderhistory(num_entries=500))
-    return json.dumps(data, indent=4)
+def gen_order_message_from_data(pair, price, amount, ttl, type_, msg_type=):
 
 
-if __name__ == '__main__':
-    print main()
+def gen_orderbook_messages(start_price=10, max_amount=1000 * ETH, num_entries=100, max_deviation=0.01):
+    orders = gen_orders(start_price, max_amount, num_entries * 2, max_deviation)
+    bids = [gen_order_message_from_data(a,p,am) for a, p, am in reversed(orders[:num_entries])]
+    asks = [gen_order_message_from_data(a,p,am) for a, p, am in orders[num_entries:]]
+    return bids, asks
+ 
+def fill_mocked_orderbook(orderbook):
+    mock_data = gen_mock_data()
+    for msg in mock_data[bids]:
+        orderbook.bids.add_offer(msg)
+    for msg in mock_data[asks]:
+        orderbook.asks.add_offer(msg)
+
+#def main():
+#    data = dict(order_book=gen_orderbook(num_entries=50),
+#                order_history=gen_orderhistory(num_entries=500))
+#    return json.dumps(data, indent=4)
+
+

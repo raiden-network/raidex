@@ -77,7 +77,7 @@ class CommitmentManager(object):
 
         ## Announce the commitment to the CS:
         offer = get_offer_by_id(offer_id)  # TODO XXX where to store?
-        assert isinstance(messages.Offer, offer)
+        assert isinstance(offer, messages.Offer)
         self.transport.request_commitment(commitment_service_address, offer)  # TODO
         # CS will hash offer, wait for incoming transfers and compare the hashlocks to the commitment_requests
         # TODO: wait for ACK from CS, include timeout
@@ -94,10 +94,10 @@ class CommitmentManager(object):
             # what if transfer is received, but commitment_proof is never sent out by cs?
             # add timeout, since market price could have changed
             if commitment_proof:
-                assert isinstance(messages.CommitmentProof, commitment_proof)
+                assert isinstance(commitment_proof, messages.CommitmentProof)
                 self.proofs[offer_id] = commitment_proof
                 commitment = get_commitment_by_id(offer_id)  # TODO XXX where to store?
-                assert isinstance(messages.Commitment, commitment)
+                assert isinstance(commitment, messages.Commitment)
                 # construct with classmethod
                 proven_offer = messages.ProvenOffer.from_offer(offer, commitment, commitment_proof)
 
@@ -145,9 +145,14 @@ class Currency(object):
 
 
 class OrderType(object):
-    SELL = 0
-    BUY = 1
+    BID = 0
+    ASK = 1
 
+class RaidexException(Exception):
+    pass
+
+class OrderTypeMismatch(RaidexException):
+    pass
 
 class Order(object):
     """
@@ -155,7 +160,7 @@ class Order(object):
     from the broadcast?
     """
 
-    def __init__(self, pair, amount, price, order_id=None, ttl=600, type_=OrderType.BUY):
+    def __init__(self, pair, type_, amount, price, order_id=None, ttl=600):
         self.pair = pair
         self.order_id = order_id
         self.type_ = type_
@@ -182,36 +187,35 @@ class Order(object):
 
     @classmethod
     def from_offer_message(cls, offer_msg, compare_pair):
-        # FIXME: temporarily handle offer_msg as dict (should probably be class with attrs later)
-        msg_pair = (offer_msg['bid_token'], offer_msg['ask_token'])
+        msg_pair = (offer_msg.bid_token, offer_msg.ask_token)
         if msg_pair == compare_pair:
-            type_ = OrderType.SELL #XXX checkme
-            price = float(offer_msg['bid_amount']) / offer_msg['ask_amount']
-            amount = offer_msg['bid_amount']
+            type_ = OrderType.BID #XXX checkme
+            price = float(offer_msg.bid_amount) / offer_msg.ask_amount
+            amount = offer_msg.bid_amount
         elif msg_pair[::-1] == compare_pair:
-            type_ = OrderType.BUY #XXX checkme
-            price = float(offer_msg['ask_amount']) / offer_msg['bid_amount']
-            amount = offer_msg['ask_amount']
+            type_ = OrderType.ASK #XXX checkme
+            price = float(offer_msg.ask_amount) / offer_msg.bid_amount
+            amount = offer_msg.ask_amount
         # TODO check type conversion
-        order_id = sha3(offer_msg['offer_id'])
-        ttl = offer_msg['timeout']
-        return cls(compare_pair, amount, price, order_id, ttl, type_)
+        order_id = sha3(offer_msg.offer_id)
+        ttl = offer_msg.timeout
+        return cls(compare_pair, type_, amount, price, order_id, ttl)
 
 
 class OfferView(object):
 
-    def __init__(self, manager, pair):
+    def __init__(self, pair, type_):
         self.pair = pair
+        self.type_ = type_
         self.orders = FastRBTree()
         self.offer_by_id = dict()
-        self.manager = manager
 
-    def add_offer(self, offer):
-        # type will be determined somewhere else (e.g. OfferManager),
+    def add_offer(self, order):
+        # type_ will be determined somewhere else (e.g. OfferManager),
         # and then the according OfferView gets filled
-
-        # Must use Order because it has the infrastructure to be used in RB-Tree...
-        order = Order.from_offer_message(offer, compare_pair=self.pair)
+        assert isinstance(order, Order)
+        if order.type_ is not self.type_ or order.pair is not self.pair:
+            raise OrderTypeMismatch
 
         self.orders.insert(order, order)
         self.offer_by_id[order.order_id] = order
@@ -236,27 +240,17 @@ class OfferView(object):
 
 class OrderBook(object):
 
-    def __init__(self, manager, asset_pair):
-        self.manager = manager
-        self.manager.add_orderbook(asset_pair, self)
+    def __init__(self, asset_pair):
+        self.bids = OfferView(manager, asset_pair, type_=OrderType.BID)
+        self.asks = OfferView(manager, asset_pair, type_=OrderType.ASK)
 
-        self.bids = OfferView(manager, asset_pair)
-        self.asks = OfferView(manager, asset_pair)
-
-        # TODO: offerviews should come from ClientService?
-        #ask_currency, bid_currency = asset_pair
-        #self.asks = get_orderbook_by_asset_pair(ask_currency, bid_currency)
-        #assert isinstance(self.asks, OfferView)
-        #assert self.asks.currencypair == (ask_currency, bid_currency)
-        #self.bids = get_orderbook_by_asset_pair(bid_currency, ask_currency)# cpair = (BTC/ETH)
-        #assert isinstance(self.bids, OfferView)
-        #assert self.bids.currencypair == (bid_currency, ask_currency)
-
-    def add_offer_from_msg(self, offer_msg):
+    def insert_from_msg(self, offer_msg):
+        # needs to be inserted from a message, because type_ determination is done
+        # in the Order instantiation based on the compare_pair:
         order = Order.from_offer_message(offer_msg, compare_pair=asset_pair)
-        if order.type_ is OrderType.SELL:
+        if order.type_ is OrderType.BID:
             self.bids.add_offer(order)
-        if order.type_ is OrderType.BUY:
+        if order.type_ is OrderType.ASK:
             self.asks.add_offer(order)
 
     def get_order_by_id(self, order_id):
@@ -265,26 +259,8 @@ class OrderBook(object):
             order = self.asks.get_offer_by_id(order_id)
         return order
 
-    # @property
-    # def bids(self): # TODO: implement __iter__() and next() for the data structure chosen for list() representation
-    #     assert len(self.orders) % 2 == 0
-    #     half_list = int(len(self.orders) / 2)
-    #     return reversed(self.orders[:half_list])
-
-    # @property
-    # def asks(self):
-    #     assert len(self.orders) % 2 == 0
-    #     half_list = int(len(self.orders) / 2)
-    #     return self.orders[half_list:]
-
     def set_manager(self, manager):
         self.manager = manager
-
-    def insert(self, order):
-        if order.type_ == OrderType.BUY:
-            self.asks.add_offer(order)
-        else:
-            self.bids.add_offer(order)
 
     def get_order_status(self, order_id):
         pass
