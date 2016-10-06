@@ -113,3 +113,37 @@ class Offer(Signed):
             pex(h),
             pex(sender)
         )
+
+
+class Commitment(Signed):
+
+    fields = [
+        ('offer_id', hash32),
+        ('timeout', int256),
+        ('amount', int256),
+    ]
+
+    def __init__(self, offer_id, timeout, amount):
+        super(Commitment, self).__init__(offer_id, timeout, amount)
+
+
+class CommitmentProof(Signed):
+
+    fields = [
+        ('commitment_hash', hash32)
+    ]
+
+    def __init__(self, commitment_hash):
+        super(CommitmentProof, self).__init__(commitment_hash)
+
+
+class ProvenOffer(Signed):
+
+    fields = [
+        ('offer', Offer),
+        ('commitment', Commitment),
+        ('commitment_proof', CommitmentProof),
+    ]
+
+    def __init__(self, offer, commitment, commitment_proof):
+        super(ProvenOffer, self).__init__(offer, commitment, commitment_proof)

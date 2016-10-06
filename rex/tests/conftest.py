@@ -17,7 +17,7 @@ def assets():
 @pytest.fixture()
 def accounts():
     Account = namedtuple('Account', 'privatekey address')
-    privkeys = [sha3("account:{}".format(i)) for i in range(2)]
+    privkeys = [sha3("account:{}".format(i)) for i in range(3)]
     accounts = [Account(pk, privtoaddr(pk)) for pk in privkeys]
     return accounts
 
