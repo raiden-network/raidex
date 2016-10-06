@@ -1,5 +1,6 @@
 from ethereum.utils import sha3
 from rex.messages import Offer, Commitment, CommitmentProof, ProvenOffer
+from rex.utils import milliseconds
 
 
 def test_offer(assets):
@@ -8,6 +9,7 @@ def test_offer(assets):
     serial = o.serialize(o)
     assert_serialization(o)
     assert Offer.deserialize(serial) == o
+    assert o.timed_out()
 
 
 def test_hashable(assets):
@@ -36,6 +38,10 @@ def test_commitments(offers, accounts):
     proven_offer = ProvenOffer(offer, commitment, commitment_proof)
     proven_offer.sign(maker.privatekey)
 
+    assert proven_offer.offer.sender == commitment.sender
+    assert proven_offer.commitment_proof.commitment_sig == proven_offer.commitment.signature
+    assert proven_offer.commitment.timeout == proven_offer.offer.timeout
+
 
 def assert_serialization(serializable):
     serialized = serializable.serialize(serializable)
@@ -46,3 +52,4 @@ def test_offers(offers, accounts):
     senders = [acc.address for acc in accounts]
     for offer in offers:
         assert offer.sender in senders
+        assert not offer.timed_out(at=milliseconds.time_int() - 3600 * 1000)  # pretend we come from the past

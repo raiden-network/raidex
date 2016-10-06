@@ -6,6 +6,7 @@ from raiden.encoding.signing import recover_publickey, GLOBAL_CTX
 from raiden.encoding.signing import sign as _sign
 from secp256k1 import PrivateKey, ALL_FLAGS
 
+from rex.utils import milliseconds
 
 sig65 = binary.fixed_length(65)
 
@@ -96,6 +97,11 @@ class Offer(Signed):
                  offer_id, timeout):
         super(Offer, self).__init__(ask_token, ask_amount,
                  bid_token, bid_amount, offer_id, timeout)
+
+    def timed_out(self, at=None):
+        if at is None:
+            at = milliseconds.time_int()
+        return self.timeout < at
 
     def __repr__(self):
         try:

@@ -1,11 +1,11 @@
 import random
-import time
 from collections import namedtuple
 
 import pytest
 from ethereum.utils import privtoaddr, sha3
 
 from rex.messages import Offer
+from rex.utils import milliseconds
 
 
 @pytest.fixture()
@@ -34,7 +34,7 @@ def offers(request, accounts, assets):
         offer = Offer(assets[i % 2], random.randint(1, 100),
                       assets[1 - i % 2], random.randint(1, 100),
                       sha3('offer {}'.format(i)),
-                      int(time.time()) * 1000 + i * 1000
+                      milliseconds.time_int() + i * 1000
                       )
         offer.sign(maker.privatekey)
         offers.append(offer)
