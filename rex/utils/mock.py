@@ -9,8 +9,13 @@ Time is milliseconds
 import time
 import random
 import json
-from ethereum.utils import denoms, sha3, encode_hex
+import math
+import copy
+from collections import namedtuple
 
+from ethereum.utils import denoms, sha3, encode_hex, privtoaddr
+
+from rex.messages import Offer
 
 ETH = denoms.ether
 
@@ -18,19 +23,43 @@ ETH = denoms.ether
 def _price(p):
     return int(p * 1000)
 
+def _accounts():
+    Account = namedtuple('Account', 'privatekey address')
+    privkeys = [sha3("account:{}".format(i)) for i in range(2)]
+    accounts = [Account(pk, privtoaddr(pk)) for pk in privkeys]
+    return accounts
 
-def gen_orders(start_price=10, max_amount=1000 * ETH, num_entries=10, max_deviation=0.01):
-    assert isinstance(start_price, (int, long))
-    orders = []
-    price = start_price
-    for i in range(num_entries):
-        factor = 1 + (2 * random.random() - 1) * max_deviation
-        price = factor * price
-        amount = random.randrange(1, max_amount)
-        address = encode_hex(sha3(price * amount))[:40]
-        orders.append((address, _price(price), amount))
-    return orders
+ASSETS = [privtoaddr(sha3("asset{}".format(i))) for i in range(2)]
+ACCOUNTS = _accounts()
 
+def gen_orderbook_messages(market_price=10, max_amount=1000 * ETH, num_messages=200, max_deviation=0.01):
+    assert isinstance(market_price, (int, long))
+    offers = []
+    asks_price = copy.deepcopy(market_price)
+    bids_price = copy.deepcopy(market_price)
+
+    for i in range(num_messages):
+        # odd i stands for bids
+        if i % 2:  # asks
+            factor = 1 + random.random()* max_deviation
+            asks_price = factor * asks_price
+            bid_amount = random.randrange(1, max_amount)
+            ask_amount = int(bid_amount / asks_price)
+        else:  # bids
+            factor = 1 - random.random() * max_deviation
+            bids_price = factor * bids_price
+            bid_amount = random.randrange(2, max_amount)
+            ask_amount = int(bid_amount / bids_price)
+
+        maker = ACCOUNTS[num_messages % 2]
+        offer = Offer(ASSETS[i % 2], ask_amount,
+                      ASSETS[1 - i % 2], bid_amount,
+                      sha3('offer {}'.format(i)), # TODO better offer_ids
+                      int(time.time() * 10000 + 1000 * random.randint(1,10) + i)
+                      )
+        offer.sign(maker.privatekey)
+        offers.append(offer)
+    return offers
 
 def gen_orderbook(start_price=10, max_amount=1000 * ETH, num_entries=100, max_deviation=0.01):
     orders = gen_orders(start_price, max_amount, num_entries * 2, max_deviation)
@@ -60,26 +89,3 @@ def gen_orderhistory(start_price=10, max_amount=1000 * ETH, num_entries=100, max
             timestamp=int(1000 * timestamp), address=address, price=price, amount=amount
         ))
     return orders
-
-def gen_order_message_from_data(pair, price, amount, ttl, type_, msg_type=):
-
-
-def gen_orderbook_messages(start_price=10, max_amount=1000 * ETH, num_entries=100, max_deviation=0.01):
-    orders = gen_orders(start_price, max_amount, num_entries * 2, max_deviation)
-    bids = [gen_order_message_from_data(a,p,am) for a, p, am in reversed(orders[:num_entries])]
-    asks = [gen_order_message_from_data(a,p,am) for a, p, am in orders[num_entries:]]
-    return bids, asks
- 
-def fill_mocked_orderbook(orderbook):
-    mock_data = gen_mock_data()
-    for msg in mock_data[bids]:
-        orderbook.bids.add_offer(msg)
-    for msg in mock_data[asks]:
-        orderbook.asks.add_offer(msg)
-
-#def main():
-#    data = dict(order_book=gen_orderbook(num_entries=50),
-#                order_history=gen_orderhistory(num_entries=500))
-#    return json.dumps(data, indent=4)
-
-

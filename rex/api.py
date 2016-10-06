@@ -15,11 +15,11 @@ class API(object):
     def get_order_book(self, asset_pair, count=None):
         assert isinstance(asset_pair, tuple)
         assert len(asset_pair) == 2
-
+        
         orderbook = self.client.get_orderbook_by_asset_pair(asset_pair)
         assert isinstance(orderbook, OrderBook)
-        bids = [dict(price=p, amount=a) for p, a in list(orderbook.bids)]
-        asks = [dict(price=p, amount=a) for p, a in list(orderbook.asks)]
+        bids = [dict(price=order.price, amount=order.amount) for order in list(orderbook.bids.orders)]
+        asks = [dict(price=order.price, amount=order.amount) for order in list(orderbook.asks.orders)]
         return jsonify(dict(bids=bids, asks=asks))
 
     def get_trade_history(self, asset_pair, count):

@@ -24,6 +24,20 @@ def handle_websocket():
         except WebSocketError:
             break
 
+class RaidexException(Exception):
+    pass
+
+class OrderTypeMismatch(RaidexException):
+    pass
+
+class InsufficientCommitmentFunds(RaidexException):
+    pass
+
+class UnknownCommitmentService(RaidexException):
+    pass
+
+class UntradableAssetPair(RaidexException):
+    pass
 
 class ClientService(object):
 
@@ -40,16 +54,11 @@ class ClientService(object):
         #TODO: get from the raiden instance
         raise NotImplementedError
 
-    def get_mocked_orderbook_by_asset_pair(self, asset_pair):
-        if asset_pair not in self.order_manager:
-            # instantiate empty orderbook
-            orderbook = OrderBook()
-            # fill with mock data
-            utils.fill_mocked_orderbook(orderbook)
-            self.order_manager.add_orderbook(orderbook)
+    def get_orderbook_by_asset_pair(self, asset_pair):
+        if asset_pair not in self.order_manager.orderbooks:
+            raise UntradableAssetPair
         else:
             orderbook = self.order_manager.get_order_book(asset_pair)
-            orderbook.update_mocked_orderbook(orderbook)
         return orderbook
 
 
@@ -59,7 +68,8 @@ class CommitmentManager(object):
         self.raidex = raidex
         self.transport = cs_transport
         self.commitment_services = dict() # cs_address -> balance
-        self.proofs = dict() # offer_id -> proof
+        self.proofs = dict() # offer_id -> CommitmentProof
+        self.commitments = dict()  # offer_id -> Commitment
 
     def commit(self, commitment_service_address, offer_id, commitment_deposit, timeout):
         """
@@ -70,15 +80,17 @@ class CommitmentManager(object):
         """
         ## Initial Checks:
         # check if known CS
-        assert commitment_service_address in self.commitment_services
+        if commitment_service_address not in self.commitment_services:
+            raise UnknownCommitmentService
         # check for insufficient funds
         balance = self.commitment_services[commitment_service_address]
-        assert  balance >= commitment_deposit
+        if not balance >= commitment_deposit:
+            raise InsufficientCommitmentFunds
 
         ## Announce the commitment to the CS:
-        offer = get_offer_by_id(offer_id)  # TODO XXX where to store?
-        assert isinstance(offer, messages.Offer)
-        self.transport.request_commitment(commitment_service_address, offer)  # TODO
+        commitment = messages.Commitment(offer_id, timeout, commitment_deposit)
+        self.commitments[offer_id] = commitment
+        self.transport.request_commitment(commitment_service_address, commitment)  # TODO
         # CS will hash offer, wait for incoming transfers and compare the hashlocks to the commitment_requests
         # TODO: wait for ACK from CS, include timeout
 
@@ -96,8 +108,6 @@ class CommitmentManager(object):
             if commitment_proof:
                 assert isinstance(commitment_proof, messages.CommitmentProof)
                 self.proofs[offer_id] = commitment_proof
-                commitment = get_commitment_by_id(offer_id)  # TODO XXX where to store?
-                assert isinstance(commitment, messages.Commitment)
                 # construct with classmethod
                 proven_offer = messages.ProvenOffer.from_offer(offer, commitment, commitment_proof)
 
@@ -148,25 +158,19 @@ class OrderType(object):
     BID = 0
     ASK = 1
 
-class RaidexException(Exception):
-    pass
-
-class OrderTypeMismatch(RaidexException):
-    pass
-
 class Order(object):
     """
     Maybe this class isn't even necessary and we just use the Offer message objects
     from the broadcast?
     """
 
-    def __init__(self, pair, type_, amount, price, order_id=None, ttl=600):
+    def __init__(self, pair, type_, amount, price, timeout, order_id=None):
         self.pair = pair
         self.order_id = order_id
         self.type_ = type_
         self.amount = amount
         # TODO: add removal of expired orders
-        self.timeout = time.time() + ttl  # TODO switch to absolute time since epoch
+        self.timeout = timeout
         self.price = price
 
     def __cmp__(self, other):
@@ -188,15 +192,15 @@ class Order(object):
     @classmethod
     def from_offer_message(cls, offer_msg, compare_pair):
         msg_pair = (offer_msg.bid_token, offer_msg.ask_token)
+        # print msg_pair
         if msg_pair == compare_pair:
             type_ = OrderType.BID #XXX checkme
             price = float(offer_msg.bid_amount) / offer_msg.ask_amount
             amount = offer_msg.bid_amount
-        elif msg_pair[::-1] == compare_pair:
+        if msg_pair[::-1] == compare_pair:
             type_ = OrderType.ASK #XXX checkme
-            price = float(offer_msg.ask_amount) / offer_msg.bid_amount
+            price = float(offer_msg.bid_amount) / offer_msg.ask_amount
             amount = offer_msg.ask_amount
-        # TODO check type conversion
         order_id = sha3(offer_msg.offer_id)
         ttl = offer_msg.timeout
         return cls(compare_pair, type_, amount, price, order_id, ttl)
@@ -241,17 +245,21 @@ class OfferView(object):
 class OrderBook(object):
 
     def __init__(self, asset_pair):
-        self.bids = OfferView(manager, asset_pair, type_=OrderType.BID)
-        self.asks = OfferView(manager, asset_pair, type_=OrderType.ASK)
+        self.asset_pair = asset_pair
+        self.bids = OfferView(asset_pair, type_=OrderType.BID)
+        self.asks = OfferView(asset_pair, type_=OrderType.ASK)
 
     def insert_from_msg(self, offer_msg):
         # needs to be inserted from a message, because type_ determination is done
         # in the Order instantiation based on the compare_pair:
-        order = Order.from_offer_message(offer_msg, compare_pair=asset_pair)
+        # print offer_msg.bid_token
+        order = Order.from_offer_message(offer_msg, compare_pair=self.asset_pair)
         if order.type_ is OrderType.BID:
             self.bids.add_offer(order)
         if order.type_ is OrderType.ASK:
             self.asks.add_offer(order)
+
+        return order.order_id
 
     def get_order_by_id(self, order_id):
         order = self.bids.get_offer_by_id(order_id)

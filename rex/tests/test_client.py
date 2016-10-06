@@ -1,13 +1,15 @@
-from rex.client import Order, OfferView, OrderManager, OrderBook, Currency, OrderType
 import gevent
+import time
 
+from rex.client import Order, OfferView, OrderManager, OrderBook, Currency, OrderType
 
 def test_order_comparison(assets):
     pair = (assets[0], assets[1])
-    order1 = Order(pair=pair, type_=OrderType.BID, amount=50, price=5.)
-    order2 = Order(pair=pair, type_=OrderType.BID, amount=100, price=1.)
-    order3 = Order(pair=pair, type_=OrderType.BID, amount=100, price=2.)
-    order4 = Order(pair=pair, type_=OrderType.BID, amount=100, price=1.)
+    timeouts = [time.time() + i for i in range(0, 4)]
+    order1 = Order(pair=pair, type_=OrderType.BID, amount=50, price=5., timeout=timeouts[0])
+    order2 = Order(pair=pair, type_=OrderType.BID, amount=100, price=1., timeout=timeouts[1])
+    order3 = Order(pair=pair, type_=OrderType.BID, amount=100, price=2., timeout=timeouts[2])
+    order4 = Order(pair=pair, type_=OrderType.BID, amount=100, price=1., timeout=timeouts[3])
 
     assert order1 == order1
     assert order2 != order4
