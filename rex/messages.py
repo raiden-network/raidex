@@ -1,3 +1,6 @@
+import json
+import base64
+
 import rlp
 from rlp.sedes import binary
 from ethereum.utils import (address, int256, hash32, sha3, big_endian_to_int)
@@ -156,3 +159,55 @@ class ProvenOffer(Signed):
 
     def __init__(self, offer, commitment, commitment_proof):
         super(ProvenOffer, self).__init__(offer, commitment, commitment_proof)
+
+
+msg_types_map = dict(
+        offer=Offer,
+        market_offer=ProvenOffer,
+        commitment=Commitment,
+        commitment_proof=CommitmentProof,
+        commitment_service=Signed,  # TODO
+        swap_completed=Signed,  # TODO
+        )
+
+types_msg_map = {value: key for key, value in msg_types_map.items()}
+
+
+class Envelope(object):
+
+    version = 1
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def encode(data):
+        return base64.encodestring(rlp.encode(data))
+
+    @staticmethod
+    def decode(data):
+        return rlp.decode(base64.decodestring(data))
+
+    @classmethod
+    def open(cls, data):
+        try:
+            envelope = json.loads(data)
+        except ValueError:
+            raise ValueError("JSON-Envelope could not be decoded")
+        assert envelope['version'] == cls.version
+        klass = msg_types_map[envelope['msg']]
+        message = klass.deserialize(cls.decode(envelope['data']))
+
+        return message
+
+    @classmethod
+    def envelop(cls, message):
+        """Wrap the message in a json envelope.
+        """
+        assert isinstance(message, RLPHashable)
+        envelope = dict(
+                version=Envelope.version,
+                msg=types_msg_map[message.__class__],
+                data=cls.encode(message.serialize(message)),
+                )
+        return json.dumps(envelope)

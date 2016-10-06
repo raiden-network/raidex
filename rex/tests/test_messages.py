@@ -1,5 +1,6 @@
 from ethereum.utils import sha3
-from rex.messages import Offer, Commitment, CommitmentProof, ProvenOffer
+from rex.messages import (Offer, Commitment, CommitmentProof, ProvenOffer,
+        Envelope)
 from rex.utils import milliseconds
 
 
@@ -53,3 +54,11 @@ def test_offers(offers, accounts):
     for offer in offers:
         assert offer.sender in senders
         assert not offer.timed_out(at=milliseconds.time_int() - 3600 * 1000)  # pretend we come from the past
+
+
+def test_envelopes(offers):
+    b64 = Envelope.encode(offers[0].serialize(offers[0]))
+    assert offers[0].serialize(offers[0]) == Envelope.decode(b64)
+    for offer in offers:
+        envelope = Envelope.envelop(offer)
+        assert Envelope.open(envelope) == offer, envelope
