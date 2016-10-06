@@ -11,7 +11,7 @@ def test_offer(assets):
     assert isinstance(o, Offer)
     serial = o.serialize(o)
     assert_serialization(o)
-    assert_envelope(o)
+    assert_envelope_serialization(o)
     assert Offer.deserialize(serial) == o
     assert o.timed_out()
 
@@ -35,18 +35,18 @@ def test_commitments(offers, accounts):
     commitment = Commitment(offer.offer_id, offer.timeout, 42)
     commitment.sign(maker.privatekey)
     assert_serialization(commitment)
-    assert_envelope(commitment)
+    assert_envelope_serialization(commitment)
 
     commitment_proof = CommitmentProof(commitment.signature)
     commitment_proof.sign(commitment_service.privatekey)
     assert commitment_proof.sender == commitment_service.address
     assert_serialization(commitment_proof)
-    assert_envelope(commitment_proof)
+    assert_envelope_serialization(commitment_proof)
 
     proven_offer = ProvenOffer(offer, commitment, commitment_proof)
     proven_offer.sign(maker.privatekey)
     assert_serialization(proven_offer)
-    assert_envelope(proven_offer)
+    assert_envelope_serialization(proven_offer)
 
     assert proven_offer.offer.sender == commitment.sender
     assert proven_offer.commitment_proof.commitment_sig == proven_offer.commitment.signature
@@ -65,7 +65,7 @@ def test_offers(offers, accounts):
         assert not offer.timed_out(at=milliseconds.time_int() - 3600 * 1000)  # pretend we come from the past
 
 
-def assert_envelope(message):
+def assert_envelope_serialization(message):
     b64 = Envelope.encode(message.serialize(message))
     assert message.serialize(message) == Envelope.decode(b64)
     envelope = Envelope.envelop(message)
