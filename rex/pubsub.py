@@ -10,7 +10,7 @@ from gevent import monkey; monkey.patch_all()
 import bottle
 
 # You *must* import the green version of zmq or things will
-# block and nothing we will work and you will be sad.
+# block and nothing will work and you will be sad.
 from zmq import green as zmq
 
 # This lets us track how many clients are currently connected.
