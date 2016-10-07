@@ -192,11 +192,14 @@ class Envelope(object):
     def open(cls, data):
         try:
             envelope = json.loads(data)
+            assert isinstance(envelope, dict)
         except ValueError:
             raise ValueError("JSON-Envelope could not be decoded")
+
         if envelope['version'] != cls.version:
             raise ValueError("Message version mismatch! want:{} got:{}".format(
                 Envelope.version, envelope['msg']))
+
         klass = msg_types_map[envelope['msg']]
         message = klass.deserialize(cls.decode(envelope['data']))
 
