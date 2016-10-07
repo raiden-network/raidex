@@ -174,20 +174,18 @@ class Order(object):
         self.price = price
 
     def __cmp__(self, other):
-        if self.price == other.price and self.timeout == other.timeout and \
-                self.order_id == other.order_id:
+        if self.price == other.price and self.timeout == other.timeout:
             return 0
         elif self.price < other.price or (
-            self.price == other.price and self.timeout < other.timeout) or (
-                self.price == other.price and self.timeout == other.timeout and \
-                        self.order_id < other.order_id):
+                self.price == other.price and self.timeout < other.timeout):
             return -1
         else:
             return 1
 
     def __repr__(self):
-        return "Order<order_id={} amount={} price={} timeout={}>".format(
-                self.order_id, self.amount, self.price, self.timeout)
+        # FIXME: check timeout coming from offer_messages
+        return "Order<order_id={} amount={} price={} type={} pair={}>".format(
+                self.order_id, self.amount, self.price, self.type_, self.pair)
 
     @classmethod
     def from_offer_message(cls, offer_msg, compare_pair):
@@ -202,8 +200,7 @@ class Order(object):
             price = float(offer_msg.bid_amount) / offer_msg.ask_amount
             amount = offer_msg.ask_amount
         order_id = sha3(offer_msg.offer_id)
-        ttl = offer_msg.timeout
-        return cls(compare_pair, type_, amount, price, order_id, ttl)
+        return cls(compare_pair, type_, amount, price, order_id, offer_msg.timeout / 1000.0)
 
 
 class OfferView(object):
@@ -218,11 +215,15 @@ class OfferView(object):
         # type_ will be determined somewhere else (e.g. OfferManager),
         # and then the according OfferView gets filled
         assert isinstance(order, Order)
-        if order.type_ is not self.type_ or order.pair is not self.pair:
+        if order.type_ != self.type_ or order.pair != self.pair:
             raise OrderTypeMismatch
 
         self.orders.insert(order, order)
         self.offer_by_id[order.order_id] = order
+
+        #if self.type_ == OrderType.BID:
+        #    order.task = OrderTask(self.orderbooks[pair], order)
+        #    order.task.start()
 
         return order.order_id
 
@@ -248,6 +249,7 @@ class OrderBook(object):
         self.asset_pair = asset_pair
         self.bids = OfferView(asset_pair, type_=OrderType.BID)
         self.asks = OfferView(asset_pair, type_=OrderType.ASK)
+        self.tasks = dict()
 
     def insert_from_msg(self, offer_msg):
         # needs to be inserted from a message, because type_ determination is done
@@ -256,6 +258,9 @@ class OrderBook(object):
         order = Order.from_offer_message(offer_msg, compare_pair=self.asset_pair)
         if order.type_ is OrderType.BID:
             self.bids.add_offer(order)
+            # FIXME: just temporarily run tasks from here...
+            self.tasks[order.order_id] = OrderTask(self, order)
+            self.tasks[order.order_id].start()
         if order.type_ is OrderType.ASK:
             self.asks.add_offer(order)
 
@@ -329,12 +334,8 @@ class OrderManager(object):
 
     def __init__(self):
         self.orderbooks = dict()
-        self.trades = dict()
+        self.trade_history = dict()
         self.order_id = 0  # increment per new order
-
-    def get_next_id(self):
-        self.order_id = self.order_id + 1
-        return self.order_id
 
     def add_orderbook(self, pair, orderbook):
         self.orderbooks[pair] = orderbook
@@ -345,8 +346,8 @@ class OrderManager(object):
         return self.orderbooks[pair]
 
     def get_trade_history(self, pair, num_trades):
-        assert pair in self.trades
-        return self.trades[pair]
+        assert pair in self.trade_history
+        return self.trade_history[pair]
 
     def limit_order(self, pair, type_, amount, price, ttl):
         '''
@@ -357,9 +358,9 @@ class OrderManager(object):
         @param ttl: Time-to-live.
         '''
         order = Order(amount=amount, price=price, ttl=ttl, type_=type_)
-        order.order_id = self.get_next_id()
+        order.order_id = None  # FIXME
         order.task = None
-        if type_ == OrderType.BUY:
+        if type_ == OrderType.BID:
             order.task = OrderTask(self.orderbooks[pair], order)
             order.task.start()
         return order
@@ -372,9 +373,9 @@ class OrderManager(object):
         @param ttl: Time-to-live.
         '''
         order = Order(amount=amount, ttl=ttl, type_=type_)
-        order.order_id = self.get_next_id()
+        order.order_id = None  # FIXME
         order.task = None
-        if type_ == OrderType.BUY:
+        if type_ == OrderType.BID:
             order.task = OrderTask(self.orderbooks[pair], order)
             order.task.start()
         return order
