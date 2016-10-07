@@ -286,36 +286,46 @@ class OrderBook(object):
         return "BookOrder<bids={} asks={}>".format(len(self.bids), len(self.asks))
 
 
+class FIFOMatcher(object):
+    '''
+    A simple FIFO matcher.
+    '''
+    def __init__(self, order, offers):
+        self.order = order
+        self.offers = offers
+
+    def match(self):
+        total_amount = total_price = 0
+        remaining = self.order.amount
+        orders_to_buy = []
+        for offer in self.offers:
+            if offer.price <= self.order.price:
+                amount = min(remaining, offer.amount)
+                total_amount += amount
+                total_price += amount * offer.price
+                remaining -= amount
+                orders_to_buy.append((offer, amount))
+                if total_amount == self.order.amount:
+                    return orders_to_buy
+        return []
+
+
 class OrderTask(gevent.Greenlet):
 
-    def __init__(self, orderbook, order):
+    def __init__(self, orderbook, order, matcher=FIFOMatcher):
         super(OrderTask, self).__init__()
         self.orderbook = orderbook
         self.order = order
+        self.matcher = matcher(order, orderbook.asks)
         self.stop_event = gevent.event.AsyncResult()
 
     def _run(self):  # pylint: disable=method-hidden
         stop = None
 
-        offers = self.orderbook.asks
-        total_amount = total_price = 0
-        remaining = self.order.amount
-        orders_to_buy = []
         while stop is None:
-            for offer in offers:
-                if offer.price <= self.order.price:
-                    amount = min(remaining, offer.amount)
-                    total_amount += amount
-                    total_price += amount * offer.price
-                    remaining -= amount
-                    orders_to_buy.append((offer, amount))
-                    if total_amount == self.order.amount:
-                        self._try_buy_operation(orders_to_buy)
-                        break
-            total_amount = total_price = 0
-            remaining = self.order.amount
-            orders_to_buy = []
-            #stop = self.stop_event.wait(0)
+            orders_to_buy = self.matcher.match()
+            if orders_to_buy:
+                self._try_buy_operation(orders_to_buy)
             gevent.sleep(1)
 
     def _try_buy_operation(self, orders_with_amount):
