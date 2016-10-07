@@ -10,7 +10,7 @@ import { AppComponent }  from './components/app.component';
 import { OrderHistoryComponent } from './components/orderhistory.component';
 import { OrderBookComponent } from './components/orderbook.component';
 import { OrderHistoryChartComponent } from './components/order-history-chart.component';
-
+import { OrderBookChartComponent } from './components/orderbook-chart.component';
 @NgModule({
     imports: [ 	BrowserModule, 
     			AgGridModule, 
@@ -21,7 +21,8 @@ import { OrderHistoryChartComponent } from './components/order-history-chart.com
     			   OrderHistoryComponent, 
     			   OrderBookComponent,
                    GoogleChart,
-                   OrderHistoryChartComponent
+                   OrderHistoryChartComponent,
+                   OrderBookChartComponent
     			 ],
     bootstrap:    [ AppComponent ],
     providers:	  [ OrderService ],

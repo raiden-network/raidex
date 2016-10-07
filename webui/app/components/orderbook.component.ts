@@ -5,6 +5,8 @@ import {GridOptions} from 'ag-grid/main';
 import { OrderService } from '../services/order.service';
 
 declare var BigNumber: any;
+declare var Web3;
+var web3 = new Web3();
 @Component({
     moduleId: module.id,
     selector: 'order-book',
@@ -23,8 +25,7 @@ export class OrderBookComponent implements OnInit{
         {   headerName: "Amount", 
             field: "amount",
             cellRenderer: function (params: any) {
-                var wei = String(params.value);
-                return new BigNumber(wei).dividedBy(new BigNumber('1000000000000000000'));
+                return web3.fromWei(String(params.value), 'ether');
             },
             width: 100
         },
@@ -42,8 +43,7 @@ export class OrderBookComponent implements OnInit{
         {   headerName: "Amount", 
             field: "amount",
             cellRenderer: function (params: any) {
-                var wei = String(params.value);
-                return new BigNumber(wei).dividedBy(new BigNumber('1000000000000000000'));
+                return web3.fromWei(String(params.value), 'ether');
             },
             width: 100
         },
