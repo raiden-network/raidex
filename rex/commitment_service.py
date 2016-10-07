@@ -4,6 +4,17 @@ import time
 
 from ethereum.utils import sha3
 from raiden.api import transfer
+from raiden.encoding.signing import recover_publickey, GLOBAL_CTX
+from raiden.encoding.signing import sign as _sign
+from secp256k1 import PrivateKey, ALL_FLAGS
+
+
+def sign(messagedata, private_key):
+    if not isinstance(private_key, PrivateKey):
+        privkey_instance = PrivateKey(privkey=private_key, flags=ALL_FLAGS, ctx=GLOBAL_CTX)
+    else:
+        privkey_instance = private_key
+    return _sign(messagedata, privkey_instance)
 
 
 class CommitmentService(object):
@@ -20,7 +31,7 @@ class CommitmentService(object):
 
     def maker_commitment_received(self, offer, commitment):
         # sign and send back commitment_proof = sign(commitment_sig, cs)
-        commitment_proof = sign(commitment.signature, self.cs_address)
+        commitment_proof = sign(commitment.signature, self.cs_priv_key)
         self.send_back_commitment_proof(commitment_proof)
 
     def taker_commitment_received(self, offer, commitment):
@@ -35,7 +46,7 @@ class CommitmentService(object):
             hashlock = sha3(offer)
             self.commited_offers[hashlock] = commitment
             # sign and send back commitment proof
-            commitment_proof = sign(commitment.signature, self.cs_address)
+            commitment_proof = sign(commitment.signature, self.cs_priv_key)
             self.send_back_commitment_proof(commitment_proof)
 
     def return_commitment(self, commitment):
@@ -63,10 +74,17 @@ class CommitmentService(object):
         # if only one or none notify burn / keep deposits
         # if both maker and taker notify of successful swap within timeout
         # redeem deposits (keep a small fee) and broadcast swap completed
+        # broadcast that swap was completed. If success returns remove order from dict
+        del self.commited_offers[sha3(self._get_offer_by_id)]
         pass
 
     def broadcast_swap_completed(self, order_id):
         # send signed message to broadcast channel stating that swap is complete
+        pass
+
+    def _get_offer_by_id(offer_id):
+        # look up the offer corresponding to an offer_id and return the offer
+        # return offer
         pass
 
 
