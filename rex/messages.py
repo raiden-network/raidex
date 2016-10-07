@@ -143,15 +143,35 @@ class Offer(Signed):
 
 
 class Commitment(Signed):
+    """A `Commitment` announces the commitment service, that a maker or taker wants to engage in the
+    offer with the `offer_id`. `offer_hash`, `timeout` should match the later published `Offer`; the
+    `amount` is the amount of tokens that will be sent via `raiden` in a following transfer.
+
+    Process note: the raiden transfer to fulfill the commitment should use the `offer_id` as an identifier.
+
+    Data:
+        offer_id = offer_id
+        offer_hash = sha3(offer)
+        timeout = int256 <unix timestamp (ms) for the end of the offers validity>
+        amount = int256 <value of tokens in the commitment-service's commitment currency>
+
+    Broadcast:
+        {
+            "msg": "commitment",
+            "version": 1,
+            "data": rlp([offer_id, offer_hash, timeout, amount])
+        }
+    """
 
     fields = [
         ('offer_id', hash32),
+        ('offer_hash', hash32),
         ('timeout', int256),
         ('amount', int256),
     ]
 
-    def __init__(self, offer_id, timeout, amount):
-        super(Commitment, self).__init__(offer_id, timeout, amount)
+    def __init__(self, offer_id, offer_hash, timeout, amount):
+        super(Commitment, self).__init__(offer_id, offer_hash, timeout, amount)
 
 
 class CommitmentProof(Signed):

@@ -32,7 +32,7 @@ def test_commitments(offers, accounts):
     commitment_service = accounts[2]
     maker = filter(lambda acc: acc.address == offer.sender, accounts)[0]
 
-    commitment = Commitment(offer.offer_id, offer.timeout, 42)
+    commitment = Commitment(offer.offer_id, offer.hash, offer.timeout, 42)
     commitment.sign(maker.privatekey)
     assert_serialization(commitment)
     assert_envelope_serialization(commitment)
