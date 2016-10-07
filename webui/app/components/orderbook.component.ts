@@ -25,12 +25,16 @@ export class OrderBookComponent implements OnInit{
             cellRenderer: function (params: any) {
                 var wei = String(params.value);
                 return new BigNumber(wei).dividedBy(new BigNumber('1000000000000000000'));
-                }
             },
+            width: 100
+        },
         {
             headerName: "Price",
             field: "price",
-            width: 100
+            width: 100,
+            cellRenderer: function(params){ 
+                return '<div style="text-align: center;">'+params.value+'</div>';
+            } 
         }
     ];
 
@@ -40,12 +44,16 @@ export class OrderBookComponent implements OnInit{
             cellRenderer: function (params: any) {
                 var wei = String(params.value);
                 return new BigNumber(wei).dividedBy(new BigNumber('1000000000000000000'));
-                }
             },
+            width: 100
+        },
         {
             headerName: "Price",
             field: "price",
-            width: 100
+            width: 100,
+            cellRenderer: function(params){ 
+                return '<div style="text-align: center;">'+params.value+'</div>';
+            } 
         }
     ];
 

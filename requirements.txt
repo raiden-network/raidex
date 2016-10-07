@@ -3,5 +3,9 @@ ethereum
 bottle
 zmq
 gevent
-git+https://github.com/raiden-network/raiden.git@master
+gevent-websocket
 bintrees
+click
+devp2p
+werkzeug
+raiden

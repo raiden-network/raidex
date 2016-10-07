@@ -3,11 +3,13 @@ import { BrowserModule } from '@angular/platform-browser';
 import {AgGridModule} from 'ag-grid-ng2/main';
 import { Ng2BootstrapModule } from 'ng2-bootstrap/ng2-bootstrap';
 import { HttpModule }    from '@angular/http';
+import {GoogleChart} from './directives/angular2-google-chart.directive';
 
 import { OrderService } from './services/order.service';
 import { AppComponent }  from './components/app.component';
 import { OrderHistoryComponent } from './components/orderhistory.component';
 import { OrderBookComponent } from './components/orderbook.component';
+import { OrderHistoryChartComponent } from './components/order-history-chart.component';
 
 @NgModule({
     imports: [ 	BrowserModule, 
@@ -17,7 +19,9 @@ import { OrderBookComponent } from './components/orderbook.component';
     		 ],
     declarations:[ AppComponent,
     			   OrderHistoryComponent, 
-    			   OrderBookComponent
+    			   OrderBookComponent,
+                   GoogleChart,
+                   OrderHistoryChartComponent
     			 ],
     bootstrap:    [ AppComponent ],
     providers:	  [ OrderService ],
