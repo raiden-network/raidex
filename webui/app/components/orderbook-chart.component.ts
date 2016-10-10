@@ -20,7 +20,7 @@ export class OrderBookChartComponent implements OnInit{
           ['Price', 'Volume', {role:'style'}],
           ];	
     public bid_ChartOptions = {
-      title: 'Bid Depth',
+      title: 'Depth',
       legend: 'none',
       hAxis: {title: 'Price', gridlines: { count: 10 }},
       vAxis: {title: 'Cumulative Volume'}
