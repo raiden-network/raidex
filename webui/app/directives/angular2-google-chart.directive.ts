@@ -20,7 +20,7 @@ export class GoogleChart implements OnInit {
   ngOnInit() {
     if(!googleLoaded) {
       googleLoaded = true;
-    google.charts.load('current', {'packages':['corechart', 'gauge']});
+      google.charts.load('current', {'packages':['corechart', 'gauge']});
      }
     setTimeout(() =>this.drawGraph(this.chartOptions,this.chartType,this.chartData,this._element),1000);
   }
