@@ -158,6 +158,7 @@ class OrderType(object):
     BID = 0
     ASK = 1
 
+
 class Order(object):
     """
     Maybe this class isn't even necessary and we just use the Offer message objects
@@ -258,13 +259,16 @@ class OrderBook(object):
         order = Order.from_offer_message(offer_msg, compare_pair=self.asset_pair)
         if order.type_ is OrderType.BID:
             self.bids.add_offer(order)
-            # FIXME: just temporarily run tasks from here...
-            self.tasks[order.order_id] = OrderTask(self, order)
-            self.tasks[order.order_id].start()
         if order.type_ is OrderType.ASK:
             self.asks.add_offer(order)
 
         return order.order_id
+
+    def run_task_for_order(self, order, callback=None):
+        if not isinstance(order, Order) or order.order_id in self.tasks:
+            return
+        self.tasks[order.order_id] = OrderTask(self, order, callback=callback)
+        self.tasks[order.order_id].start()
 
     def get_order_by_id(self, order_id):
         order = self.bids.get_offer_by_id(order_id)
@@ -312,11 +316,12 @@ class FIFOMatcher(object):
 
 class OrderTask(gevent.Greenlet):
 
-    def __init__(self, orderbook, order, matcher=FIFOMatcher):
+    def __init__(self, orderbook, order, matcher=FIFOMatcher, callback=None):
         super(OrderTask, self).__init__()
         self.orderbook = orderbook
         self.order = order
         self.matcher = matcher(order, orderbook.asks)
+        self.callback = callback
         self.stop_event = gevent.event.AsyncResult()
 
     def _run(self):  # pylint: disable=method-hidden
@@ -324,10 +329,12 @@ class OrderTask(gevent.Greenlet):
 
         while stop is None:
             orders_to_buy = self.matcher.match()
-            if orders_to_buy:
-                self._try_buy_operation(orders_to_buy)
-            gevent.sleep(1)
+            if orders_to_buy and self.callback is not None:
+                self.callback(orders_to_buy)
+            # TODO: instead of sleeping, should wait for event signaling new offers
+            stop = self.stop_event.wait(1)
 
+    # FIXME: remove later (only useful for debug)
     def _try_buy_operation(self, orders_with_amount):
         print("Will try to buy: {}".format(
             " + ".join("{}*{}={}".format(

@@ -1,7 +1,9 @@
 import gevent
 import time
 
-from rex.client import Order, OfferView, OrderManager, OrderBook, Currency, OrderType
+from rex.client import Order, OfferView, OrderManager, OrderBook, Currency, OrderType, OrderTask
+from rex.messages import Offer
+from ethereum.utils import sha3
 
 def test_order_comparison(assets):
     pair = (assets[0], assets[1])
@@ -37,21 +39,41 @@ def test_offerview_ordering(offers, assets):
     assert all(first <= second for first, second in zip(list(offers)[:-1], list(offers)[1:]))
 
 
-def test_matching(offers, assets):
+def test_simple_matching(assets):
     manager = OrderManager()
 
     pair = (assets[0], assets[1])
     orderbook = OrderBook(asset_pair=pair)
     manager.add_orderbook(pair, orderbook)
 
-    for offer in offers:
-        if offer.ask_token == assets[0]:
-            orderbook.insert_from_msg(offer)
-    gevent.sleep(2)
+    # ask orders
+    order_ids = []
+    for i in range(8):
+        order_ids.append(orderbook.insert_from_msg(
+            Offer(
+                assets[0], 10, assets[1], 10,
+                sha3('offer {}'.format(i)),
+                int(time.time()) * 1000 + 60000
+            )
+        ))
+    gevent.sleep(.1)
 
-    for offer in offers:
-        if offer.bid_token == assets[0]:
-            orderbook.insert_from_msg(offer)
-            break
+    # bid order
+    offer = Offer(
+        assets[1], 10, assets[0], 10,
+        sha3('offer {}'.format(i)),
+        int(time.time()) * 1000 + 60000,
+    )
+    order_id = orderbook.insert_from_msg(offer)
 
-    gevent.sleep(1)
+    event = gevent.event.AsyncResult()
+
+    def check_match(offers):
+        assert len(offers) == 1
+        order = offers[0][0]
+        assert order.order_id in order_ids
+        event.set(True)
+
+    order = orderbook.bids.get_offer_by_id(order_id)
+    orderbook.run_task_for_order(order, callback=check_match)
+    event.wait(1.)
