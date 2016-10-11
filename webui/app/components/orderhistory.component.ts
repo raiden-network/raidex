@@ -43,7 +43,7 @@ export class OrderHistoryComponent implements OnInit{
             headerName: "Price",
             field: "price",
             sort:'asc',
-            width: 100,
+            width: 70,
             cellRenderer: function(params){ 
                 return '<div style="text-align: center;">'+util.formatCurrency(params.value)+'</div>';
             } 

@@ -1,20 +1,35 @@
-<div class = "container text-center">
-	<div class = "jumbotron">
-		<h3>{{title}}</h3>
-		<p>A decentralised Exchange Based on the Raiden State Channel System for Etherem</p>
-	</div>
-</div>
-
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <img alt="{{altText}}" src="{{imageUrl}}" height="50" width="90">
+    </div>
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+	    <ul class="nav navbar-nav">
+	      
+	    </ul>
+	    <form class="navbar-form navbar-left">
+	        <div class="form-group">
+	        	<label for="markets">Markets</label>
+  				<select class="form-control" id="markets">
+	    			<option>ETH/USD</option>
+	    			<option>ETC/USD</option>
+  				</select>
+	        </div>
+      </form>
+      <p class="navbar-text">Decentralised Exchange based on Raiden</p>
+	</div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
 
 <div class="container-fluid">
 	<div class="row">
 		<div class="col-md-4">
 			<order-history></order-history>
-			<order-book></order-book>
-			
 		</div>
-		<div class="col-md-1"></div>
-		<div class="col-md-7">
+		<div class="col-md-2">
+			<order-book></order-book>
+		</div>
+		<div class="col-md-6">
 			<order-history-chart></order-history-chart>
 			<order-book-chart></order-book-chart>
 		</div>

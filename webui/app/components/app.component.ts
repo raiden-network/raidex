@@ -13,7 +13,9 @@ import { OrderService } from '../services/order.service';
 })
 export class AppComponent implements OnInit{
 
-    title = 'Raidex Decentralized Exchange';  
+    title = 'Raidex Decentralized Exchange';
+    altText = 'Raidex'
+    imageUrl = 'raidexlogo.png';  
     ngOnInit(): void {
         
     }
