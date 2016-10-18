@@ -1,0 +1,16 @@
+/* You can add global styles to this file, and also import other style files */
+.ag-pinned-cols-container {
+        text-align: center;
+    }
+.ag-body-container {
+        text-align: center;
+    }
+* {
+    margin: 0;
+    padding: 0;
+}
+.full-width {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+}
