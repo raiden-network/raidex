@@ -3,8 +3,11 @@ import { Subscription } from "rxjs/Subscription";
 import {AgGridNg2} from 'ag-grid-ng2/main';
 import {GridOptions} from 'ag-grid/main';
 import { OrderService } from '../services/order.service';
+import * as util from '../services/util.service';
 
 declare var BigNumber: any;
+declare var Web3;
+var web3 = new Web3();
 @Component({
     moduleId: module.id,
     selector: 'order-book',
@@ -19,18 +22,26 @@ export class OrderBookComponent implements OnInit{
 
     private orderbookSubscription: Subscription;
 
+    public gridOptions = <GridOptions>{};
+
 	orderBidColumns = [
         {   headerName: "Amount", 
             field: "amount",
             cellRenderer: function (params: any) {
-                var wei = String(params.value);
-                return new BigNumber(wei).dividedBy(new BigNumber('1000000000000000000'));
-                }
+                return util.convertToEther(params.value);
             },
+            sort:'asc',
+            cellStyle: { color: '#ff0000'},
+            width: 80
+        },
         {
             headerName: "Price",
             field: "price",
-            width: 100
+            width: 80,
+            sort:'asc',
+            cellRenderer: function(params){ 
+                return '<div style="text-align: center;">'+util.formatCurrency(params.value)+'</div>';
+            }
         }
     ];
 
@@ -38,14 +49,20 @@ export class OrderBookComponent implements OnInit{
         {   headerName: "Amount", 
             field: "amount",
             cellRenderer: function (params: any) {
-                var wei = String(params.value);
-                return new BigNumber(wei).dividedBy(new BigNumber('1000000000000000000'));
-                }
+                return util.convertToEther(params.value);
             },
+            sort:'asc',
+            cellStyle: { color: '#00ff00'},
+            width: 80
+        },
         {
             headerName: "Price",
             field: "price",
-            width: 100
+            width: 80,
+            sort:'asc',
+            cellRenderer: function(params){ 
+                return '<div style="text-align: center;">'+util.formatCurrency(params.value)+'</div>';
+            } 
         }
     ];
 
@@ -55,6 +72,7 @@ export class OrderBookComponent implements OnInit{
 
     ngOnInit(): void {
     	this.getOrderBook();
+        this.gridOptions.enableSorting = true;
 	}
 
     public ngOnDestroy(): void {

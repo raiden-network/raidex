@@ -4,11 +4,14 @@
 <head>
 
     <base href="app">
+    <title>Raidex Exchange</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
 
     <!--ag-grid styles-->
     <link href="node_modules/ag-grid/dist/styles/ag-grid.css" rel="stylesheet" />
     <link href="node_modules/ag-grid/dist/styles/theme-fresh.css" rel="stylesheet" />
-    <link href="app/grid.css" rel="stylesheet" />
+    
+    <link href="css/custom.css" rel="stylesheet">
     <!--bootstrap styles-->
     <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
     <!--angular 2-->
@@ -24,8 +27,14 @@
     <script src="node_modules/ng2-bootstrap/bundles/ng2-bootstrap.min.js"></script>
 
     <script src="node_modules/bignumber.js/bignumber.min.js"></script>
+    <!--angular2-google-chart-->
+    
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="node_modules/web3/dist/web3.min.js"></script>
+    <script src="node_modules/d3-array/build/d3-array.min.js"></script>
 
     <script>
+        var googleLoaded = false;
         System.config({
             packages: {
                 lib: {

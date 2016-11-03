@@ -5,3 +5,7 @@ zmq
 gevent
 gevent-websocket
 bintrees
+click
+devp2p
+werkzeug
+raiden

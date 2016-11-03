@@ -41,18 +41,17 @@ class UntradableAssetPair(RaidexException):
 
 class ClientService(object):
 
-    def __init__(self, raiden, order_manager, commitment_manager, api):
+    def __init__(self, raiden, order_manager, commitment_manager):
         self.raiden = raiden
         self.commitment_manager = commitment_manager
         self.order_manager = order_manager
-        self.api = api
 
     @property
     def assets(self):
+        raise NotImplementedError
         # returns assets and balances tradeable from raiden
         # requirement: have an open channel + deposit for that asset
         #TODO: get from the raiden instance
-        raise NotImplementedError
 
     def get_orderbook_by_asset_pair(self, asset_pair):
         if asset_pair not in self.order_manager.orderbooks:
@@ -60,6 +59,7 @@ class ClientService(object):
         else:
             orderbook = self.order_manager.get_order_book(asset_pair)
         return orderbook
+
 
 
 class CommitmentManager(object):

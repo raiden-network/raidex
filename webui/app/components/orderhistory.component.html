@@ -1,5 +1,7 @@
-<ag-grid-ng2 class="ag-fresh" style="height: 300px; width: 500px;" 
+<h4 class="text-nowrap">Recent Trades</h4>
+<ag-grid-ng2 class="ag-bootstrap" style="height: 600px; width: 270px;" 
+	[gridOptions]="gridOptions"
 	[columnDefs]="orderHistoryColumns"  
-	[rowData] = "orderHistory">
+	rowModelType="pagination">
 </ag-grid-ng2>
 
