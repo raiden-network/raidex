@@ -1,11 +1,11 @@
 # -*- coding: utf8 -*-
 import pytest
 
-from rex.utils import get_contract_path
+from rex.utils.smart_contracts import get_contract_path
 from ethereum import tester
 from ethereum.tester import ABIContract, ContractTranslator, TransactionFailed
 
-
+@pytest.mark.skip(reason='Third party smart contract deprecated')
 def test_thirdparty():
     third_party_path = get_contract_path('ThirdParty.sol')
 

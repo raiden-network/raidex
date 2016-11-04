@@ -1,13 +1,17 @@
-from rex.client import LimitOrder, OfferView, OrderManager, OrderBook, Currency
-from gen_orderbook_mock import gen_orderbook, gen_orderhistory
 import gevent
+import time
 
+from rex.client import Order, OfferView, OrderManager, OrderBook, Currency, OrderType, OrderTask
+from rex.messages import Offer
+from ethereum.utils import sha3
 
-def test_limitorder_comparison():
-    order1 = LimitOrder(amount=50, price=5.)
-    order2 = LimitOrder(amount=100, price=1.)
-    order3 = LimitOrder(amount=100, price=2.)
-    order4 = LimitOrder(amount=100, price=1.)
+def test_order_comparison(assets):
+    pair = (assets[0], assets[1])
+    timeouts = [time.time() + i for i in range(0, 4)]
+    order1 = Order(pair=pair, type_=OrderType.BID, amount=50, price=5., timeout=timeouts[0])
+    order2 = Order(pair=pair, type_=OrderType.BID, amount=100, price=1., timeout=timeouts[1])
+    order3 = Order(pair=pair, type_=OrderType.BID, amount=100, price=2., timeout=timeouts[2])
+    order4 = Order(pair=pair, type_=OrderType.BID, amount=100, price=1., timeout=timeouts[3])
 
     assert order1 == order1
     assert order2 != order4
@@ -15,36 +19,15 @@ def test_limitorder_comparison():
     assert order1 >= order3 >= order4 >= order2
 
 
-class MockManager(object):
-    id_ = 0
+def test_offerview_ordering(offers, assets):
+    # filter correct asset_pair and add type_ manually
+    compare_pair = (assets[0], assets[1])
+    bid_orders = [Order.from_offer_message(offer, compare_pair)
+                  for offer in offers if offer.bid_token==assets[0]]
+    offers = OfferView(pair=compare_pair, type_=OrderType.BID)
+    offer_ids = [offers.add_offer(order) for order in bid_orders]
 
-    def limit_order(self, pair, type_, amount, price, ttl=600):
-        return LimitOrder(
-            amount=amount, price=price, order_id=self.get_next_id(), ttl=ttl)
-
-    def get_next_id(self):
-        self.id_ = self.id_ + 1
-        return self.id_
-
-
-offerview_data = [
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 100, 'price': 15., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 120, 'price': 20., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 130, 'price': 18., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 90,  'price': 13., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 80,  'price': 18., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 80,  'price': 20., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 100, 'price': 16., 'ttl': 300 },
-    { 'message_type': 'limit', 'type': 'sell', 'amount': 20,  'price': 14., 'ttl': 300 },
-]
-
-
-def test_offerview_ordering():
-    manager = MockManager()
-    offers = OfferView(manager, (Currency.ETH, Currency.BTC))
-    offer_ids = [offers.add_offer(offer) for offer in offerview_data]
-
-    assert len(offers) == len(offerview_data)
+    assert len(offers) == len(bid_orders)
     assert all(first <= second for first, second in zip(list(offers)[:-1], list(offers)[1:]))
 
     # test removal
@@ -52,20 +35,45 @@ def test_offerview_ordering():
     offers.remove_offer(offers.orders.min_item()[0].order_id)
     offers.remove_offer(offers.orders.min_item()[0].order_id)
 
-    assert len(offers) == len(offerview_data) - 3
+    assert len(offers) == len(bid_orders) - 3
     assert all(first <= second for first, second in zip(list(offers)[:-1], list(offers)[1:]))
 
 
-def test_matching():
+def test_simple_matching(assets):
     manager = OrderManager()
-    pair = (Currency.ETH, Currency.BTC)
-    orderbook = OrderBook(manager, pair)
-    offer_ids = [orderbook.asks.add_offer(offer) for offer in offerview_data]
-    gevent.sleep(2)
 
-    # try to buy from the previous sell data
-    buy_data = {
-        'message_type': 'limit', 'type': 'buy', 'amount': 150, 'price': 15., 'ttl': 300
-    }
-    offer_id = orderbook.bids.add_offer(buy_data)
-    gevent.sleep(3)
+    pair = (assets[0], assets[1])
+    orderbook = OrderBook(asset_pair=pair)
+    manager.add_orderbook(pair, orderbook)
+
+    # ask orders
+    order_ids = []
+    for i in range(8):
+        order_ids.append(orderbook.insert_from_msg(
+            Offer(
+                assets[0], 10, assets[1], 10,
+                sha3('offer {}'.format(i)),
+                int(time.time()) * 1000 + 60000
+            )
+        ))
+    gevent.sleep(.1)
+
+    # bid order
+    offer = Offer(
+        assets[1], 10, assets[0], 10,
+        sha3('offer {}'.format(i)),
+        int(time.time()) * 1000 + 60000,
+    )
+    order_id = orderbook.insert_from_msg(offer)
+
+    event = gevent.event.AsyncResult()
+
+    def check_match(offers):
+        assert len(offers) == 1
+        order = offers[0][0]
+        assert order.order_id in order_ids
+        event.set(True)
+
+    order = orderbook.bids.get_offer_by_id(order_id)
+    orderbook.run_task_for_order(order, callback=check_match)
+    event.wait(1.)

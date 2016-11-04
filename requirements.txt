@@ -1,11 +1,10 @@
 pytest
-ethereum
 bottle
 zmq
-gevent
-gevent-websocket
 bintrees
 click
 devp2p
 werkzeug
 raiden
+ethereum
+gevent==1.1.0

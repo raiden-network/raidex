@@ -5,10 +5,7 @@ from bottle import request, Bottle, abort
 from gevent.pywsgi import WSGIServer
 from geventwebsocket import WebSocketError
 from geventwebsocket.handler import WebSocketHandler
-
-
-from rex.gen_orderbook_mock import gen_orderbook
-
+from ethereum.utils import sha3
 
 
 app = Bottle()
@@ -26,6 +23,20 @@ def handle_websocket():
         except WebSocketError:
             break
 
+class RaidexException(Exception):
+    pass
+
+class OrderTypeMismatch(RaidexException):
+    pass
+
+class InsufficientCommitmentFunds(RaidexException):
+    pass
+
+class UnknownCommitmentService(RaidexException):
+    pass
+
+class UntradableAssetPair(RaidexException):
+    pass
 
 class ClientService(object):
 
@@ -42,49 +53,71 @@ class ClientService(object):
         #TODO: get from the raiden instance
 
     def get_orderbook_by_asset_pair(self, asset_pair):
-        if asset_pair not in self.orderbooks.keys():
-            # instantiate empty orderbook
-            mocked_orderbook = OrderBook()
-            # fill with mock data
-            mocked_orderbook.orders = gen_orderbook()
-            self.orderbooks[asset_pair] = mocked_orderbook
-            return mocked_orderbook
+        if asset_pair not in self.order_manager.orderbooks:
+            raise UntradableAssetPair
         else:
-            return self.orderbooks[asset_pair]
+            orderbook = self.order_manager.get_order_book(asset_pair)
+        return orderbook
+
 
 
 class CommitmentManager(object):
 
-    def __init__(self, raiden):
-        self.raiden = raiden
-        self.commitment_services = dict()
+    def __init__(self, raidex, cs_transport):
+        self.raidex = raidex
+        self.transport = cs_transport
+        self.commitment_services = dict() # cs_address -> balance
+        self.proofs = dict() # offer_id -> CommitmentProof
+        self.commitments = dict()  # offer_id -> Commitment
 
     def commit(self, commitment_service_address, offer_id, commitment_deposit, timeout):
         """
-            cs = <commitment service ethereum address>
-            offer = rlp([ask_token, ask_amount, bid_token, bid_amount, offer_id])
-            offer_sig = sign(sha3(offer), maker)
-            commitment = rlp([sha3(offer), amount, timeout])
-            commitment_sig = sign(sha3(commitment), maker)
-            commitment_proof = sign(commitment_sig, cs)
+        offer_id == hashlock == sha3(offer.hash)
+
+        XXX: maybe dont take the offer_id but instead the preconstructed messages.Offer and
+        than hash it to the id internally
         """
+        ## Initial Checks:
+        # check if known CS
+        if commitment_service_address not in self.commitment_services:
+            raise UnknownCommitmentService
+        # check for insufficient funds
+        balance = self.commitment_services[commitment_service_address]
+        if not balance >= commitment_deposit:
+            raise InsufficientCommitmentFunds
 
-        raise NotImplementedError
-        #TODO: send signed maker commitment message and wait for signed answer from CS
+        ## Announce the commitment to the CS:
+        commitment = messages.Commitment(offer_id, timeout, commitment_deposit)
+        self.commitments[offer_id] = commitment
+        self.transport.request_commitment(commitment_service_address, commitment)  # TODO
+        # CS will hash offer, wait for incoming transfers and compare the hashlocks to the commitment_requests
+        # TODO: wait for ACK from CS, include timeout
 
-        offer = get_offer_from_id(offer_id)
-        bid_token, ask_token = offer.asset_pair
-        offer_msg = rlp([ask_token, ask_amount, bid_token, bid_amount, offer_id])
-        offer_msg_sig = sign(sha3(offer), maker)
-        commitment_msg = rlp([sha3(offer), amount, timeout])
-        commitment_msg_sig = sign(sha3(commitment), maker)
-        self.send_msg(commitment_service_address, commitment_msg, commitment_msg_sig)
-        if successful:
-            self.notify_success(commitment_service_address, offer_id)
-            signed_commitment = True
-            return signed_commitment
-        else:
-            return False
+        ## Send the actual commitment as a raiden transfer
+        if ack:
+            # send a locked, direct transfer to the CS, where the hashlock == sha3(offer.hash)
+            self.raidex.raiden.send_cs_transfer(commitment_service_address, deposit_amount, hashlock=offer_id)  # TODO
+            # write changes to current balance
+            balance -= commitment_deposit
+            self.commitment_services[commitment_service_address] = balance
+
+            ## TODO: wait for commitment_proof
+            # what if transfer is received, but commitment_proof is never sent out by cs?
+            # add timeout, since market price could have changed
+            if commitment_proof:
+                assert isinstance(commitment_proof, messages.CommitmentProof)
+                self.proofs[offer_id] = commitment_proof
+                # construct with classmethod
+                proven_offer = messages.ProvenOffer.from_offer(offer, commitment, commitment_proof)
+
+                ## Broadcast the valid, committed-to offer into the network and wait that someone takes it
+                try:
+                    self.raidex.broadcast.post(proven_offer) # serialization is done in broadcast
+                except BroadcastUnreachable:
+                    # TODO: rollback balance changes and put ProvenOffer in a resend queue
+                    pass
+
+                return offer_id
 
     def notify_success(self, commitment_service_address, offer_id):
         raise NotImplementedError
@@ -116,84 +149,81 @@ class CommitmentManager(object):
 
 class Currency(object):
     # TODO: add all supported currencies...
-    ETH = 0
-    BTC = 1
+    ETH = 'ETH'
+    BTC = 'BTC'
+
+
+class OrderType(object):
+    BID = 0
+    ASK = 1
 
 
 class Order(object):
+    """
+    Maybe this class isn't even necessary and we just use the Offer message objects
+    from the broadcast?
+    """
 
-    SELL = 0
-    BUY = 1
-
-    def __init__(self, type_, amount, order_id=None, ttl=600):
+    def __init__(self, pair, type_, amount, price, timeout, order_id=None):
+        self.pair = pair
         self.order_id = order_id
         self.type_ = type_
         self.amount = amount
         # TODO: add removal of expired orders
-        self.timeout = time.time() + ttl
-
-
-class LimitOrder(Order):
-
-    def __init__(self, amount, price, order_id=None, ttl=600, type_=Order.BUY):
-        super(LimitOrder, self).__init__(amount=amount, order_id=order_id, ttl=ttl, type_=type_)
+        self.timeout = timeout
         self.price = price
 
     def __cmp__(self, other):
-        if self.price == other.price and self.timeout == other.timeout and \
-                self.order_id == other.order_id:
+        if self.price == other.price and self.timeout == other.timeout:
             return 0
         elif self.price < other.price or (
-            self.price == other.price and self.timeout < other.timeout) or (
-                self.price == other.price and self.timeout == other.timeout and \
-                        self.order_id < other.order_id):
+                self.price == other.price and self.timeout < other.timeout):
             return -1
         else:
             return 1
 
     def __repr__(self):
-        return "LimitOrder<order_id={} amount={} price={} timeout={}>".format(
-                self.order_id, self.amount, self.price, self.timeout)
+        # FIXME: check timeout coming from offer_messages
+        return "Order<order_id={} amount={} price={} type={} pair={}>".format(
+                self.order_id, self.amount, self.price, self.type_, self.pair)
 
-
-class MarketOrder(Order):
-
-    def __init__(self, amount, order_id=None, ttl=600, type_=Order.BUY):
-        super(MarketOrder, self).__init__(amount=amount, order_id=order_id, ttl=ttl, type_=type_)
-
-    def __cmp__(self, other):
-        if self.timeout == other.timeout and self.order_id == other.order_id:
-            return 0
-        elif self.timeout < other.timeout or (
-                self.timeout == other.timeout and self.order_id < other.order_id):
-            return -1
-        else:
-            return 1
+    @classmethod
+    def from_offer_message(cls, offer_msg, compare_pair):
+        msg_pair = (offer_msg.bid_token, offer_msg.ask_token)
+        # print msg_pair
+        if msg_pair == compare_pair:
+            type_ = OrderType.BID #XXX checkme
+            price = float(offer_msg.bid_amount) / offer_msg.ask_amount
+            amount = offer_msg.bid_amount
+        if msg_pair[::-1] == compare_pair:
+            type_ = OrderType.ASK #XXX checkme
+            price = float(offer_msg.bid_amount) / offer_msg.ask_amount
+            amount = offer_msg.ask_amount
+        order_id = sha3(offer_msg.offer_id)
+        return cls(compare_pair, type_, amount, price, order_id, offer_msg.timeout / 1000.0)
 
 
 class OfferView(object):
 
-    def __init__(self, manager, pair):
+    def __init__(self, pair, type_):
         self.pair = pair
+        self.type_ = type_
         self.orders = FastRBTree()
         self.offer_by_id = dict()
-        self.manager = manager
 
-    def add_offer(self, offer_message):
-        # TODO: using mock format, must define offer_message
-        message_type = offer_message['message_type']
-        type_ = Order.BUY if offer_message['type'] == 'buy' else Order.SELL
-        amount = offer_message['amount']
-        price = offer_message.get('price')
-        ttl = offer_message.get('ttl')
-
-        if message_type == 'limit':
-            order = self.manager.limit_order(pair=self.pair, type_=type_, amount=amount, price=price, ttl=ttl)
-        else:
-            order = self.manager.market_order(pair=self.pair, type_=type_, amount=amount, ttl=ttl)
+    def add_offer(self, order):
+        # type_ will be determined somewhere else (e.g. OfferManager),
+        # and then the according OfferView gets filled
+        assert isinstance(order, Order)
+        if order.type_ != self.type_ or order.pair != self.pair:
+            raise OrderTypeMismatch
 
         self.orders.insert(order, order)
         self.offer_by_id[order.order_id] = order
+
+        #if self.type_ == OrderType.BID:
+        #    order.task = OrderTask(self.orderbooks[pair], order)
+        #    order.task.start()
 
         return order.order_id
 
@@ -202,7 +232,6 @@ class OfferView(object):
             order = self.offer_by_id[offer_id]
             self.orders.remove(order)
             del self.offer_by_id[offer_id]
-            # TODO: publish removal?
 
     def get_offer_by_id(self, offer_id):
         return self.offer_by_id.get(offer_id)
@@ -216,27 +245,29 @@ class OfferView(object):
 
 class OrderBook(object):
 
-    def __init__(self, manager, asset_pair):
-        self.manager = manager
-        self.manager.add_orderbook(asset_pair, self)
+    def __init__(self, asset_pair):
+        self.asset_pair = asset_pair
+        self.bids = OfferView(asset_pair, type_=OrderType.BID)
+        self.asks = OfferView(asset_pair, type_=OrderType.ASK)
+        self.tasks = dict()
 
-        self.bids = OfferView(manager, asset_pair)
-        self.asks = OfferView(manager, asset_pair)
+    def insert_from_msg(self, offer_msg):
+        # needs to be inserted from a message, because type_ determination is done
+        # in the Order instantiation based on the compare_pair:
+        # print offer_msg.bid_token
+        order = Order.from_offer_message(offer_msg, compare_pair=self.asset_pair)
+        if order.type_ is OrderType.BID:
+            self.bids.add_offer(order)
+        if order.type_ is OrderType.ASK:
+            self.asks.add_offer(order)
 
-        # TODO: offerviews should come from ClientService?
-        #ask_currency, bid_currency = asset_pair
-        #self.asks = get_orderbook_by_asset_pair(ask_currency, bid_currency)
-        #assert isinstance(self.asks, OfferView)
-        #assert self.asks.currencypair == (ask_currency, bid_currency)
-        #self.bids = get_orderbook_by_asset_pair(bid_currency, ask_currency)# cpair = (BTC/ETH)
-        #assert isinstance(self.bids, OfferView)
-        #assert self.bids.currencypair == (bid_currency, ask_currency)
+        return order.order_id
 
-    def add(self, address, price, amount, timeout):
-        id_ = sha3(address + str(price * amount))
-        self.ordersindex.insert(price)
-        assert id_ not in self.orders
-        self.orders[id_] = (address, price, amount, timeout)
+    def run_task_for_order(self, order, callback=None):
+        if not isinstance(order, Order) or order.order_id in self.tasks:
+            return
+        self.tasks[order.order_id] = OrderTask(self, order, callback=callback)
+        self.tasks[order.order_id].start()
 
     def get_order_by_id(self, order_id):
         order = self.bids.get_offer_by_id(order_id)
@@ -244,26 +275,8 @@ class OrderBook(object):
             order = self.asks.get_offer_by_id(order_id)
         return order
 
-    # @property
-    # def bids(self): # TODO: implement __iter__() and next() for the data structure chosen for list() representation
-    #     assert len(self.orders) % 2 == 0
-    #     half_list = int(len(self.orders) / 2)
-    #     return reversed(self.orders[:half_list])
-
-    # @property
-    # def asks(self):
-    #     assert len(self.orders) % 2 == 0
-    #     half_list = int(len(self.orders) / 2)
-    #     return self.orders[half_list:]
-
     def set_manager(self, manager):
         self.manager = manager
-
-    def insert(self, order):
-        if order.type_ == Order.BUY:
-            self.asks.add_offer(order)
-        else:
-            self.bids.add_offer(order)
 
     def get_order_status(self, order_id):
         pass
@@ -276,38 +289,51 @@ class OrderBook(object):
         return "BookOrder<bids={} asks={}>".format(len(self.bids), len(self.asks))
 
 
+class FIFOMatcher(object):
+    '''
+    A simple FIFO matcher.
+    '''
+    def __init__(self, order, offers):
+        self.order = order
+        self.offers = offers
+
+    def match(self):
+        total_amount = total_price = 0
+        remaining = self.order.amount
+        orders_to_buy = []
+        for offer in self.offers:
+            if offer.price <= self.order.price:
+                amount = min(remaining, offer.amount)
+                total_amount += amount
+                total_price += amount * offer.price
+                remaining -= amount
+                orders_to_buy.append((offer, amount))
+                if total_amount == self.order.amount:
+                    return orders_to_buy
+        return []
+
+
 class OrderTask(gevent.Greenlet):
 
-    def __init__(self, orderbook, order):
+    def __init__(self, orderbook, order, matcher=FIFOMatcher, callback=None):
         super(OrderTask, self).__init__()
         self.orderbook = orderbook
         self.order = order
+        self.matcher = matcher(order, orderbook.asks)
+        self.callback = callback
         self.stop_event = gevent.event.AsyncResult()
 
     def _run(self):  # pylint: disable=method-hidden
         stop = None
 
-        offers = self.orderbook.asks
-        total_amount = total_price = 0
-        remaining = self.order.amount
-        orders_to_buy = []
         while stop is None:
-            for offer in offers:
-                if offer.price <= self.order.price:
-                    amount = min(remaining, offer.amount)
-                    total_amount += amount
-                    total_price += amount * offer.price
-                    remaining -= amount
-                    orders_to_buy.append((offer, amount))
-                    if total_amount == self.order.amount:
-                        self._try_buy_operation(orders_to_buy)
-                        break
-            total_amount = total_price = 0
-            remaining = self.order.amount
-            orders_to_buy = []
-            #stop = self.stop_event.wait(0)
-            gevent.sleep(1)
+            orders_to_buy = self.matcher.match()
+            if orders_to_buy and self.callback is not None:
+                self.callback(orders_to_buy)
+            # TODO: instead of sleeping, should wait for event signaling new offers
+            stop = self.stop_event.wait(1)
 
+    # FIXME: remove later (only useful for debug)
     def _try_buy_operation(self, orders_with_amount):
         print("Will try to buy: {}".format(
             " + ".join("{}*{}={}".format(
@@ -324,12 +350,8 @@ class OrderManager(object):
 
     def __init__(self):
         self.orderbooks = dict()
-        self.trades = dict()
+        self.trade_history = dict()
         self.order_id = 0  # increment per new order
-
-    def get_next_id(self):
-        self.order_id = self.order_id + 1
-        return self.order_id
 
     def add_orderbook(self, pair, orderbook):
         self.orderbooks[pair] = orderbook
@@ -340,8 +362,8 @@ class OrderManager(object):
         return self.orderbooks[pair]
 
     def get_trade_history(self, pair, num_trades):
-        assert pair in self.trades
-        return self.trades[pair]
+        assert pair in self.trade_history
+        return self.trade_history[pair]
 
     def limit_order(self, pair, type_, amount, price, ttl):
         '''
@@ -351,10 +373,10 @@ class OrderManager(object):
         @param price: Maximum acceptable value for buy, minimum for sell.
         @param ttl: Time-to-live.
         '''
-        order = LimitOrder(amount=amount, price=price, ttl=ttl, type_=type_)
-        order.order_id = self.get_next_id()
+        order = Order(amount=amount, price=price, ttl=ttl, type_=type_)
+        order.order_id = None  # FIXME
         order.task = None
-        if type_ == Order.BUY:
+        if type_ == OrderType.BID:
             order.task = OrderTask(self.orderbooks[pair], order)
             order.task.start()
         return order
@@ -366,10 +388,10 @@ class OrderManager(object):
         @param amount: The number of tokens to buy/sell
         @param ttl: Time-to-live.
         '''
-        order = MarketOrder(amount=amount, ttl=ttl, type_=type_)
-        order.order_id = self.get_next_id()
+        order = Order(amount=amount, ttl=ttl, type_=type_)
+        order.order_id = None  # FIXME
         order.task = None
-        if type_ == Order.BUY:
+        if type_ == OrderType.BID:
             order.task = OrderTask(self.orderbooks[pair], order)
             order.task.start()
         return order
