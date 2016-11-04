@@ -5,7 +5,6 @@ from bottle import request, Bottle, abort
 from gevent.pywsgi import WSGIServer
 from geventwebsocket import WebSocketError
 from geventwebsocket.handler import WebSocketHandler
-from rex.gen_orderbook_mock import gen_orderbook
 from ethereum.utils import sha3
 
 
