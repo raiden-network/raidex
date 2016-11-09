@@ -1,4 +1,5 @@
 import json
+import time
 import pytest
 
 from ethereum.utils import sha3
@@ -70,9 +71,35 @@ def test_offers(offers, accounts):
 def test_cs_advertisements(commitment_service_advertisements, commitment_services):
     cservices = [cs.address for cs in commitment_service_advertisements]
     for advertisement in commitment_service_advertisements:
+        # the only sender of a CS-Ad can be the CS itself:
+        assert advertisement.address == advertisement.sender
         assert advertisement.address in cservices
         assert advertisement.commitment_asset == ETHER_TOKEN_ADDRESS
-        assert 0. <= advertisement.fee_rate <= 1.
+        # fee_rate represented as int(float_rate/uint32.max_int)
+        assert isinstance(advertisement.fee_rate, int)
+        assert 0 <= advertisement.fee_rate <= 2 ** 32
+
+
+def test_swap_execution(offers, accounts, maker_swap_executions, taker_swap_executions):
+    time_ = milliseconds.time_int()
+    senders = [acc.address for acc in accounts]
+
+    # there need to exist two swap executions, one from the offer.sender and one from the taker
+    # dont include this logic in the unit test!
+    for sw_execution in taker_swap_executions + maker_swap_executions:
+        assert sw_execution.sender in senders
+        assert time_ > sw_execution.timestamp  # should be in the past
+
+
+def test_swap_completeds(offers, commitment_services, swap_completeds):
+    time_ = milliseconds.time_int()
+    senders = [cs.address for cs in commitment_services]
+
+    # there need to exist two swap executions, one from the offer.sender and one from the taker
+    # dont include this logic in the unit test!
+    for sw_completed in swap_completeds:
+        assert sw_completed.sender in senders
+        assert time_ > sw_completed.timestamp  # should be in the past
 
 
 def assert_envelope_serialization(message):
