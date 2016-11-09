@@ -1,7 +1,9 @@
 import os
 import time
-
+from ethereum.utils import privtoaddr, sha3
 import rex
+
+ETHER_TOKEN_ADDRESS = privtoaddr(sha3('ether'))
 
 
 def get_contract_path(contract_name):
