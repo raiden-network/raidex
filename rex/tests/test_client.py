@@ -1,9 +1,11 @@
 import gevent
 import time
 
-from rex.client import Order, OfferView, OrderManager, OrderBook, Currency, OrderType, OrderTask
-from rex.messages import Offer
 from ethereum.utils import sha3
+
+from rex.client import Order, OfferView, OrderManager, OrderBook, OrderType
+from rex.messages import Offer
+
 
 def test_order_comparison(assets):
     pair = (assets[0], assets[1])
@@ -23,7 +25,7 @@ def test_offerview_ordering(offers, assets):
     # filter correct asset_pair and add type_ manually
     compare_pair = (assets[0], assets[1])
     bid_orders = [Order.from_offer_message(offer, compare_pair)
-                  for offer in offers if offer.bid_token==assets[0]]
+                  for offer in offers if offer.bid_token == assets[0]]
     offers = OfferView(pair=compare_pair, type_=OrderType.BID)
     offer_ids = [offers.add_offer(order) for order in bid_orders]
 
