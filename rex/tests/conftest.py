@@ -4,7 +4,7 @@ from collections import namedtuple
 import pytest
 from ethereum.utils import privtoaddr, sha3
 
-from rex.messages import Offer
+from rex.messages import Offer, CommitmentServiceAdvertisement
 from rex.utils import milliseconds
 from rex.commitment_service import CommitmentService
 
@@ -25,7 +25,7 @@ def accounts():
 @pytest.fixture()
 def commitment_services():
     privkeys = [sha3("cs_account:{}".format(i)) for i in range(2)]
-    fee_rates = [random.randrange( 0.01, 0.5) for _ in privkeys] # XXX check range
+    fee_rates = [random.random() for _ in privkeys] # XXX check range
     commitment_services = [CommitmentService(pk, fr)
                            for pk, fr in zip(privkeys, fee_rates)]
     return commitment_services
