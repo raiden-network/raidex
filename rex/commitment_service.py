@@ -2,11 +2,13 @@ import rlp
 import uint32
 import time
 
-from ethereum.utils import sha3
+from ethereum.utils import privtoaddr, sha3
 from raiden.api import transfer
 from raiden.encoding.signing import recover_publickey, GLOBAL_CTX
 from raiden.encoding.signing import sign as _sign
 from secp256k1 import PrivateKey, ALL_FLAGS
+
+from rex.utils import ETHER_TOKEN_ADDRESS
 
 
 def sign(messagedata, private_key):
@@ -19,10 +21,14 @@ def sign(messagedata, private_key):
 
 class CommitmentService(object):
 
-    def __init__(self, cs_address, fee):
-        self.cs_address = cs_address
+    def __init__(self, private_key, fee_rate):
+        self.private_key = private_key
+        self.commitment_asset = ETHER_TOKEN_ADDRESS
         self.commited_offers = dict()
-        self.fee = fee
+        self.fee_rate = fee_rate
+
+    def address(self):
+        return privtoaddr(self.private_key)
 
     def transfer_listener():
         # When transfer received trigger method
@@ -31,7 +37,7 @@ class CommitmentService(object):
 
     def maker_commitment_received(self, offer, commitment):
         # sign and send back commitment_proof = sign(commitment_sig, cs)
-        commitment_proof = sign(commitment.signature, self.cs_priv_key)
+        commitment_proof = sign(commitment.signature, self.private_key)
         self.send_back_commitment_proof(commitment_proof)
 
     def taker_commitment_received(self, offer, commitment):
@@ -46,7 +52,7 @@ class CommitmentService(object):
             hashlock = sha3(offer)
             self.commited_offers[hashlock] = commitment
             # sign and send back commitment proof
-            commitment_proof = sign(commitment.signature, self.cs_priv_key)
+            commitment_proof = sign(commitment.signature, self.private_key)
             self.send_back_commitment_proof(commitment_proof)
 
     def return_commitment(self, commitment):
