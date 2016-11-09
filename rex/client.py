@@ -72,19 +72,28 @@ class CommitmentManager(object):
 
     def commit(self, commitment_service_address, offer_id, commitment_deposit, timeout):
         """
-        offer_id == hashlock == sha3(offer.hash)
 
-        XXX: maybe dont take the offer_id but instead the preconstructed messages.Offer and
-        than hash it to the id internally
+            cs = <commitment service ethereum address>
+            offer = rlp([ask_token, ask_amount, bid_token, bid_amount, offer_id])
+            offer_sig = sign(sha3(offer), maker)
+            commitment = rlp([sha3(offer), amount, timeout])
+            commitment_sig = sign(sha3(commitment), maker)
+            commitment_proof = sign(commitment_sig, cs)
         """
+        # XXX change the construction of the offer_id !!!
+
         ## Initial Checks:
+
         # check if known CS
         if commitment_service_address not in self.commitment_services:
             raise UnknownCommitmentService
+            # TODO: maybe open channel and deposit with commitment_service
+
         # check for insufficient funds
         balance = self.commitment_services[commitment_service_address]
         if not balance >= commitment_deposit:
             raise InsufficientCommitmentFunds
+        # TODO: maybe raise deposit with commitment_service
 
         ## Announce the commitment to the CS:
         commitment = messages.Commitment(offer_id, timeout, commitment_deposit)
@@ -95,7 +104,7 @@ class CommitmentManager(object):
 
         ## Send the actual commitment as a raiden transfer
         if ack:
-            # send a locked, direct transfer to the CS, where the hashlock == sha3(offer.hash)
+            # send a locked, direct transfer to the CS, where the hashlock == sha3(offer.hash) == offer_id
             self.raidex.raiden.send_cs_transfer(commitment_service_address, deposit_amount, hashlock=offer_id)  # TODO
             # write changes to current balance
             balance -= commitment_deposit
@@ -107,20 +116,28 @@ class CommitmentManager(object):
             if commitment_proof:
                 assert isinstance(commitment_proof, messages.CommitmentProof)
                 self.proofs[offer_id] = commitment_proof
-                # construct with classmethod
-                proven_offer = messages.ProvenOffer.from_offer(offer, commitment, commitment_proof)
+                # construct ProvenOffer message
+                proven_offer = messages.ProvenOffer(offer, commitment, commitment_proof)
 
                 ## Broadcast the valid, committed-to offer into the network and wait that someone takes it
                 try:
                     self.raidex.broadcast.post(proven_offer) # serialization is done in broadcast
                 except BroadcastUnreachable:
-                    # TODO: rollback balance changes and put ProvenOffer in a resend queue
+                    # TODO: (put ProvenOffer in a resend queue)
                     pass
 
                 return offer_id
+        # XXX consider: add balance of commitment again to the dict once commitment has timed out,
+        #               add balance-fee ... when offer was taken by someone
 
     def notify_success(self, commitment_service_address, offer_id):
         raise NotImplementedError
+        timestamp = time.time()
+        swap_execution_confirmation = messages.SwapExecution(offer_id, timestamp)
+        self.transport.send_message(swap_execution_confirmation)
+        # TODO wait for ack/SwapCompleted(?) (sent by cs if SwExc by both parties arrived)
+        # TODO wait for directtransfer (amount == balance-fee)
+        # TODO update balance for self.commitment_services[commitment_service_address]
 
     def make_commitment_deposit(self, commitment_service_address, deposit_amount):
         if commitment_service_address not in self.commitment_services:
