@@ -1,9 +1,11 @@
 import json
 import pytest
+
 from ethereum.utils import sha3
+
 from rex.messages import (Offer, Commitment, CommitmentProof, ProvenOffer,
         Envelope)
-from rex.utils import milliseconds
+from rex.utils import milliseconds, ETHER_TOKEN_ADDRESS
 
 
 def test_offer(assets):
@@ -63,6 +65,14 @@ def test_offers(offers, accounts):
     for offer in offers:
         assert offer.sender in senders
         assert not offer.timed_out(at=milliseconds.time_int() - 3600 * 1000)  # pretend we come from the past
+
+
+def test_cs_advertisements(commitment_service_advertisements, commitment_services):
+    cservices = [cs.address for cs in commitment_service_advertisements]
+    for advertisement in commitment_service_advertisements:
+        assert advertisement.address in cservices
+        assert advertisement.commitment_asset == ETHER_TOKEN_ADDRESS
+        assert 0. <= advertisement.fee_rate <= 1.
 
 
 def assert_envelope_serialization(message):
