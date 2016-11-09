@@ -25,6 +25,7 @@ class CommitmentService(object):
         self.commited_offers = dict()
         self.fee_rate = fee_rate
 
+    @property
     def address(self):
         return privtoaddr(self.private_key)
 

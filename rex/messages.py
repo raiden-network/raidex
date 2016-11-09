@@ -245,8 +245,14 @@ class CommitmentServiceAdvertisement(Signed):
 
     Fee calculations:
 
-    Users of the service have to expect to have a fee of
-    fee = int(uint32.max_int / fee_rate * commitment + 0.5)
+    Users of the service have to expect to have a fee of e.g.
+
+    uint32_maxint = 2 ** 32
+    fee = int(float_fee_rate/uint32_maxint * commitment_in_wei + .5)
+
+    mock fee: random.randint(1, 100000) # wei
+    mock fee_rate: int(random.random() * uint32_maxint)
+
     deducted from each commitment.
     """
 
