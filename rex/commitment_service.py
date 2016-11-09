@@ -1,9 +1,7 @@
-import rlp
-import uint32
 import time
 
 from ethereum.utils import privtoaddr, sha3
-from raiden.api import transfer
+# from raiden.raiden_service import transfer_async
 from raiden.encoding.signing import recover_publickey, GLOBAL_CTX
 from raiden.encoding.signing import sign as _sign
 from secp256k1 import PrivateKey, ALL_FLAGS
