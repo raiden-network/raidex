@@ -83,6 +83,15 @@ class Signed(RLPHashable):
             self._sender = sha3(pub[1:])[-20:]
         return self._sender
 
+class Ping(Signed):
+
+    fields = [
+        ('nonce', int256)
+    ]
+
+    def __init__(self, nonce):
+        super(Ping, self).__init__(nonce)
+
 
 class Offer(Signed):
     """An `Offer` is the base for a `ProvenOffer`. It's `offer_id`, `hash` and `timeout` should be sent
@@ -311,6 +320,7 @@ class SwapCompleted(SwapExecution):
         super(SwapCompleted, self).__init__(offer_id, timestamp)
 
 msg_types_map = dict(
+        ping=Ping,
         offer=Offer,
         market_offer=ProvenOffer,
         commitment=Commitment,
