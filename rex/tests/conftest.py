@@ -6,7 +6,7 @@ import pytest
 from ethereum.utils import privtoaddr, sha3
 
 from rex.messages import Offer, CommitmentServiceAdvertisement, SwapExecution, SwapCompleted
-from rex.utils import milliseconds
+from rex.utils import milliseconds, DEFAULT_RAIDEX_PORT
 from rex.commitment_service import CommitmentService
 
 
@@ -108,3 +108,55 @@ def commitment_service_advertisements(commitment_services):
         csa.sign(cs.private_key)
         commitment_service_advertisements.append(csa)
     return commitment_service_advertisements
+
+from rex.network.transport import DummyTransport
+from rex.network.broadcast import DummyBroadcast
+from rex.protocol import RexProtocol
+from rex.client import ClientService
+from raiden.network.discovery import Discovery as RaidenDiscovery
+
+@pytest.fixture()
+def dummy_discovery():
+    # the discovery will use the raiden discovery
+    dummy_discovery = RaidenDiscovery()
+    return dummy_discovery
+
+@pytest.fixture()
+def dummy_broadcast():
+    dummy_broadcast = DummyBroadcast()
+    return dummy_broadcast
+
+# @pytest.fixture()
+# def global_broadcast_state():
+#     """
+#     the global broadcast state,
+#     stores all Offers and  CommitmentService announcements,
+#     basically stands for a Client that has listened long enough to the broadcast
+#     to have all recent and sufficient information
+#     """
+#     # XXX is this needed in that way?
+#     pass
+#
+
+
+
+@pytest.fixture()
+def clients(accounts, dummy_discovery):
+    Raiden = namedtuple('Raiden', ['api'] )
+    clients = []
+    for i, acc in enumerate(accounts):
+        host, port = '{}'.format(i), DEFAULT_RAIDEX_PORT
+        transport = DummyTransport(host=host, port=port)
+        broadcast = DummyBroadcast()
+        raiden = Raiden(None)
+        # TODO: create a DummyRaiden for easy client-CS interaction
+        client = ClientService(raiden, acc.privatekey, RexProtocol, transport,
+                               dummy_discovery, dummy_broadcast)
+        # emulate the raiden port-mapping here
+        dummy_discovery.register(client.address, host, port - 1)
+        clients.append(client)
+    return clients
+
+# @pytest.fixture()
+# def dummy_network(clients, commitment_services):
+#     pass
