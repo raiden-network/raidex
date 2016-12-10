@@ -1,9 +1,13 @@
 import os
 import time
+
+from raiden.app import INITIAL_PORT as DEFAULT_RAIDEN_PORT
 from ethereum.utils import privtoaddr, sha3
+
 import rex
 
 ETHER_TOKEN_ADDRESS = privtoaddr(sha3('ether'))
+DEFAULT_RAIDEX_PORT = DEFAULT_RAIDEN_PORT + 1
 
 
 def get_contract_path(contract_name):
