@@ -5,8 +5,9 @@ from bottle import request, Bottle, abort
 from gevent.pywsgi import WSGIServer
 from geventwebsocket import WebSocketError
 from geventwebsocket.handler import WebSocketHandler
-from ethereum.utils import sha3
+from ethereum.utils import sha3, privtoaddr
 
+from rex import messages
 
 app = Bottle()
 
@@ -40,10 +41,17 @@ class UntradableAssetPair(RaidexException):
 
 class ClientService(object):
 
-    def __init__(self, raiden, order_manager, commitment_manager):
-        self.raiden = raiden
-        self.commitment_manager = commitment_manager
-        self.order_manager = order_manager
+    def __init__(self, raiden, private_key, protocol_cls, transport,
+                 discovery, broadcast, order_manager=None, commitment_manager=None):
+        self.raiden = raiden.api  # raiden is RaidenService object
+        self.private_key = private_key # FIXME store privkey somewhere else
+        # use the raiden discovery here, with port being `raiden_port + 1`
+        self.protocol = protocol_cls(transport, discovery, self)
+        transport.protocol = self.protocol
+        self.broadcast = broadcast
+        self.commitment_manager = order_manager or CommitmentManager(self)
+        self.order_manager = commitment_manager or OrderManager()
+
 
     @property
     def assets(self):
@@ -52,6 +60,10 @@ class ClientService(object):
         # requirement: have an open channel + deposit for that asset
         #TODO: get from the raiden instance
 
+    @property
+    def address(self):
+        return privtoaddr(self.private_key)
+
     def get_orderbook_by_asset_pair(self, asset_pair):
         if asset_pair not in self.order_manager.orderbooks:
             raise UntradableAssetPair
@@ -59,13 +71,17 @@ class ClientService(object):
             orderbook = self.order_manager.get_order_book(asset_pair)
         return orderbook
 
+    def ping(self, receiver_address):
+        ping = messages.Signed()
+        ping.sign(self.private_key)
+        self.protocol.send(receiver_address, ping)
+
 
 
 class CommitmentManager(object):
 
-    def __init__(self, raidex, cs_transport):
-        self.raidex = raidex
-        self.transport = cs_transport
+    def __init__(self, client_service):
+        self.client = client_service
         self.commitment_services = dict() # cs_address -> balance
         self.proofs = dict() # offer_id -> CommitmentProof
         self.commitments = dict()  # offer_id -> Commitment
@@ -98,14 +114,14 @@ class CommitmentManager(object):
         ## Announce the commitment to the CS:
         commitment = messages.Commitment(offer_id, timeout, commitment_deposit)
         self.commitments[offer_id] = commitment
-        self.transport.request_commitment(commitment_service_address, commitment)  # TODO
+        self.client.transport.request_commitment(commitment_service_address, commitment)  # TODO
         # CS will hash offer, wait for incoming transfers and compare the hashlocks to the commitment_requests
         # TODO: wait for ACK from CS, include timeout
 
         ## Send the actual commitment as a raiden transfer
         if ack:
             # send a locked, direct transfer to the CS, where the hashlock == sha3(offer.hash) == offer_id
-            self.raidex.raiden.send_cs_transfer(commitment_service_address, deposit_amount, hashlock=offer_id)  # TODO
+            self.client.raiden.send_cs_transfer(commitment_service_address, deposit_amount, hashlock=offer_id)  # TODO
             # write changes to current balance
             balance -= commitment_deposit
             self.commitment_services[commitment_service_address] = balance
@@ -121,7 +137,7 @@ class CommitmentManager(object):
 
                 ## Broadcast the valid, committed-to offer into the network and wait that someone takes it
                 try:
-                    self.raidex.broadcast.post(proven_offer) # serialization is done in broadcast
+                    self.client.broadcast.publish(topic, proven_offer) # serialization is done in broadcast
                 except BroadcastUnreachable:
                     # TODO: (put ProvenOffer in a resend queue)
                     pass
@@ -143,8 +159,8 @@ class CommitmentManager(object):
         if commitment_service_address not in self.commitment_services:
             # TODO: make raiden work with ether deposits
             asset_address = sha3('ETH') # XXX mock asset_address for now
-            self.raiden.api.open(asset_address, commitment_service_address)
-            successful = self.raiden.deposit(asset_address, commitment_service_address, deposit_amount)
+            self.client.raiden.open(asset_address, commitment_service_address)
+            successful = self.client.raiden.deposit(asset_address, commitment_service_address, deposit_amount)
             # assert isinstance(successful, NettingChannel)
             # TODO improve success checking
             if successful:
@@ -163,6 +179,10 @@ class CommitmentManager(object):
                 return False
             # returns raiden receipt
 
+        def register_commitment_service():
+            pass
+
+
 
 class Currency(object):
     # TODO: add all supported currencies...
@@ -176,10 +196,6 @@ class OrderType(object):
 
 
 class Order(object):
-    """
-    Maybe this class isn't even necessary and we just use the Offer message objects
-    from the broadcast?
-    """
 
     def __init__(self, pair, type_, amount, price, timeout, order_id=None):
         self.pair = pair
@@ -203,6 +219,7 @@ class Order(object):
         # FIXME: check timeout coming from offer_messages
         return "Order<order_id={} amount={} price={} type={} pair={}>".format(
                 self.order_id, self.amount, self.price, self.type_, self.pair)
+
 
     @classmethod
     def from_offer_message(cls, offer_msg, compare_pair):
@@ -273,6 +290,9 @@ class OrderBook(object):
         # in the Order instantiation based on the compare_pair:
         # print offer_msg.bid_token
         order = Order.from_offer_message(offer_msg, compare_pair=self.asset_pair)
+        # TODO: check if the Offer/OfferView really should contain the type?
+        # maybe type checking should be done in the orderbook and only be determined by the assignment to self.bid/ self.ask
+        # then the offers are far more flexible and OfferViews are interchangeable depending on the OrderBook's comparepair
         if order.type_ is OrderType.BID:
             self.bids.add_offer(order)
         if order.type_ is OrderType.ASK:
