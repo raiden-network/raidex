@@ -18,7 +18,7 @@ export function formatArray(orderArray: Array<any>){
 		obj['amount'] = parseFloat(convertToEther(element.amount));
 		obj['price'] = parseFloat(formatCurrency(element.price));
 		newArray.push(obj);
-	});	
+	});
 	return newArray;
 }
 
@@ -27,9 +27,9 @@ export function cumulativeArray(orderArray:Array<any>){
 	orderArray.forEach(function(element, index, arr){
 		var obj={};
 		obj['price'] = parseFloat(element.price);
-		obj['amount'] = parseFloat(d3Array.sum(arr.slice(index),function(d){
+		obj['amount'] = d3Array.sum(arr.slice(index),function(d){
 							return d.amount;
-						}));
+						});
 		newArray.push(obj);
 	});
 	return newArray;
