@@ -1,5 +1,3 @@
-from rex.exceptions import UntradableAssetPair
-
 
 class BroadcastClient(object):
     """

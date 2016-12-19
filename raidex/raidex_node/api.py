@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from flask import jsonify, request, abort, make_response
-from flask import send_file
-from rex.client import OfferBook
+from raidex.client import OfferBook
 
 
 

@@ -4,14 +4,14 @@ import time
 from raiden.app import INITIAL_PORT as DEFAULT_RAIDEN_PORT
 from ethereum.utils import privtoaddr, sha3
 
-import rex
+import raidex
 
 ETHER_TOKEN_ADDRESS = privtoaddr(sha3('ether'))
 DEFAULT_RAIDEX_PORT = DEFAULT_RAIDEN_PORT + 1
 
 
 def get_contract_path(contract_name):
-    project_directory = os.path.dirname(rex.__file__)
+    project_directory = os.path.dirname(raidex.__file__)
     contract_path = os.path.join(project_directory, 'smart_contracts', contract_name)
     return os.path.realpath(contract_path)
 

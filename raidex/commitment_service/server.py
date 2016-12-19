@@ -6,9 +6,9 @@ from raiden.encoding.signing import recover_publickey, GLOBAL_CTX
 from raiden.encoding.signing import sign as _sign
 from secp256k1 import PrivateKey, ALL_FLAGS
 
-from rex.utils import ETHER_TOKEN_ADDRESS
-from rex.messages import CommitmentProof
-from rex.network.broadcast import CSBroadcastHandler
+from raidex.utils import ETHER_TOKEN_ADDRESS
+from raidex.messages import CommitmentProof
+from raidex.message_broker.client import BroadcastClient
 
 # string? or PrivateKey -> PrivateKey
 def sign(messagedata, private_key):
@@ -43,15 +43,16 @@ class CommitmentService(object):
         self.fee_rate = fee_rate
         self.communication_proto = communication_protocol_cls(communication_transport, raiden_discovery, self)
         communication_transport.protocol = self.communication_proto
-        self.broadcast = CSBroadcastHandler(broadcast_protocol_cls, broadcast_transport, self) # TODO move class here
+        self.broadcast = BroadcastClient(broadcast_protocol_cls, broadcast_transport, BroadcastMessageHandler(self))
 
     @property
     def address(self):
         return privtoaddr(self.private_key)
 
     def get_swap_commitment_by_offer_id(self, offer_id):
+        pass
 
-    def transfer_listener():
+    def transfer_listener(self):
         # When transfer received trigger method
         # send_back_signed_offer()
         pass
@@ -108,14 +109,14 @@ class CommitmentService(object):
     def reject_commitment(self, commitment):
         # TODO put in a backlog queue
         # used if unsuccessful commit
-        transfer(commitment.token, commitment.amount, commitment.sender)
+        self.raiden.transfer(commitment.token, commitment.amount, commitment.sender)
 
     def redeem_commitment(self, commitment):
         # from issue#10
         # called when swap was completed successfully
         fee = int(uint32.max_int / self.fee * commitment.amount + 0.5)
         redeem_amount = commitment.amount - fee
-        transfer(commitment.token, redeem_amount, commitment.sender)
+        self.raiden.transfer(commitment.token, redeem_amount, commitment.sender)
 
     def send_maker_commitment_proof(self, commitment):
         commitment_proof = CommitmentProof(commitment.signature)

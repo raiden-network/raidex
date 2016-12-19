@@ -4,7 +4,7 @@ import random
 import pytest
 from ethereum.utils import sha3
 
-from rex.messages import (Offer,
+from raidex.messages import (Offer,
                           Commitment,
                           CommitmentProof,
                           ProvenOffer,
@@ -13,8 +13,8 @@ from rex.messages import (Offer,
                           SwapExecution,
                           CommitmentServiceAdvertisement)
 
-from rex.utils import milliseconds, ETHER_TOKEN_ADDRESS
-from rex.commitment_service.server import CommitmentService
+from raidex.utils import milliseconds, ETHER_TOKEN_ADDRESS
+from raidex.commitment_service.server import CommitmentService
 
 
 @pytest.fixture(params=[10])

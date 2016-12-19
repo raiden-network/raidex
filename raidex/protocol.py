@@ -1,4 +1,4 @@
-from rex.messages import Envelope
+from raidex.messages import Envelope
 
 class RexProtocol(object):
     """ Everything will be blocking for the time being, simplifying the success

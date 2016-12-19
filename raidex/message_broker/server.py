@@ -6,7 +6,8 @@ import json
 from contextlib import contextmanager
 
 from gevent.pywsgi import WSGIServer
-from gevent import monkey; monkey.patch_all()
+from gevent import monkey; monkey.patch_all(),
+from gevent import spawn_later
 import bottle
 
 # You *must* import the green version of zmq or things will
@@ -171,7 +172,7 @@ class DummyBroadcastServer(object):
         self.track_send(sender, host_port, topic, bytes_)
         receive_end = self.transports[host_port].receive
         # TODO modify Transport
-        gevent.spawn_later(0.001, receive_end, topic, bytes_)
+        spawn_later(0.001, receive_end, topic, bytes_)
 
     def publish(self, sender, topic, bytes_):
         """

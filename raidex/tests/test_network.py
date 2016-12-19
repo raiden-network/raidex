@@ -6,12 +6,12 @@ import gevent
 from raiden.network.discovery import Discovery as RaidenDiscovery
 from raiden.network.transport import DummyTransport
 
-from rex.messages import Ping, Envelope
-from rex.utils import DEFAULT_RAIDEX_PORT
-from rex.message_broker.server import DummyBroadcastServer
-from rex.protocol import RexProtocol
-from rex.raidex_node.service import RaidexService
-from rex.utils import DEFAULT_RAIDEX_PORT
+from raidex.messages import Ping, Envelope
+from raidex.utils import DEFAULT_RAIDEX_PORT
+from raidex.message_broker.server import DummyBroadcastServer
+from raidex.protocol import RexProtocol
+from raidex.raidex_node.service import RaidexService
+from raidex.utils import DEFAULT_RAIDEX_PORT
 
 @pytest.fixture()
 def dummy_discovery():

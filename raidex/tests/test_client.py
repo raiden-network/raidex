@@ -5,8 +5,8 @@ import pytest
 import gevent
 from ethereum.utils import sha3, privtoaddr
 
-from rex.raidex_node.offer_book import Offer, OfferView, OfferBook, OfferType
-from rex.messages import Offer
+from raidex.raidex_node.offer_book import Offer, OfferView, OfferBook, OfferType
+from raidex.messages import Offer
 
 
 @pytest.fixture()

@@ -2,9 +2,9 @@ import time
 
 from ethereum.utils import sha3, privtoaddr, big_endian_to_int, int_to_big_endian
 
-from rex import messages
-from rex.message_broker.client import BroadcastClient
-from rex.exceptions import UntradableAssetPair, UnknownCommitmentService, InsufficientCommitmentFunds
+from raidex import messages
+from raidex.message_broker.client import BroadcastClient
+from raidex.exceptions import UntradableAssetPair, UnknownCommitmentService, InsufficientCommitmentFunds
 
 ERC20_ETH_ADDRESS = sha3('ETHER') # mock for now
 

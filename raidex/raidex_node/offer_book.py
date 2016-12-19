@@ -1,7 +1,7 @@
 from bintrees import FastRBTree
 
-from rex.raidex_node.service import get_market_from_asset_pair
-from rex.exceptions import RaidexException
+from raidex.raidex_node.service import get_market_from_asset_pair
+from raidex.exceptions import RaidexException
 
 class OfferType(object):
     BID = 0

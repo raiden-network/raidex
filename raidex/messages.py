@@ -9,7 +9,7 @@ from raiden.encoding.signing import recover_publickey, GLOBAL_CTX
 from raiden.encoding.signing import sign as _sign
 from secp256k1 import PrivateKey, ALL_FLAGS
 
-from rex.utils import milliseconds
+from raidex.utils import milliseconds
 
 sig65 = binary.fixed_length(65)
 

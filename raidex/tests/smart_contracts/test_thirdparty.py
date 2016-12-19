@@ -1,7 +1,7 @@
 # -*- coding: utf8 -*-
 import pytest
 
-from rex.utils.smart_contracts import get_contract_path
+from raidex.utils.smart_contracts import get_contract_path
 from ethereum import tester
 from ethereum.tester import ABIContract, ContractTranslator, TransactionFailed
 

@@ -1,9 +1,9 @@
 from flask import Flask
 from werkzeug.routing import BaseConverter
 
-from rex.client import ClientService, OfferBook, OfferManager
-from rex.api import API
-from rex.utils.mock import gen_orderbook_messages, ASSETS, ACCOUNTS
+from raidex.client import ClientService, OfferBook, OfferManager
+from raidex.api import API
+from raidex.utils.mock import gen_orderbook_messages, ASSETS, ACCOUNTS
 
 
 app = Flask(__name__)
