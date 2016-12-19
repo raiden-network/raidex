@@ -2,7 +2,7 @@
 from __future__ import print_function
 from flask import jsonify, request, abort, make_response
 from flask import send_file
-from rex.client import OrderBook
+from rex.client import OfferBook
 
 
 
@@ -15,8 +15,8 @@ class API(object):
         assert isinstance(asset_pair, tuple)
         assert len(asset_pair) == 2
         
-        orderbook = self.client.get_orderbook_by_asset_pair(asset_pair)
-        assert isinstance(orderbook, OrderBook)
+        orderbook = self.client.get_offerbook_by_asset_pair(asset_pair)
+        assert isinstance(orderbook, OfferBook)
         bids = [dict(price=order.price, amount=order.amount) for order in list(orderbook.bids.orders)]
         asks = [dict(price=order.price, amount=order.amount) for order in list(orderbook.asks.orders)]
         return jsonify(dict(bids=bids, asks=asks))

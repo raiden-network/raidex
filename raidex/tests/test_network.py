@@ -1,8 +1,45 @@
+from collections import namedtuple
+
 import pytest
 import gevent
 
+from raiden.network.discovery import Discovery as RaidenDiscovery
+from raiden.network.transport import DummyTransport
+
 from rex.messages import Ping, Envelope
 from rex.utils import DEFAULT_RAIDEX_PORT
+from rex.message_broker.server import DummyBroadcastServer
+from rex.protocol import RexProtocol
+from rex.raidex_node.service import RaidexService
+from rex.utils import DEFAULT_RAIDEX_PORT
+
+@pytest.fixture()
+def dummy_discovery():
+    # the discovery will use the raiden discovery
+    dummy_discovery = RaidenDiscovery()
+    return dummy_discovery
+
+@pytest.fixture()
+def dummy_broadcast():
+    dummy_broadcast = DummyBroadcastServer()
+    return dummy_broadcast
+
+@pytest.fixture()
+def clients(accounts, dummy_discovery):
+    Raiden = namedtuple('Raiden', ['api'] )
+    clients = []
+    for i, acc in enumerate(accounts):
+        host, port = '{}'.format(i), DEFAULT_RAIDEX_PORT
+        transport = DummyTransport(host=host, port=port)
+        broadcast = DummyBroadcastServer()
+        raiden = Raiden(None)
+        # TODO: create a DummyRaiden for easy client-CS interaction
+        client = RaidexService(raiden, acc.privatekey, RexProtocol, transport,
+                               dummy_discovery, dummy_broadcast)
+        # emulate the raiden port-mapping here
+        dummy_discovery.register(client.address, host, port - 1)
+        clients.append(client)
+    return clients
 
 def test_discovery(clients):
     for c in clients:
@@ -29,7 +66,6 @@ def test_ping(clients):
         # host, port = host_port
         # assert host in '0123456789'.split()
         # assert port == DEFAULT_RAIDEX_PORT
-        print rex, host_port, data
         received[0][rex] = {data: host_port}
 
 
@@ -39,7 +75,6 @@ def test_ping(clients):
         # host, port = host_port
         # assert host in '0123456789'.split()
         # assert port == DEFAULT_RAIDEX_PORT
-        print sender, host_port, data
         sent[0][sender] = {data: host_port}
 
     # no ACKs yet, so tap the receiving end with a callback

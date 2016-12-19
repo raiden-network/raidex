@@ -1,7 +1,7 @@
 from flask import Flask
 from werkzeug.routing import BaseConverter
 
-from rex.client import ClientService, OrderBook, OrderManager
+from rex.client import ClientService, OfferBook, OfferManager
 from rex.api import API
 from rex.utils.mock import gen_orderbook_messages, ASSETS, ACCOUNTS
 
@@ -58,11 +58,11 @@ def register_type_converters(app):
 if __name__ == '__main__':
     pair = (ASSETS[0], ASSETS[1])
     print ASSETS[0].encode('hex'), ASSETS[1].encode('hex')
-    order_book = OrderBook(pair)
+    order_book = OfferBook(pair)
     messages = gen_orderbook_messages()
     order_ids = [order_book.insert_from_msg(msg) for msg in messages]
-    order_manager = OrderManager()
-    order_manager.add_orderbook(pair, order_book)
+    order_manager = OfferManager()
+    order_manager.add_offerbook(pair, order_book)
     client = ClientService(None, order_manager, None, None)
     api = API(client)
     register_type_converters(app)

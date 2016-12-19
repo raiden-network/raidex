@@ -42,20 +42,20 @@ test_requirements = []
 version = '0.0.1'  # preserve format, this is read from __init__.py
 
 setup(
-    name='rex',
+    name='raidex',
     version=version,
     description="",
     long_description=readme + '\n\n' + history,
-    author='ezmac',
+    author='ezdac',
     author_email='max@brainbot.com',
-    url='https://github.com/ezmac/rex',
+    url='https://github.com/brainbot-com/raidex',
     packages=[
-        'rex',
+        'raidex',
     ],
     include_package_data=True,
     license='BSD',
     zip_safe=False,
-    keywords='rex',
+    keywords='raidex',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
@@ -67,8 +67,5 @@ setup(
     cmdclass={'test': PyTest},
     install_requires=install_requires,
     tests_require=test_requirements,
-    entry_points='''
-    [console_scripts]
-    rex=rex.raidex:run
     '''
 )

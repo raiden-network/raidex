@@ -84,17 +84,63 @@ class Signed(RLPHashable):
         return self._sender
 
 class Ping(Signed):
+    """
+    TODO: Should Pings be signed?
+        Data:
+        nonce = int256 <will get increased after every ping to the sender>
+
+    Broadcast:
+        {
+            "msg": "ping",
+            "version": 1,
+            "data": "rlp([nonce])" # CHECKME
+        }
+
+    """
 
     fields = [
         ('nonce', int256)
     ]
 
     def __init__(self, nonce):
-        super(Ping, self).__init__(nonce)
+        super(Ping, self).__init__( nonce)
 
+
+
+class Ack(RLPHashable):
+    """from raiden, TODO: validate
+        ACKs are not signed because attack vector can be mitigated (?)
+        echo is the hash of the original message
+
+    Data:
+        sender = address <raiden address of the acknowledgement's sender>
+        echo = hash32 <the message.hash of the message to be acknowledged>
+
+    Broadcast:
+        {
+            "msg": "ack",
+            "version": 1,
+            "data": "rlp([sender, echo])"
+        }
+    """
+    fields = [
+        ('sender', address),
+        ('echo', hash32)
+    ]
+
+    # checks if a given message is acknowledged by this ACK
+    def acknowledges(self, message):
+        assert isinstance(message, RLPHashable)
+        if message.hash == self.echo:
+            return True
+        else:
+            return False
+
+    def __init__(self, sender, echo):
+        super(Ack, self).__init__(sender, echo)
 
 class Offer(Signed):
-    """An `Offer` is the base for a `ProvenOffer`. It's `offer_id`, `hash` and `timeout` should be sent
+    """An `Offer` is the base for a `ProvenOffer`. Its `offer_id`, `hash` and `timeout` should be sent
     as a `Commitment` to a commitment service provider.
 
     Data:
@@ -106,7 +152,7 @@ class Offer(Signed):
         {
             "msg": "offer",
             "version": 1,
-            "data": "rlp([offer])"
+            "data": "rlp([offer])" XXX
         }
     """
 
@@ -151,6 +197,35 @@ class Offer(Signed):
         )
 
 
+    @classmethod
+    def from_offer(cls, offer):
+        """
+        Takes the relative `offer_book.Offer` representation and constructs a message with the absolute representation
+        out of it
+
+        :param market:
+        :param type_:
+        :param amount:
+        :param price:
+        :param timeout:
+        :param offer_id:
+        :return:
+        """
+        raise NotImplementedError
+        market = offer.market
+        type_ = offer.type_
+        amount = offer.amount
+        price = offer.price
+        ask_token = None  # TODO calculate based on market/type
+        ask_amount = None  # TODO calculate based on market/type/price
+        bid_token = None  # TODO calculate based on market/type
+        bid_amount = None # TODO calculate based on market/type/price
+        timeout = offer.timeout
+        offer_id = offer.timeout
+        offer_msg = cls(self, ask_token, ask_amount, bid_token, bid_amount, offer_id, timeout)
+        return offer_msg
+
+
 class Commitment(Signed):
     """A `Commitment` announces the commitment service, that a maker or taker wants to engage in the
     offer with the `offer_id`. `offer_hash`, `timeout` should match the later published `Offer`; the
@@ -170,18 +245,48 @@ class Commitment(Signed):
             "version": 1,
             "data": rlp([offer_id, offer_hash, timeout, amount])
         }
+
+    NOTE:  XXX
+    The Commitment is only sent by the maker, so that the CS has all the information
+    (especially the offer_id and timeout, ((the amount could be determined by the incoming raiden transaction)))
+
+    A taker can than extract the information from the commitment and try to engage in it with a transaction
+    to the matching CS, with matching amount, matching offer_id within the correct timewindow
     """
 
     fields = [
-        ('offer_id', hash32),
-        ('offer_hash', hash32),
+        ('offer_id', hash32), # FIXME should be unique for market, fix type in raiden from int?? to hash32 ?
         ('timeout', int256),
         ('amount', int256),
     ]
 
-    def __init__(self, offer_id, offer_hash, timeout, amount):
-        super(Commitment, self).__init__(offer_id, offer_hash, timeout, amount)
+    def __init__(self, offer_id, timeout, amount):
+        super(Commitment, self).__init__(offer_id, timeout, amount)
 
+
+class OfferTaken(Signed):
+    """ The CommitmentService publishes this offer on the broadcast as soon as an engaged (commited) Taker
+    is determined by the CS so that it doesn't receive any incoming Raiden transfers for that offer anymore.
+
+    Data:
+        offer_id = offer_id
+        offer_hash = sha3(offer)
+
+        Broadcast:
+        {
+            "msg": "offer_taken",
+            "version": 1,
+            "data": rlp([offer_id, offer_hash)
+        }
+
+    """
+
+    fields = [
+        ('offer_id', hash32),
+    ]
+
+    def __init__(self, offer_id):
+        super(OfferTaken, self).__init__(offer_id)
 
 class CommitmentProof(Signed):
     """A `CommitmentProof` is the commitment service's signature that a commitment was made. It allows

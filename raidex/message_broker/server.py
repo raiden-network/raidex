@@ -13,6 +13,8 @@ import bottle
 # block and nothing will work and you will be sad.
 from zmq import green as zmq
 
+from raiden.network.transport import DummyTransport
+
 # This lets us track how many clients are currently connected.
 polling = 0
 
@@ -122,3 +124,88 @@ def debug():
 
 if __name__ == "__main__":
     WSGIServer(('', 8000), app).serve_forever()
+
+
+
+class DummyBroadcastServer(object):
+    """
+    Based on the raiden.network.tansport.DummyNetwork
+    Sends a message to every host (except the sending one)
+    """
+
+    on_send_cbs = []  # debugging
+
+    def __init__(self):
+        self.transports = dict()
+        self.counter = 0
+        self.subscriptions = defaultdict() # topic -> [host_port1, host_port2, ...]
+
+        # TODO create topic messages for easier structuring/specification of topics
+        # should include: serialisation/deserialisation like in messages.py
+
+    def register(self, transport, host, port):
+        """ Register a new node in the dummy network. """
+        assert isinstance(transport, DummyTransport)
+        self.transports[(host, port)] = transport
+
+    def subscribe(self, host_port, topic):
+        assert isinstance(topic, str)
+        subscriptions = self.subscriptions[topic]
+        if host_port not in subscriptions:
+            subscriptions.append(host_port)
+
+    def unsubscribe(self, host_port, topic):
+        subscriptions = self.subscriptions[topic]
+        if host_port in subscriptions:
+            subscriptions.remove(host_port)
+
+    def track_send(self, sender, host_port, topic, bytes_):
+        """ Register an attempt to send a packet. This method should be called
+        everytime send() is used.
+        """
+        self.counter += 1
+        for callback in self.on_send_cbs:
+            callback(sender, host_port, topic, bytes_)
+
+    def _send(self, sender, host_port, topic, bytes_):
+        self.track_send(sender, host_port, topic, bytes_)
+        receive_end = self.transports[host_port].receive
+        # TODO modify Transport
+        gevent.spawn_later(0.001, receive_end, topic, bytes_)
+
+    def publish(self, sender, topic, bytes_):
+        """
+        Send the message to all subscribers to this topic
+        send also to the original sender (if he is subcribed)
+        this will serve as an indicator for the sender that the network got the message
+        """
+        # XXX should we require that the sender is also subscribed?
+        subscribers = self.subscriptions[topic]
+        for host_port in subscribers:
+            self._send(sender, host_port, topic, bytes_)
+
+
+    class DummyBroadcastTransport(DummyTransport):
+        """
+        Modifies the existing DummyTransport to support a 'topic' argument
+        NOTE:
+            there is no endpoint storing for now, since the broadcast network is
+            not properly defined yet and only Dummy-Classes are used at the moment
+        """
+
+        network = DummyBroadcastServer()
+
+        def publish(self, sender, topic, bytes_):
+            self.network.publish(sender, topic, bytes_)
+
+        # overload incompatible 'send' method
+        send = publish
+
+        @classmethod
+        def track_recv(cls, rex, topic, data):
+            for callback in cls.on_recv_cbs:
+                callback(rex, topic, data)
+
+        def receive(self, topic, data):
+            self.track_recv(self.protocol.rex, topic, data)
+            self.protocol.receive(topic, data)
