@@ -1,26 +1,26 @@
-import {Component} from '@angular/core';
-import {AgGridNg2} from 'ag-grid-ng2/main';
-import {GridOptions} from 'ag-grid/main';
+import { Component } from '@angular/core';
 import { OnInit } from '@angular/core';
-import { OrderService } from './services/order.service';
-
 
 
 @Component({
-    selector: 'app-root',
+    selector: 'rex-app-root',
     templateUrl: 'app.component.html'
 })
-export class AppComponent implements OnInit{
+
+
+export class AppComponent implements OnInit {
 
     title = 'Raidex Decentralized Exchange';
-    altText = 'Raidex'
-    imageUrl = 'raidexlogo.png';  
-    markets = ['ETH/USD', 'ETC/USD']
+    altText = 'Raidex';
+    imageUrl = 'raidexlogo.png';
+    markets = ['ETH/USD', 'ETC/USD'];
     selectedMarket = 'ETH/USD';
-    ngOnInit(): void {
-        
-    }
-    get diagnostic() { return this.selectedMarket; }
 
+    ngOnInit(): void {
+
+    }
+
+
+    get diagnostic() { return this.selectedMarket; }
 
 }
