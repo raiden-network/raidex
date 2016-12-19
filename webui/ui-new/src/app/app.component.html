@@ -5,13 +5,13 @@
     </div>
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
 	    <ul class="nav navbar-nav">
-	      
+
 	    </ul>
 	    <form class="navbar-form navbar-left">
 
 	        <div class="form-group">
 	        	<label for="markets">Markets</label>
-  				<select class="form-control" id="markets" 
+  				<select class="form-control" id="markets"
   				required
   				[(ngModel)]="selectedMarket" name="marketselector" #marketselect>
 	    			<option *ngFor="let market of markets" [value]="market">
@@ -28,15 +28,15 @@
 <div class="container-fluid">
 	<div class="row">
 		<div class="col-md-4">
-			<user-interact></user-interact>
-			<order-history [market]="selectedMarket"></order-history>
+			<rex-user-interact></rex-user-interact>
+			<rex-order-history [market]="selectedMarket"></rex-order-history>
 		</div>
 		<div class="col-md-2">
-			<order-book></order-book>
+			<rex-order-book></rex-order-book>
 		</div>
 		<div class="col-md-6">
-			<order-history-chart></order-history-chart>
-			<order-book-chart></order-book-chart>
+			<rex-order-history-chart></rex-order-history-chart>
+			<rex-order-book-chart></rex-order-book-chart>
 		</div>
 	</div>
 </div>
