@@ -1,47 +1,30 @@
 import json
 import random
+from operator import attrgetter
 
 import pytest
-from ethereum.utils import sha3
+from ethereum.utils import sha3, big_endian_to_int
 
-from raidex.messages import (Offer,
-                          Commitment,
-                          CommitmentProof,
-                          ProvenOffer,
-                          Envelope,
-                          SwapCompleted,
-                          SwapExecution,
-                          CommitmentServiceAdvertisement)
+from raidex.messages import (
+    SignatureMissingError,
+    Signed,
+    Offer,
+    Commitment,
+    CommitmentProof,
+    ProvenOffer,
+    Envelope,
+    SwapCompleted,
+    SwapExecution,
+    CommitmentServiceAdvertisement
+)
 
 from raidex.utils import milliseconds, ETHER_TOKEN_ADDRESS
-from raidex.commitment_service.server import CommitmentService
-
-
-@pytest.fixture(params=[10])
-def offers(request, accounts, assets):
-    """
-    This fixture generates `num_offers` with more or less random values.
-    """
-    random.seed(42)
-    offers = []
-    for i in range(request.param):
-        maker = accounts[i % 2]
-        offer = Offer(assets[i % 2],
-                      random.randint(1, 100),
-                      assets[1 - i % 2],
-                      random.randint(1, 100),
-                      sha3('offer {}'.format(i)),
-                      milliseconds.time_int() + i * 1000
-                      )
-        offer.sign(maker.privatekey)
-        offers.append(offer)
-    return offers
 
 
 @pytest.fixture()
-def taker_swap_executions(accounts, offers):
+def taker_swap_executions(accounts, offer_msgs):
     taker_swap_executions = []
-    for offer in offers:
+    for offer in offer_msgs:
         taker = None
         while taker is None or taker.address == offer.sender:
             taker = random.choice(accounts)
@@ -52,9 +35,9 @@ def taker_swap_executions(accounts, offers):
 
 
 @pytest.fixture()
-def maker_swap_executions(accounts, offers):
-    maker_swap_executions = []
-    for offer in offers:
+def maker_swap_executions(accounts, offer_msgs):
+    maker_swap_executions_ = []
+    for offer in offer_msgs:
         maker = None
         for acc in accounts:
             if offer.sender == acc.address:
@@ -64,33 +47,25 @@ def maker_swap_executions(accounts, offers):
             continue
         sw_execution = SwapExecution(offer.offer_id, milliseconds.time_int())
         sw_execution.sign(maker.privatekey)
-        maker_swap_executions.append(sw_execution)
-    return maker_swap_executions
-
-@pytest.fixture()
-def commitment_services():
-    privkeys = [sha3("cs_account:{}".format(i)) for i in range(2)]
-    fee_rates = [int(random.random() * 2 ** 32) for _ in privkeys]
-    commitment_services = [CommitmentService(pk, fr)
-                           for pk, fr in zip(privkeys, fee_rates)]
-    return commitment_services
+        maker_swap_executions_.append(sw_execution)
+    return maker_swap_executions_
 
 
 @pytest.fixture()
-def swap_completeds(commitment_services, offers):
-    swap_completeds = []
-    for offer in offers:
+def swap_completeds(commitment_services, offer_msgs):
+    swap_completeds_ = []
+    for offer in offer_msgs:
         cs = random.choice(commitment_services)
         # TODO eventually construct them in a way, that swap executions have an earlier time
         sw_completed = SwapCompleted(offer.offer_id, milliseconds.time_int())
         sw_completed.sign(cs.private_key)
-        swap_completeds.append(sw_completed)
-    return swap_completeds
+        swap_completeds_.append(sw_completed)
+    return swap_completeds_
 
 
 @pytest.fixture()
 def commitment_service_advertisements(commitment_services):
-    commitment_service_advertisements = []
+    commitment_service_advertisements_ = []
     for cs in commitment_services:
         csa = CommitmentServiceAdvertisement(
             cs.address,
@@ -98,12 +73,13 @@ def commitment_service_advertisements(commitment_services):
             cs.fee_rate
         )
         csa.sign(cs.private_key)
-        commitment_service_advertisements.append(csa)
-    return commitment_service_advertisements
+        commitment_service_advertisements_.append(csa)
+    return commitment_service_advertisements_
 
 
-def test_offer(assets):
-    o = Offer(assets[0], 100, assets[1], 110, sha3('offer id'), 10)
+def test_offer(assets, accounts):
+    o = Offer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
+    acc = accounts[0]
     assert isinstance(o, Offer)
     serial = o.serialize(o)
     assert_serialization(o)
@@ -113,27 +89,47 @@ def test_offer(assets):
 
 
 def test_hashable(assets):
-    o = Offer(assets[0], 100, assets[1], 110, sha3('offer id'), 10)
+    o = Offer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
     assert o.hash
 
 
-def test_signed(accounts, assets):
-    o = Offer(assets[0], 100, assets[1], 110, sha3('offer id'), 10)
+def test_signing(accounts, assets):
+    o = Offer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
+    o_unsigned = Offer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
+    # not signed yet, so must be equal
+    assert o == o_unsigned
     o.sign(accounts[0].privatekey)
     assert o.sender == accounts[0].address
+    assert_serialization(o)
+    assert_serialization(o_unsigned)
+
+    #check hashes:
+    assert o._hash_without_signature == o_unsigned._hash_without_signature
+    assert o.hash != o_unsigned.hash
+    assert o_unsigned.signature == ''
+
+    # check that getting the sender of unsigned 'Signed'-message raises an error
+    o_unsigned_deserialized = Offer.deserialize(o_unsigned.serialize(o_unsigned))
+    raised = False
+    try:
+        o_unsigned_deserialized.sender
+    except SignatureMissingError:
+        raised = True
+    assert raised
 
 
-def test_commitments(offers, accounts):
-    offer = offers[0]
+def test_commitments(offer_msgs, accounts):
+    offer = offer_msgs[0]
     commitment_service = accounts[2]
     maker = filter(lambda acc: acc.address == offer.sender, accounts)[0]
 
-    commitment = Commitment(offer.offer_id, offer.hash, offer.timeout, 42)
+    commitment = Commitment(offer.offer_id, offer.timeout, 42)
     commitment.sign(maker.privatekey)
     assert_serialization(commitment)
     assert_envelope_serialization(commitment)
 
-    commitment_proof = CommitmentProof(commitment.signature)
+    proof = commitment.compute_signed_signature(commitment_service.privatekey)
+    commitment_proof = CommitmentProof(commitment.signature, proof)
     commitment_proof.sign(commitment_service.privatekey)
     assert commitment_proof.sender == commitment_service.address
     assert_serialization(commitment_proof)
@@ -151,12 +147,18 @@ def test_commitments(offers, accounts):
 
 def assert_serialization(serializable):
     serialized = serializable.serialize(serializable)
-    assert serializable.__class__.deserialize(serialized) == serializable
+    deserialized = serializable.__class__.deserialize(serialized)
+    assert deserialized == serializable
+    for field in serializable.__class__.fields:
+        getter = attrgetter(field[0])
+        assert getter(deserialized) == getter(serializable)
+    if isinstance(serializable, Signed):
+        assert deserialized.signature == serializable.signature
 
 
-def test_offers(offers, accounts):
+def test_offers(offer_msgs, accounts):
     senders = [acc.address for acc in accounts]
-    for offer in offers:
+    for offer in offer_msgs:
         assert offer.sender in senders
         assert not offer.timed_out(at=milliseconds.time_int() - 3600 * 1000)  # pretend we come from the past
 
@@ -173,7 +175,7 @@ def test_cs_advertisements(commitment_service_advertisements, commitment_service
         assert 0 <= advertisement.fee_rate <= 2 ** 32
 
 
-def test_swap_execution(offers, accounts, maker_swap_executions, taker_swap_executions):
+def test_swap_execution(offer_msgs, accounts, maker_swap_executions, taker_swap_executions):
     time_ = milliseconds.time_int()
     senders = [acc.address for acc in accounts]
 
@@ -184,7 +186,7 @@ def test_swap_execution(offers, accounts, maker_swap_executions, taker_swap_exec
         assert time_ > sw_execution.timestamp  # should be in the past
 
 
-def test_swap_completeds(offers, commitment_services, swap_completeds):
+def test_swap_completeds(offer_msgs, commitment_services, swap_completeds):
     time_ = milliseconds.time_int()
     senders = [cs.address for cs in commitment_services]
 
@@ -205,3 +207,4 @@ def assert_envelope_serialization(message):
         envelope_dict = json.loads(envelope)
         envelope_dict['version'] = 2
         Envelope.open(json.dumps(envelope_dict))
+
