@@ -1,7 +1,10 @@
 from bintrees import FastRBTree
 
-from raidex.raidex_node.service import get_market_from_asset_pair
+from raidex.utils import get_market_from_asset_pair
 from raidex.exceptions import RaidexException
+
+class OfferMismatch(RaidexException):
+    pass
 
 class OfferType(object):
     BID = 0
@@ -97,8 +100,8 @@ class OfferView(object):
     def add_offer(self, offer):
         assert isinstance(offer, Offer)
 
-        if offer.type_ != self.type_ or offer.pair != self.market:
-            raise OrderTypeMismatch
+        if offer.type_ != self.type_ or offer.market != self.market:
+            raise OfferMismatch
 
         # inserts in the RBTree
         self.offers.insert(offer, offer)
@@ -138,10 +141,7 @@ class OfferBook(object):
         self.asks = OfferView(market, type_=OfferType.ASK)
         self.tasks = dict()
 
-    def insert_from_msg(self, offer_msg):
-        # when converting an Offer-message to an Offer,
-        # the market has to be given to convert to the relative representation:
-        offer = Offer.from_message(offer_msg, market=self.market)
+    def insert_offer(self, offer):
 
         if offer.type_ is OfferType.BID:
             self.bids.add_offer(offer)

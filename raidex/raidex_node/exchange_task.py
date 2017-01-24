@@ -1,5 +1,8 @@
 import gevent
 
+from raidex import messages
+from raidex.raidex_node.offer_book import Offer
+
 
 class MakerExchangeTask(gevent.Greenlet):
     """
@@ -36,7 +39,7 @@ class TakerExchangeTask(gevent.Greenlet):
 
         # we only want to engage in a trade if the maker also provided a viable commitment-proof
         # the cs_address can be retrieved out of the commitment-proof
-        assert isinstance(maker_commitment_proof, CommitmentProof)
+        assert isinstance(maker_commitment_proof, messages.CommitmentProof)
         self.proof = maker_commitment_proof
         pass
 

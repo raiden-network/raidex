@@ -23,14 +23,17 @@ ETH = denoms.ether
 def _price(p):
     return int(p * 1000)
 
+
 def _accounts():
     Account = namedtuple('Account', 'privatekey address')
     privkeys = [sha3("account:{}".format(i)) for i in range(2)]
     accounts = [Account(pk, privtoaddr(pk)) for pk in privkeys]
     return accounts
 
+
 ASSETS = [privtoaddr(sha3("asset{}".format(i))) for i in range(2)]
 ACCOUNTS = _accounts()
+
 
 def gen_orderbook_messages(market_price=10, max_amount=1000 * ETH, num_messages=200, max_deviation=0.01):
     assert isinstance(market_price, (int, long))
@@ -60,6 +63,7 @@ def gen_orderbook_messages(market_price=10, max_amount=1000 * ETH, num_messages=
         offer.sign(maker.privatekey)
         offers.append(offer)
     return offers
+
 
 def gen_orderbook(start_price=10, max_amount=1000 * ETH, num_entries=100, max_deviation=0.01):
     orders = gen_orders(start_price, max_amount, num_entries * 2, max_deviation)

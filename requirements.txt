@@ -5,6 +5,8 @@ bintrees
 click
 devp2p
 werkzeug
-raiden
 ethereum
 gevent==1.1.0
+raiden
+secp256k1==0.12.1  # FIXME only temporary to remove installation failures
+rlp==0.4.6  # FIXME only temporary to remove installation failures

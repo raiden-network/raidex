@@ -4,6 +4,7 @@
 
 import json
 from contextlib import contextmanager
+from collections import defaultdict
 
 from gevent.pywsgi import WSGIServer
 from gevent import monkey; monkey.patch_all(),
@@ -14,7 +15,6 @@ import bottle
 # block and nothing will work and you will be sad.
 from zmq import green as zmq
 
-from raiden.network.transport import DummyTransport
 
 # This lets us track how many clients are currently connected.
 polling = 0
@@ -123,8 +123,6 @@ def debug():
     # additional output.
     yield('polling = %d\n' % polling)
 
-if __name__ == "__main__":
-    WSGIServer(('', 8000), app).serve_forever()
 
 
 
@@ -146,7 +144,6 @@ class DummyBroadcastServer(object):
 
     def register(self, transport, host, port):
         """ Register a new node in the dummy network. """
-        assert isinstance(transport, DummyTransport)
         self.transports[(host, port)] = transport
 
     def subscribe(self, host_port, topic):
@@ -186,27 +183,47 @@ class DummyBroadcastServer(object):
             self._send(sender, host_port, topic, bytes_)
 
 
-    class DummyBroadcastTransport(DummyTransport):
-        """
-        Modifies the existing DummyTransport to support a 'topic' argument
-        NOTE:
-            there is no endpoint storing for now, since the broadcast network is
-            not properly defined yet and only Dummy-Classes are used at the moment
-        """
+class DummyBroadcastTransport():
+    """
+    Modifies the existing DummyTransport to support a 'topic' argument
+    NOTE:
+        there is no endpoint storing for now, since the broadcast network is
+        not properly defined yet and only Dummy-Classes are used at the moment
+    """
 
-        network = DummyBroadcastServer()
+    network = DummyBroadcastServer()
+    on_recv_cbs = []  # debugging
 
-        def publish(self, sender, topic, bytes_):
-            self.network.publish(sender, topic, bytes_)
+    def __init__(
+            self,
+            host,
+            port,
+            protocol=None):
 
-        # overload incompatible 'send' method
-        send = publish
+        self.host = host
+        self.port = port
+        self.protocol = protocol
 
-        @classmethod
-        def track_recv(cls, rex, topic, data):
-            for callback in cls.on_recv_cbs:
-                callback(rex, topic, data)
+        self.network.register(self, host, port)
 
-        def receive(self, topic, data):
-            self.track_recv(self.protocol.rex, topic, data)
-            self.protocol.receive(topic, data)
+    def publish(self, sender, topic, bytes_):
+        self.network.publish(sender, topic, bytes_)
+
+    # overload incompatible 'send' method
+    send = publish # TODO still needed?
+
+    @classmethod
+    def track_recv(cls, address, topic, data):
+        for callback in cls.on_recv_cbs:
+            callback(address, topic, data)
+
+    def receive(self, topic, data):
+        self.track_recv(self.protocol.rex, topic, data)
+        self.protocol.receive(topic, data)
+
+
+def main():
+    WSGIServer(('', 8000), app).serve_forever()
+
+if __name__ == "__main__":
+    main()

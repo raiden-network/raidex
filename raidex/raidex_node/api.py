@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from flask import jsonify, request, abort, make_response
-from raidex.client import OfferBook
+from raidex.raidex_node.offer_book import OfferBook
 
 
 

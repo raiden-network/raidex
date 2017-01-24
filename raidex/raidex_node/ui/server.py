@@ -60,7 +60,7 @@ if __name__ == '__main__':
     print ASSETS[0].encode('hex'), ASSETS[1].encode('hex')
     order_book = OfferBook(pair)
     messages = gen_orderbook_messages()
-    order_ids = [order_book.insert_from_msg(msg) for msg in messages]
+    order_ids = [order_book.insert_offer(msg) for msg in messages]
     order_manager = OfferManager()
     order_manager.add_offerbook(pair, order_book)
     client = ClientService(None, order_manager, None, None)

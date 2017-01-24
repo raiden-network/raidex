@@ -7,8 +7,10 @@ from raiden.encoding.signing import sign as _sign
 from secp256k1 import PrivateKey, ALL_FLAGS
 
 from raidex.utils import ETHER_TOKEN_ADDRESS
-from raidex.messages import CommitmentProof
+from raidex import messages
 from raidex.message_broker.client import BroadcastClient
+
+from raidex.raidex_node.message_abstrations import Commitment, SwapExecution
 
 # string? or PrivateKey -> PrivateKey
 def sign(messagedata, private_key):
@@ -17,6 +19,15 @@ def sign(messagedata, private_key):
     else:
         privkey_instance = private_key
     return _sign(messagedata, privkey_instance)
+
+class RaidexException(Exception):
+    pass
+
+class CommitmentTaken(RaidexException):
+    pass
+
+class CommitmentMismatch(RaidexException):
+    pass
 
 
 class CommitmentService(object):
@@ -29,6 +40,7 @@ class CommitmentService(object):
 
     def __init__(
         self,
+        raiden_api,
         private_key,
         fee_rate,
         communication_protocol_cls,
@@ -37,13 +49,14 @@ class CommitmentService(object):
         broadcast_transport,
         broadcast_protocol_cls):
 
+        self.raiden = raiden_api
         self.private_key = private_key
         self.commitment_asset = ETHER_TOKEN_ADDRESS
         self.committed_offers = dict()  # offer_hash -> CommitmentTuple
         self.fee_rate = fee_rate
-        self.communication_proto = communication_protocol_cls(communication_transport, raiden_discovery, self)
+        self.communication_proto = communication_protocol_cls(self.address, communication_transport, raiden_discovery, MessageHandler(self))
         communication_transport.protocol = self.communication_proto
-        self.broadcast = BroadcastClient(broadcast_protocol_cls, broadcast_transport, BroadcastMessageHandler(self))
+        self.broadcast = BroadcastClient(self.address, broadcast_protocol_cls, broadcast_transport, BroadcastMessageHandler(self))
 
     @property
     def address(self):
@@ -64,7 +77,7 @@ class CommitmentService(object):
         # once the proof is sent (and ack'd), register internally:
         swap_commitment = CommitmentTuple(commitment)
 
-        self.cs.committed_offers[swap_commitment.offer_id] = swap_commitment
+        self.committed_offers[swap_commitment.offer_id] = swap_commitment
 
         # TODO wait for further events (start task?)
         # once there is a taker also commited, wait for SwapExecuted from taker and maker
@@ -90,7 +103,7 @@ class CommitmentService(object):
             # then the ordering is
             try:
                 swap_commitment.taker = commitment
-            except AlreadyTaken:
+            except CommitmentTaken:
                 self.reject_commitment(commitment)
             except CommitmentMismatch:
                 raise
@@ -114,12 +127,12 @@ class CommitmentService(object):
     def redeem_commitment(self, commitment):
         # from issue#10
         # called when swap was completed successfully
-        fee = int(uint32.max_int / self.fee * commitment.amount + 0.5)
+        fee = int(uint32.max_int / self.fee_rate * commitment.amount + 0.5) # CHECKME
         redeem_amount = commitment.amount - fee
         self.raiden.transfer(commitment.token, redeem_amount, commitment.sender)
 
     def send_maker_commitment_proof(self, commitment):
-        commitment_proof = CommitmentProof(commitment.signature)
+        commitment_proof = messages.CommitmentProof(commitment.signature)
         commitment_proof.sign(self.private_key)
         receiver = commitment.sender
         self.communication_proto.send(receiver, commitment_proof)
@@ -138,7 +151,7 @@ class CommitmentService(object):
         # if only one or none notify burn / keep deposits
         # if both maker and taker notify of successful swap within timeout
         # redeem deposits (keep a small fee) and broadcast swap completed
-        commitment = message.
+        swap_execution = SwapExecution.from_message(message)
         self.redeem_commitment(commitment)
         # broadcast that swap was completed. If success returns remove order from dict
         self.broadcast_swap_completed(message.offer_id)

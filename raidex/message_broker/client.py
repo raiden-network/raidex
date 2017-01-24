@@ -20,12 +20,11 @@ class BroadcastClient(object):
 
     """
 
-    def __init__(self, protocol_cls, transport, message_handler):
-        self.handler = message_handler
+    def __init__(self, address, protocol_cls, transport, message_handler):
         self.topics = set()  # dict with {topic: [messages]}
         broadcast_endpoint = None  # TODO
 
-        self.protocol = protocol_cls(self, transport, broadcast_endpoint)
+        self.protocol = protocol_cls(address, transport, message_handler)
         transport.protocol = self.protocol
 
     def add_topic(self, topic):
@@ -36,17 +35,8 @@ class BroadcastClient(object):
         # self.add_topic(topic)
         pass
 
-    def on_message(self, topic, message):
-        #
-        assert topic in self.topics
-        # FIXME make 'on_' methods snake_case
-        method = 'on_%s' % message.__class__.__name__.lower()
-
-        # call the 'on_<message_type>' method from the message handler
-        getattr(self.handler, method)(message)
-
     def broadcast(self, topic, message):
-        self.protocol.send(topic, message)
+        self.protocol.broadcast(topic, message)
 
 
 
