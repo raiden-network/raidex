@@ -26,10 +26,18 @@ export class OrderBookChartComponent implements OnInit {
         ['Price', 'Volume', {role: 'style'}],
 		];
     public bid_ChartOptions = {
+				isStacked: false,
       	title: 'Depth',
       	legend: 'none',
       	hAxis: {title: 'Price', gridlines: { count: 10 }},
-      	vAxis: {title: 'Cumulative Volume'}
+      	vAxis: {title: 'Cumulative Volume'},
+				series: {
+    						0: {
+        							// set the area opacity of the first data series to 0
+        							areaOpacity: 0
+    						}
+}
+
     };
 		private orderbookSubscription: Subscription;
 

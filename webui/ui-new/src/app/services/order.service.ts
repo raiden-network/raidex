@@ -22,7 +22,7 @@ export class OrderService {
         return TimerObservable.create(0, 10000)
                 .flatMap(() =>  this.http.get('app/services/order-history.json')
                     .map((response) => response.json().order_history))
-                .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderBook', errors));
+                .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderHistory', errors));
     }
 
 

@@ -7,23 +7,25 @@ import { AgGridModule} from 'ag-grid-ng2/main';
 import { AppComponent } from './app.component';
 import { OrderHistoryComponent } from './components/orderhistory.component';
 import { OrderBookComponent } from './components/orderbook.component';
-import { OrderHistoryChartComponent } from './components/order-history-chart.component';
-import { OrderBookChartComponent } from './components/orderbook-chart.component';
+
+
 import { UserInteractionComponent } from './components/userinteraction.component';
 
 import { OrderService } from './services/order.service';
-import {GoogleChart} from './directives/angular2-google-chart.directive';
 
+import { ZingChartDirective } from './directives/zing-chart.directive';
+import { ZingDepthChartComponent } from './components/zing-depthchart.component';
+import { ZingPriceTimeSeriesComponent } from './components/zing-pricechart.component';
 
 @NgModule({
     declarations: [
         AppComponent,
-        GoogleChart,
+        ZingChartDirective,
         OrderHistoryComponent,
         OrderBookComponent,
-        OrderHistoryChartComponent,
-        OrderBookChartComponent,
-        UserInteractionComponent
+        UserInteractionComponent,
+        ZingDepthChartComponent,
+        ZingPriceTimeSeriesComponent
     ],
     imports: [
         BrowserModule,
