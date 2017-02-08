@@ -38,3 +38,38 @@ export function cumulativeArray(orderArray: Array<any>) {
 		});
 		return newArray;
 }
+
+export function cumulativePoints(orderArray: Array<any>) {
+		let newArray = [];
+		orderArray.forEach(function(element, index, arr){
+				let arrPoint = [];
+				arrPoint[0] = parseFloat(element.price);
+				arrPoint[1] = d3Array.sum(arr.slice(index), function(d){
+														return d.amount;
+												});
+				newArray.push(arrPoint);
+		});
+		return newArray;
+}
+
+export function formatIntoPriceTimeSeries(orderHistoryArray: Array<any>) {
+		let newArray = [];
+		orderHistoryArray.forEach(function(element, index) {
+				let arrPoint = [];
+				arrPoint[0] = element.timestamp;
+				arrPoint[1] = formatCurrency(element.price);
+				newArray.push(arrPoint);
+		});
+		return newArray;
+}
+
+export function formatIntoVolumeTimeSeries(orderHistoryArray: Array<any>) {
+		let tempArray = [];
+		orderHistoryArray.forEach(function(element, index) {
+				let arrPoint = [];
+				arrPoint[0] = element.timestamp;
+				arrPoint[1] = convertToEther(element.amount);
+				tempArray.push(arrPoint);
+		});
+		return tempArray;
+}

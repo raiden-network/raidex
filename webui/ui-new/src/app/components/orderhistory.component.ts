@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, OnChanges, SimpleChanges, Input } from '@angular/core';
 import { Subscription } from 'rxjs/Subscription';
 import { AgGridNg2 } from 'ag-grid-ng2/main';
 import { GridOptions } from 'ag-grid/main';
@@ -16,13 +16,13 @@ let web3 = new Web3();
     templateUrl: 'orderhistory.component.html'
 })
 
-export class OrderHistoryComponent implements OnInit {
+export class OrderHistoryComponent implements OnInit, OnChanges {
 
     public orderHistory = [];
     public gridOptions = <GridOptions>{};
     private orderhistorySubscription: Subscription;
     @Input() market: String;
-	  orderHistoryColumns = [
+	  public orderHistoryColumns = [
         {
             headerName: 'Timestamp',
             field: 'timestamp',
@@ -52,7 +52,7 @@ export class OrderHistoryComponent implements OnInit {
 
         }
     ];
-    dataSource = {
+    public dataSource = {
 
         pageSize: 25,
         overflowSize: 100,
@@ -88,6 +88,14 @@ export class OrderHistoryComponent implements OnInit {
         );
     }
 
+    ngOnChanges(changes: SimpleChanges) {
+        for (let propName in changes) {
+            let chng = changes[propName];
+            let cur  = JSON.stringify(chng.currentValue);
+            let prev = JSON.stringify(chng.previousValue);
+            console.log('Current Value ==' + cur + ' Previous Value==' + prev);
+        }
+    }
     get diagnostic() { return this.market; }
 
 }

@@ -10,7 +10,7 @@ let web3 = new Web3();
 
 
 @Component({
-		selector : 'rex-order-history-chart',
+		selector: 'rex-order-history-chart',
 		template: `
     		<div id="history_price"
 				[chartData]="historyprice_ChartData"
