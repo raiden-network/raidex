@@ -1,6 +1,6 @@
 import * as d3Array from 'd3-array';
-
-
+import { OrderHistory } from '../model/order-history';
+import { OrderBook } from '../model/order-book';
 declare var Web3;
 let web3 = new Web3();
 
@@ -72,4 +72,27 @@ export function formatIntoVolumeTimeSeries(orderHistoryArray: Array<any>) {
 				tempArray.push(arrPoint);
 		});
 		return tempArray;
+}
+
+export function preprocessOrderHistory(orderHistoryArray: Array<any>): OrderHistory[] {
+		let orderHistory: OrderHistory[] = [];
+		orderHistoryArray.forEach(function(element, index) {
+				orderHistory.push(new OrderHistory(
+						element.timestamp,
+						parseFloat(convertToEther(element.amount)),
+						parseFloat(formatCurrency(element.price))
+				));
+		});
+		return orderHistory;
+}
+
+export function preprocessOrderBook(orderBookArray: Array<any>): OrderBook[] {
+		let orderBook: OrderBook[] = [];
+		orderBookArray.forEach(function(element, index){
+				orderBook.push(new OrderBook(
+					parseFloat(convertToEther(element.amount)),
+					parseFloat(formatCurrency(element.price))
+				));
+		});
+		return orderBook;
 }

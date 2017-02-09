@@ -1,0 +1,16 @@
+<div class="container-fluid">
+  <div class="row bottom30">
+    <p-dataTable [value]="bids" [rows]="10" [paginator]="true" [pageLinks]="0">
+        <p-header>Bids</p-header>
+        <p-column field="amount" header="Amount"></p-column>
+        <p-column field="price" header="Price"></p-column>
+    </p-dataTable>
+  </div>
+  <div class="row">
+    <p-dataTable [value]="asks" [rows]="10" [paginator]="true" [pageLinks]="0">
+        <p-header>Asks</p-header>
+        <p-column field="amount" header="Amount"></p-column>
+        <p-column field="price" header="price"></p-column>
+    </p-dataTable>
+  </div>
+</div>
