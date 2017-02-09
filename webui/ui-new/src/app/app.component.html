@@ -28,11 +28,16 @@
 <div class="container-fluid">
 	<div class="row">
 		<div class="col-md-4">
-			<rex-user-interact></rex-user-interact>
-			<rex-order-history [market]="selectedMarket"></rex-order-history>
+      <div class="row">
+  			<rex-user-interact></rex-user-interact>
+  			<!-- <rex-order-history [market]="selectedMarket"></rex-order-history> -->
+      </div>
+      <div class="row">
+        <rex-orderhistory-table></rex-orderhistory-table>
+      </div>
 		</div>
 		<div class="col-md-2">
-			<rex-order-book></rex-order-book>
+		    <rex-orderbook-table></rex-orderbook-table>
 		</div>
 		<div class="col-md-6">
 			<rex-zing-pricechart-component></rex-zing-pricechart-component>
