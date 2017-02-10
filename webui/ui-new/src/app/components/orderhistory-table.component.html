@@ -1,5 +1,6 @@
-<div class="container-fluid top30">
-  <p-dataTable [value]="orderHistory" [rows]="12" [paginator]="true" [pageLinks]="0">
+<div class="container-fluid">
+  <p-dataTable [value]="orderHistory" [rows]="10" [paginator]="true" [pageLinks]="0"
+      styleClass="borderless">
       <p-header>Trade History</p-header>
       <p-column field="timestamp" header="Timestamp" [sortable]="true"
       [style]="{width: '50px', 'text-align': 'center'}">

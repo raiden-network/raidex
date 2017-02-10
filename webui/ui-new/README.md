@@ -1,3 +1,11 @@
+## Install Angular2 CLI
+  `npm install @angular/cli -g`
+## Install Node dependencies
+`npm install`
+## Run the Development Server
+The server runs on the port 4200  by default
+`ng serve`
+
 # Rexmigration
 
 This project was generated with [angular-cli](https://github.com/angular/angular-cli) version 1.0.0-beta.17.

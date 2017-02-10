@@ -1,4 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
+@import url('../node_modules/primeng/resources/themes/redmond/theme.css');
+@import url('../node_modules/primeng/resources/primeng.min.css');
+@import url('../node_modules/font-awesome/css/font-awesome.min.css');
 .ag-pinned-cols-container {
         text-align: center;
     }
@@ -28,3 +31,10 @@
 .bottom15 { margin-bottom:15px; }
 .bottom17 { margin-bottom:17px; }
 .bottom30 { margin-bottom:30px; }
+
+.ui-datatable.borderless thead th,
+.ui-datatable.borderless tbody,
+.ui-datatable.borderless tbody tr,
+.ui-datatable.borderless tbody td {
+    border-style: none;
+}
