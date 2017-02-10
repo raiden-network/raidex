@@ -27,21 +27,19 @@
 </nav>
 <div class="container-fluid">
 	<div class="row">
-		<div class="col-md-4">
-      <div class="row">
-  			<rex-user-interact></rex-user-interact>
-  			<!-- <rex-order-history [market]="selectedMarket"></rex-order-history> -->
-      </div>
-      <div class="row">
-        <rex-orderhistory-table></rex-orderhistory-table>
-      </div>
-		</div>
-		<div class="col-md-2">
-		    <rex-orderbook-table></rex-orderbook-table>
-		</div>
-		<div class="col-md-6">
-			<rex-zing-pricechart-component></rex-zing-pricechart-component>
+    <div class="col-md-6">
+      <rex-zing-pricechart-component></rex-zing-pricechart-component>
+    </div>
+    <div class="col-md-6">
       <rex-zing-depthchart-component></rex-zing-depthchart-component>
-		</div>
+    </div>
 	</div>
+  <div class="row">
+    <div class="col-md-4">
+      <rex-orderhistory-table></rex-orderhistory-table>
+    </div>
+    <div class="col-md-4">
+      <rex-orderbook-table></rex-orderbook-table>
+    </div>
+  </div>
 </div>

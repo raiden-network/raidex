@@ -148,7 +148,7 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges {
                 }
               ],
           },
-          height: 400,
+          height: 300,
           width: '100%'
       }];
     }
