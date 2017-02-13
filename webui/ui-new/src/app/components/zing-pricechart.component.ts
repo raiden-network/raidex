@@ -40,8 +40,6 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges {
                 });
                 this.priceTimeSeriesArray = util.formatIntoPriceTimeSeries(tempArray);
                 this.volumeTimeSeriesArray = util.formatIntoVolumeTimeSeries(tempArray);
-                console.log(this.priceTimeSeriesArray.length+",,,"+
-                this.volumeTimeSeriesArray.length);
                 let length = this.priceTimeSeriesArray.length - 1;
                 this.populateChartData(this.priceTimeSeriesArray[0][0],
                                   this.priceTimeSeriesArray[length][0]);

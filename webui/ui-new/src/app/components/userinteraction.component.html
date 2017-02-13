@@ -1,33 +1,45 @@
 <div class="container-fluid">
-	<ul class="nav nav-tabs">
-	  <li class="active"><a data-toggle="tab" href="#buy">Buy Orders</a></li>
-	  <li><a data-toggle="tab" href="#sell">Sell Orders</a></li>
-	  <li><a data-toggle="tab" href="#balance">Balance</a></li>
-	</ul>
-	<div class="tab-content ">
-		<div class="tab-pane active" id="buy">
-			<p>Submit New Buy Orders</p>
-			<form class="form-horizontal">
-				<div class="form-group">
-	        		<label for="amount" class="control-label col-sm-2">Buy</label>
-	        		<div class="col-sm-10">
-	        			<input type="text" class="form-control" id="amount" required>
-	        		</div>
-	      		</div>
-	      		<div class="form-group">
-	        		<label for="price" class="control-label col-sm-2">Price</label>
-	        		<div class="col-sm-10">
-	        			<input type="text" class="form-control" id="price" required>
-	        		</div>
-	      		</div>
-	      		<button type="submit" class="btn btn-default">Submit</button>
-			</form>
-		</div>
-		<div class="tab-pane" id="sell">
-			<p>Submit New Sell Orders</p>
-		</div>
-		<div class="tab-pane" id="balance">
-			<p>Balance of the User</p>
-		</div>
-	</div>
+		<!-- Nav tabs -->
+			<div class="card" id="userinput">
+				<ul class="nav nav-tabs" role="tablist" >
+					<li role="presentation" class="active"><a href="#buy" aria-controls="buy" role="tab" data-toggle="tab">Buy</a></li>
+					<li role="presentation"><a href="#sell" aria-controls="sell" role="tab" data-toggle="tab">Sell</a></li>
+
+				</ul>
+		<!-- Tab panes -->
+				<div class="tab-content">
+					<div role="tabpanel" class="tab-pane active" id="buy">
+						<h6>Submit Buy Orders</h6>
+						<form>
+				      <div class="form-group label-floating">
+				        <label class="control-label" for="amount">Amount</label>
+				        <input type="text" class="form-control" id="amount"
+								[(ngModel)] = "buyOrder.amount" required>
+				      </div>
+				      <div class="form-group label-floating">
+				        <label class="control-label" for="price">Price</label>
+				        <input type="text" class="form-control" id="price"
+								[(ngModel)] = "buyOrder.price" required="">
+				      </div>
+				      <button type="submit" class="btn btn-success">Submit</button>
+				    </form>
+					</div>
+					<div role="tabpanel" class="tab-pane" id="sell">
+						<h6>Submit Sell Orders</h6>
+						<form>
+				      <div class="form-group label-floating">
+				        <label class="control-label" for="amount">Amount</label>
+				        <input type="text" class="form-control" id="amount"
+								[(ngModel)] = "sellOrder.amount" required>
+				      </div>
+				      <div class="form-group label-floating">
+				        <label class="control-label" for="price">Price</label>
+				        <input type="text" class="form-control" id="price"
+								[(ngModel)] = "sellOrder.price" required="">
+				      </div>
+				      <button type="submit" class="btn btn-success">Submit</button>
+				    </form>
+					</div>
+				</div>
+			</div>
 </div>
