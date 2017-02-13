@@ -10,7 +10,7 @@ import { OnInit } from '@angular/core';
 
 export class AppComponent implements OnInit {
 
-    title = 'Raidex Decentralized Exchange';
+    title = 'Decentralised Exchange based on Raiden';
     altText = 'Raidex';
     imageUrl = 'raidexlogo.png';
     markets = ['ETH/USD', 'ETC/USD'];

@@ -3,7 +3,7 @@ import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 import { DataTableModule, SharedModule } from 'primeng/primeng';
-
+import { MaterialModule } from '@angular/material';
 
 import { AppComponent } from './app.component';
 import { UserInteractionComponent } from './components/userinteraction.component';
@@ -15,6 +15,8 @@ import { ZingPriceTimeSeriesComponent } from './components/zing-pricechart.compo
 
 import { OrderHistoryTableComponent } from './components/orderhistory-table.component'
 import { OrderBookTableComponent } from './components/orderbook-table.component';
+
+import 'hammerjs';
 @NgModule({
     declarations: [
         AppComponent,
@@ -30,7 +32,8 @@ import { OrderBookTableComponent } from './components/orderbook-table.component'
         FormsModule,
         HttpModule,
         DataTableModule,
-        SharedModule
+        SharedModule,
+        MaterialModule.forRoot()
     ],
     providers: [ OrderService ],
     bootstrap: [ AppComponent ]
