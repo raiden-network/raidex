@@ -46,6 +46,7 @@
     "@types/d3-array": "^1.0.5",
     "@types/hammerjs": "^2.0.34",
     "@types/jasmine": "^2.2.30",
+    "@types/jquery": "^2.0.40",
     "@types/node": "^6.0.42",
     "codelyzer": "~0.0.26",
     "jasmine-core": "2.4.1",

@@ -19,7 +19,7 @@ export class OrderService {
 		}
 
 		public getOrderHistory(): Observable<any> {
-        return TimerObservable.create(0, 10000)
+        return TimerObservable.create(0, 60000)
                 .flatMap(() =>  this.http.get('app/services/order-history.json')
                     .map((response) => response.json().order_history))
                 .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderHistory', errors));
@@ -27,7 +27,7 @@ export class OrderService {
 
 
     public getOrderBook(): Observable<any> {
-        return TimerObservable.create(0, 10000)
+        return TimerObservable.create(0, 60000)
                 .flatMap(() =>  this.http.get('app/services/order-book.json')
                     .map((response) => response.json()))
                 .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderBook', errors));

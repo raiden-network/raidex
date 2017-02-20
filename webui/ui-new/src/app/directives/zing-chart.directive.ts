@@ -4,7 +4,7 @@ import { ZingChartModel } from '../model/zing-chart.model';
 declare var zingchart: any;
 
 @Directive({
-  selector: 'zing-chart',
+  selector: '[ZingChartDirective]',
 })
 export class ZingChartDirective implements AfterViewInit, OnDestroy {
     @Input()
@@ -28,6 +28,7 @@ export class ZingChartDirective implements AfterViewInit, OnDestroy {
                 width : this.chart['width'],
                 height: this.chart['height']
             });
+
         });
     }
 
@@ -41,5 +42,14 @@ export class ZingChartDirective implements AfterViewInit, OnDestroy {
           data: this.chart['data']
         });
       });
+    }
+
+    zoomToDate(){
+      var scaleXValues = zingchart.exec('price-chart', 'getobjectinfo',{
+          object : 'scale',
+          name : 'scale-x'
+      });
+      var values = scaleXValues.values;
+      console.log("The values=="+values);
     }
 }

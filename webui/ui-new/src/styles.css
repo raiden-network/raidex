@@ -24,3 +24,15 @@
 .ui-datatable.borderless tbody td {
     border-style: none;
 }
+
+#price-chart {
+
+
+}
+
+#sliderDouble {
+  
+  right: 30px;
+  width: 300px;
+
+}
