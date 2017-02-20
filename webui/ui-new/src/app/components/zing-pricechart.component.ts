@@ -1,18 +1,19 @@
-import { Component, OnInit, OnChanges, Input, SimpleChanges } from '@angular/core';
+import { Component, OnInit, OnChanges, Input, SimpleChanges, AfterViewInit } from '@angular/core';
 import { ZingChartDirective } from '../directives/zing-chart.directive';
 import { ZingChartModel } from '../model/zing-chart.model';
 import { OrderService } from '../services/order.service';
 import { Subscription } from 'rxjs/Subscription';
 import * as util from '../services/util.service';
 import * as d3Array from 'd3-array';
-
+declare var $ : any;
 @Component({
     selector: 'rex-zing-pricechart-component',
     template: `
-        <zing-chart *ngFor="let chartObj of charts" [chart]="chartObj"></zing-chart>
-    `
+        <div *ngFor="let chartObj of charts" [chart]="chartObj" ZingChartDirective>
+        </div>
+        `
 })
-export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges {
+export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges, AfterViewInit {
 
     charts: ZingChartModel[];
 
@@ -28,6 +29,10 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges {
       setTimeout(() => this.initialisePriceChart(), 1000);
     }
     ngOnChanges(changes: SimpleChanges) {
+
+    }
+
+    ngAfterViewInit() {
 
     }
 
@@ -65,16 +70,20 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges {
                 'auto-fit': true,
                 'min-value': minValue,
                 'max-value': maxValue,
-                'step': '1second',
+                'step': '10second',
                 'transform':{
                   'type':'date',
                   'all':'%g:%i'
                 },
                 'items-overlap': true,
-                'max-items': 6,
+                'max-items': 10,
+                'zooming': true,
+                'zoom-to-values': [minValue, minValue + 2*60000],
                 'label': {
                   'text': 'Time'
                 }
+              },
+              'scroll-x': {
               },
               'crosshair-x':{
                 'plot-label':{
@@ -89,7 +98,7 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges {
                 }
               },
                 'scale-y': {
-                  'offset-start': '20%', //to adjust scale offsets.
+                  'offset-start': '25%', //to adjust scale offsets.
 
                   'format': '$%v',
                   'label': {
@@ -112,7 +121,7 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges {
                     'text': 'Volume'
                   },
                   'guide':{
-
+                    'line-style': 'solid'
                   },
                   'item':{
                     'font-size': 10
@@ -120,7 +129,7 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges {
                 },
               'series': [
                 {
-                  'type':'scatter',
+                  'type':'line',
                   'scales': 'scale-x,scale-y',
                   'guide-label': { //for crosshair plot labels
                     'text': 'Price: %vt',

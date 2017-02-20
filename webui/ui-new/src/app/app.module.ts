@@ -17,6 +17,8 @@ import { OrderHistoryTableComponent } from './components/orderhistory-table.comp
 import { OrderBookTableComponent } from './components/orderbook-table.component';
 
 import 'hammerjs';
+import * as $ from 'jquery';
+
 @NgModule({
     declarations: [
         AppComponent,

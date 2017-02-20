@@ -9,7 +9,7 @@ import * as d3Array from 'd3-array';
 @Component({
     selector: 'rex-zing-depthchart-component',
     template: `
-        <zing-chart *ngFor="let chartObj of charts" [chart]="chartObj"></zing-chart>
+        <div *ngFor="let chartObj of charts" [chart]="chartObj" ZingChartDirective></div>
     `
 })
 export class ZingDepthChartComponent implements OnInit, OnChanges {
