@@ -1,10 +1,30 @@
-from collections import namedtuple
 import time
+import pytest
+import gevent
 
-from ethereum.utils import int_to_big_endian
+from ethereum.utils import int_to_big_endian, sha3
 
-from raidex.raidex_node.offer_book import Offer, OfferView, OfferBook, OfferType
-from raidex.utils import get_market_from_asset_pair
+from raidex.raidex_node.offer_book import Offer, OfferBook, OfferType, OfferBookTask, OfferView
+from raidex.message_broker.listeners import OfferListener
+from raidex.utils import get_market_from_asset_pair, milliseconds
+from raidex.message_broker.message_broker import MessageBroker
+from raidex.commitment_service.commitment_service import CommitmentService
+from raidex.raidex_node.market import TokenPair
+
+
+@pytest.fixture()
+def token_pair(assets):
+    return TokenPair(assets[0], assets[1])
+
+
+@pytest.fixture()
+def message_broker():
+    return MessageBroker()
+
+
+@pytest.fixture()
+def commitment_service(token_pair):
+    return CommitmentService(token_pair, sha3("test1"))
 
 
 def test_market_from_asset_pair():
@@ -27,42 +47,28 @@ def test_market_from_asset_pair():
     assert get_market_from_asset_pair(asset_pair_permuted) == market != asset_pair_permuted
 
 
-def test_offer_comparison(assets):
-    pair = (assets[0], assets[1])
-    timeouts = [time.time() + i for i in range(0, 4)]
+def test_offer_comparison():
+    timeouts = [int(time.time() + i) for i in range(0, 4)]
     offer_ids = list(range(0, 4))
-    order1 = Offer(market=pair, type_=OfferType.BID, amount=50, price=5., timeout=timeouts[0], offer_id=offer_ids[0])
-    order2 = Offer(market=pair, type_=OfferType.BID, amount=100, price=1., timeout=timeouts[1], offer_id=offer_ids[1])
-    order3 = Offer(market=pair, type_=OfferType.BID, amount=100, price=2., timeout=timeouts[2], offer_id=offer_ids[2])
-    order4 = Offer(market=pair, type_=OfferType.BID, amount=100, price=1., timeout=timeouts[3], offer_id=offer_ids[3])
+    offer1 = Offer(OfferType.BUY, 50, 5, timeout=timeouts[0], offer_id=offer_ids[0])
+    offer2 = Offer(OfferType.BUY, 100, 1, timeout=timeouts[1], offer_id=offer_ids[1])
+    offer3 = Offer(OfferType.BUY, 100, 2, timeout=timeouts[2], offer_id=offer_ids[2])
+    offer4 = Offer(OfferType.BUY, 100, 1, timeout=timeouts[3], offer_id=offer_ids[3])
+    offers = OfferView()
+    for offer in [offer1, offer2, offer3, offer4]:
+        offers.add_offer(offer)
+    assert list(offers.values()) == [offer2, offer4, offer3, offer1]
 
-    assert order1 == order1
-    assert order2 != order4
-    assert order2 < order4 < order3 < order1
-    assert order1 >= order3 >= order4 >= order2
+
+def test_offer_book_task(message_broker, commitment_service, token_pair):
+    offerbook = OfferBook()
+    OfferBookTask(offerbook, OfferListener(token_pair, message_broker)).start()
+    gevent.sleep(0.001)
+    offer = Offer(OfferType.SELL, 100, 1000, offer_id=123, timeout=milliseconds.time_plus(2))
+    proof = commitment_service.maker_commit_async(offer).get()
+    message_broker.broadcast(proof)
+    gevent.sleep(0.001)
+    assert len(offerbook.sells) == 1
 
 
-def test_offerview_ordering(offer_msgs, assets):
-    # filter correct asset_pair and add type_ manually
-    asset_pair = (assets[0], assets[1])
-    market = get_market_from_asset_pair(asset_pair)
-
-    bid_offers = [Offer.from_message(offer)
-                  for offer in offer_msgs if offer.bid_token == market[0]] # TODO CHECKME
-
-    offers = OfferView(market=market, type_=OfferType.BID)
-    offer_ids = [offers.add_offer(offer) for offer in bid_offers]
-
-    assert len(offers) == len(bid_offers)
-    assert all(first <= second for first, second in zip(list(offers)[:-1], list(offers)[1:]))
-
-    # test removal
-    offers.remove_offer(offers.offers.min_item()[0].offer_id)
-    offers.remove_offer(offers.offers.min_item()[0].offer_id)
-    offers.remove_offer(offers.offers.min_item()[0].offer_id)
-
-    assert len(offers) == len(bid_offers) - 3
-
-    # checks the ordering of the offers
-    assert all(first <= second for first, second in zip(list(offers)[:-1], list(offers)[1:]))
 

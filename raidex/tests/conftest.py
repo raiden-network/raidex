@@ -4,15 +4,21 @@ from collections import namedtuple
 import pytest
 
 from ethereum.utils import sha3, privtoaddr, big_endian_to_int
+from ethereum import slogging
+
 
 from raiden.network.discovery import Discovery as RaidenDiscovery
 
 from raidex import messages
 from raidex.utils import milliseconds, DEFAULT_RAIDEX_PORT
 from raidex.commitment_service.server import CommitmentService
-from raidex.message_broker.server import DummyBroadcastTransport
 from raidex.network import DummyTransport
 from raidex.protocol import BroadcastProtocol, RaidexProtocol
+
+
+@pytest.fixture(autouse=True)
+def logging_level():
+    slogging.configure(':INFO')
 
 
 @pytest.fixture()
@@ -28,6 +34,7 @@ def accounts():
     accounts = [Account(pk, privtoaddr(pk)) for pk in privkeys]
     return accounts
 
+
 @pytest.fixture(params=[10])
 def offer_msgs(request, accounts, assets):
     """
@@ -37,13 +44,13 @@ def offer_msgs(request, accounts, assets):
     offers = []
     for i in range(request.param):
         maker = accounts[i % 2]
-        offer = messages.Offer(assets[i % 2],
-                      random.randint(1, 100),
-                      assets[1 - i % 2],
-                      random.randint(1, 100),
-                      big_endian_to_int(sha3('offer {}'.format(i))),
-                      milliseconds.time_int() + i * 1000
-                      )
+        offer = messages.SwapOffer(assets[i % 2],
+                                   random.randint(1, 100),
+                                   assets[1 - i % 2],
+                                   random.randint(1, 100),
+                                   big_endian_to_int(sha3('offer {}'.format(i))),
+                                   milliseconds.time_int() + i * 1000
+                                   )
         offer.sign(maker.privatekey)
         offers.append(offer)
     return offers
@@ -56,11 +63,13 @@ def cs_accounts():
     accounts = [Account(pk, privtoaddr(pk)) for pk in privkeys]
     return accounts
 
+
 @pytest.fixture()
 def dummy_discovery():
     # the discovery will use the raiden discovery
     dummy_discovery = RaidenDiscovery()
     return dummy_discovery
+
 
 @pytest.fixture()
 def commitment_services(cs_accounts, dummy_discovery):
@@ -80,12 +89,15 @@ def commitment_services(cs_accounts, dummy_discovery):
             RaidexProtocol,
             dummy_transport,
             dummy_discovery,
-            DummyBroadcastTransport(host, port),
+            None,
             BroadcastProtocol
         )
         # emulate the raiden port-mapping here
         dummy_discovery.register(commitment_service.address, host, port - 1)
         commitment_services.append(commitment_service)
     return commitment_services
+
+
+
 
 

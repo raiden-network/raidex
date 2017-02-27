@@ -2,11 +2,11 @@ import time
 
 from ethereum.utils import sha3, privtoaddr, big_endian_to_int, int_to_big_endian
 
-from raidex import messages
-from raidex.message_broker.client import BroadcastClient
-from raidex.exceptions import UntradableAssetPair, UnknownCommitmentService, InsufficientCommitmentFunds
-from raidex.raidex_node.offer_book import Offer
-from raidex.utils import get_market_from_asset_pair
+from raidex_service import messages
+from raidex_service.message_broker.client import BroadcastClient
+from raidex_service.exceptions import UntradableAssetPair, UnknownCommitmentService, InsufficientCommitmentFunds
+from raidex_service.raidex_node.offer_book import Offer
+from raidex_service.utils import get_market_from_asset_pair
 
 ERC20_ETH_ADDRESS = sha3('ETHER') # mock for now
 

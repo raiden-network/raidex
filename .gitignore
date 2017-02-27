@@ -32,3 +32,6 @@ webui/app/**/*.js
 webui/app/**/*.map
 webui/node_modules
 webui/typings
+
+# ide
+.idea

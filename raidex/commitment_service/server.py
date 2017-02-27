@@ -8,7 +8,6 @@ from secp256k1 import PrivateKey, ALL_FLAGS
 
 from raidex.utils import ETHER_TOKEN_ADDRESS
 from raidex import messages
-from raidex.message_broker.client import BroadcastClient
 
 from raidex.raidex_node.message_abstrations import Commitment, SwapExecution
 
@@ -56,7 +55,6 @@ class CommitmentService(object):
         self.fee_rate = fee_rate
         self.communication_proto = communication_protocol_cls(self.address, communication_transport, raiden_discovery, MessageHandler(self))
         communication_transport.protocol = self.communication_proto
-        self.broadcast = BroadcastClient(self.address, broadcast_protocol_cls, broadcast_transport, BroadcastMessageHandler(self))
 
     @property
     def address(self):
