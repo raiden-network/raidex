@@ -1,7 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
 @import url('../node_modules/primeng/resources/themes/start/theme.css');
 @import url('../node_modules/primeng/resources/primeng.min.css');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+@import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500,700');
 @import url('../node_modules/font-awesome/css/font-awesome.min.css');
+@import '~@angular/material/core/theming/prebuilt/deeppurple-amber.css';
 
 
 .top5 { margin-top:5px; }
@@ -25,14 +28,6 @@
     border-style: none;
 }
 
-#price-chart {
-
-
-}
-
-#sliderDouble {
-  
-  right: 30px;
-  width: 300px;
-
+select option{
+color: black;
 }

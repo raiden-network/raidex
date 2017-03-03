@@ -17,7 +17,6 @@
       "styles": [
         "../node_modules/bootstrap/dist/css/bootstrap.min.css",
         "styles.css"
-
       ],
       "scripts": [
         "../node_modules/web3/dist/web3.min.js",

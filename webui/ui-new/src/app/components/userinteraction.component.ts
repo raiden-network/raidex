@@ -9,8 +9,7 @@ declare var Web3;
 
 @Component({
     selector: 'rex-user-interact',
-    templateUrl: 'userinteraction.component.html',
-    styleUrls: ['material-tab.css']
+    templateUrl: 'userinteraction.component.html'
 })
 
 export class UserInteractionComponent implements OnInit {
@@ -22,4 +21,7 @@ export class UserInteractionComponent implements OnInit {
 	  ngOnInit(): void {
 
     }
+
+    // TODO: Remove this when we're done
+    get diagnostic() { return JSON.stringify(this.buyOrder); }
 }

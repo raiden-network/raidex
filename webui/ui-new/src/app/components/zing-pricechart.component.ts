@@ -135,9 +135,11 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges, AfterVie
                     'text': 'Price: %vt',
                     'decimals': 2
                   },
+                  'line-style': 'solid',
                   'marker': {
                     'type': 'circle',
-                    'size':3
+                    'size':3,
+                    'background-color': '#03a9f4'
                   },
                   'values': this.priceTimeSeriesArray
                 },
