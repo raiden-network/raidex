@@ -1,14 +1,22 @@
+from __future__ import print_function
+
+import gevent
 from bintrees import FastRBTree
+from enum import Enum
+from ethereum import slogging
+from raidex.utils import milliseconds
 
-from raidex.utils import get_market_from_asset_pair
-from raidex.exceptions import RaidexException
 
-class OfferMismatch(RaidexException):
-    pass
+log = slogging.get_logger('node.offer_book')
 
-class OfferType(object):
-    BID = 0
-    ASK = 1
+
+class OfferType(Enum):
+    BUY = 0
+    SELL = 1
+
+    @classmethod
+    def opposite(cls, type_):
+        return OfferType((type_.value + 1) % 2)
 
 
 class Offer(object):
@@ -21,7 +29,7 @@ class Offer(object):
 
     Internally we work with relative values because:
         1) we want to easily compare prices (prices are the ultimate ordering criterion)
-        2) we want to separate BIDs from ASKs
+        2) we want to separate BUYs from SELLs
         3) traders are used to this!
 
     In the broadcast we work with absolute values because:
@@ -34,79 +42,51 @@ class Offer(object):
 
     """
 
-    def __init__(self, market, type_, amount, price, timeout, offer_id):
-        self.market = market
+    def __init__(self, type_, base_amount, counter_amount, offer_id, timeout, maker_address=None, taker_address=None):
+        assert isinstance(type_, OfferType)
+        assert isinstance(base_amount, int)
+        assert isinstance(counter_amount, int)
+        assert isinstance(offer_id, int)
+        assert isinstance(timeout, int)
         self.offer_id = offer_id
         self.type_ = type_
-        self.amount = amount
+        self.base_amount = base_amount
+        self.counter_amount = counter_amount
         self.timeout = timeout
-        self.price = price
+        self.maker_address = maker_address
+        self.taker_address = taker_address
 
-    def __cmp__(self, other):
-        if self.price == other.price and self.timeout == other.timeout:
-            return 0
-        elif self.price < other.price or (
-                self.price == other.price and self.timeout < other.timeout):
-            return -1
-        else:
-            return 1
+    @property
+    def amount(self):
+        return self.base_amount
+
+    @property
+    def price(self):
+        return float(self.counter_amount) / self.base_amount
 
     def __repr__(self):
-        return "Order<order_id={} amount={} price={} type={} market={}>".format(
-                self.offer_id, self.amount, self.price, self.type_, self.market)
-
-
-    @classmethod
-    def from_message(cls, offer_msg):
-        """
-        Constructs an Offer out of an offer_message (e.g. retrieved from the broadcast).
-        It converts the absolute values of the message to the values relative to the fixed market
-
-        :param offer_msg: an Offer message retrieved from the broadcast
-        :param market: the market's fixed asset pair in which the offer is traded - to calculate the price and offer_type
-        :return: an Offer instance
-        """
-
-        msg_pair = (offer_msg.bid_token, offer_msg.ask_token)
-        market = get_market_from_asset_pair(msg_pair)
-
-        if msg_pair == market:
-            type_ = OfferType.BID #XXX checkme
-            price = float(offer_msg.bid_amount) / offer_msg.ask_amount
-            amount = offer_msg.bid_amount
-        elif msg_pair[::-1] == market:
-            type_ = OfferType.ASK #XXX checkme
-            price = float(offer_msg.bid_amount) / offer_msg.ask_amount
-            amount = offer_msg.ask_amount
-        else:
-            raise Exception('Wrong market')
-        offer_id = offer_msg.offer_id
-        return cls(market, type_, amount, price, offer_id, offer_msg.timeout / 1000.0)
+        return "Order<order_id={} amount={} price={} type={} >".format(
+                self.offer_id, self.amount, self.price, self.type_)
 
 
 class OfferView(object):
     """
     Holds a collection of Offers in an RBTree for faster search.
-    One OfferView instance holds either BIDs or ASKs, as denoted by the `type_` field
+    One OfferView instance holds either BUYs or SELLs
 
     """
 
-    def __init__(self, market, type_):
-        self.market = market
-        self.type_ = type_
+    def __init__(self):
         self.offers = FastRBTree()
         self.offer_by_id = dict()
 
     def add_offer(self, offer):
         assert isinstance(offer, Offer)
 
-        if offer.type_ != self.type_ or offer.market != self.market:
-            raise OfferMismatch
-
         # inserts in the RBTree
-        self.offers.insert(offer, offer)
+        self.offers.insert((offer.price, offer.offer_id), offer)
 
-        #inserts in the dict for retrieval by offer_id
+        # inserts in the dict for retrieval by offer_id
         self.offer_by_id[offer.offer_id] = offer
 
         return offer.offer_id
@@ -116,7 +96,7 @@ class OfferView(object):
             offer = self.offer_by_id[offer_id]
 
             # remove from the RBTree
-            self.offers.remove(offer)
+            self.offers.remove((offer.price, offer.offer_id))
 
             # remove from the dict
             del self.offer_by_id[offer_id]
@@ -132,41 +112,86 @@ class OfferView(object):
         # self.offers = <FastRBTree>
         return iter(self.offers)
 
+    def values(self):
+        return self.offers.values()
+
 
 class OfferBook(object):
 
-    def __init__(self, market):
-        self.market = market
-        self.bids = OfferView(market, type_=OfferType.BID)
-        self.asks = OfferView(market, type_=OfferType.ASK)
+    def __init__(self):
+        self.buys = OfferView()
+        self.sells = OfferView()
         self.tasks = dict()
 
     def insert_offer(self, offer):
 
-        if offer.type_ is OfferType.BID:
-            self.bids.add_offer(offer)
-        elif offer.type_ is OfferType.ASK:
-            self.asks.add_offer(offer)
+        if offer.type_ is OfferType.BUY:
+            self.buys.add_offer(offer)
+        elif offer.type_ is OfferType.SELL:
+            self.sells.add_offer(offer)
         else:
-            raise RaidexException('unsupported offer-type')
+            raise Exception('unsupported offer-type')
 
         return offer.offer_id
 
     def get_offer_by_id(self, offer_id):
-        offer = self.bids.get_offer_by_id(offer_id)
+        offer = self.buys.get_offer_by_id(offer_id)
         if offer is None:
-            offer = self.asks.get_offer_by_id(offer_id)
+            offer = self.sells.get_offer_by_id(offer_id)
         return offer
 
+    def contains(self, offer_id):
+        return offer_id in self.buys.offer_by_id or offer_id in self.sells.offer_by_id
+
     def remove_offer(self, offer_id):
-        if offer_id in self.bids:
-            offer_view = self.bids
-        elif offer_id in self.asks:
-            offer_view = self.asks
+        if offer_id in self.buys.offer_by_id:
+            offer_view = self.buys
+        elif offer_id in self.sells.offer_by_id:
+            offer_view = self.sells
         else:
-            raise RaidexException('offer_id not found')
+            raise Exception('offer_id not found')
 
         offer_view.remove_offer(offer_id)
 
     def __repr__(self):
-        return "OfferBook<bids={} asks={}>".format(len(self.bids), len(self.asks))
+        return "OfferBook<buys={} sells={}>".format(len(self.buys), len(self.sells))
+
+
+class TakenTask(gevent.Greenlet):
+    def __init__(self, offer_book, taken_listener):
+        self.offer_book = offer_book
+        self.taken_listener = taken_listener
+        gevent.Greenlet.__init__(self)
+
+    def _run(self):
+        self.taken_listener.start()
+        while True:
+            offer_id = self.taken_listener.get()
+            if self.offer_book.contains(offer_id):
+                log.debug('Offer {} is taken'.format(offer_id))
+                self.offer_book.remove_offer(offer_id)
+
+
+class OfferBookTask(gevent.Greenlet):
+
+    def __init__(self, offer_book, offer_listener):
+        self.offer_book = offer_book
+        self.offer_listener = offer_listener
+        gevent.Greenlet.__init__(self)
+
+    def _run(self):
+        self.offer_listener.start()
+
+        while True:
+            offer = self.offer_listener.get()
+            log.debug('New Offer: {}'.format(offer))
+            self.offer_book.insert_offer(offer)
+
+            def after_offer_timeout_func(offer_id):
+                def func():
+                    if self.offer_book.contains(offer_id):
+                        log.debug('Offer {} is taken'.format(offer_id))
+                        self.offer_book.remove_offer(offer_id)
+                return func
+
+            gevent.spawn_later(milliseconds.seconds_to_timeout(offer.timeout), after_offer_timeout_func(offer.offer_id))

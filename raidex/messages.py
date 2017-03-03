@@ -2,9 +2,9 @@ import json
 import base64
 
 import rlp
-from rlp.sedes import List, binary
+from rlp.sedes import binary
 from ethereum.utils import (address, int256, hash32, sha3, big_endian_to_int, int32)
-from raiden.utils import pex, isaddress
+from raiden.utils import pex
 from raiden.encoding.signing import recover_publickey, GLOBAL_CTX
 from raiden.encoding.signing import sign as _sign
 from secp256k1 import PrivateKey, ALL_FLAGS
@@ -190,8 +190,8 @@ class Ack(RLPHashable):
         super(Ack, self).__init__(sender, echo)
 
 
-class Offer(Signed):
-    """An `Offer` is the base for a `ProvenOffer`. Its `offer_id`, `hash` and `timeout` should be sent
+class SwapOffer(Signed):
+    """An `SwapOffer` is the base for a `ProvenOffer`. Its `offer_id`, `hash` and `timeout` should be sent
     as a `Commitment` to a commitment service provider.
 
     Data:
@@ -219,8 +219,8 @@ class Offer(Signed):
     def __init__(self, ask_token, ask_amount,
                  bid_token, bid_amount,
                  offer_id, timeout, signature=''):
-        super(Offer, self).__init__(ask_token, ask_amount,
-                 bid_token, bid_amount, offer_id, timeout, signature)
+        super(SwapOffer, self).__init__(ask_token, ask_amount,
+                                        bid_token, bid_amount, offer_id, timeout, signature)
 
     def timed_out(self, at=None):
         if at is None:
@@ -307,12 +307,13 @@ class Commitment(Signed):
 
     fields = [
         ('offer_id', int256), # FIXME should be unique for market, fix type in raiden from int?? to hash32 ?
+        ('offer_hash', hash32),
         ('timeout', int256),
         ('amount', int256),
     ] + Signed.fields
 
-    def __init__(self, offer_id, timeout, amount, signature=''):
-        super(Commitment, self).__init__(offer_id, timeout, amount, signature)
+    def __init__(self, offer_id, offer_hash, timeout, amount, signature=''):
+        super(Commitment, self).__init__(offer_id, offer_hash, timeout, amount, signature)
 
     def compute_signed_signature(self, privkey):
         return sign(self.signature, privkey)
@@ -335,12 +336,12 @@ class OfferTaken(Signed):
 
     """
 
-    _fields = [
+    fields = [
         ('offer_id', int256),
-    ]
+    ] + Signed.fields
 
-    def __init__(self, offer_id):
-        super(OfferTaken, self).__init__(offer_id)
+    def __init__(self, offer_id, signature=''):
+        super(OfferTaken, self).__init__(offer_id, signature)
 
 
 class CommitmentProof(Signed):
@@ -359,11 +360,10 @@ class CommitmentProof(Signed):
 
     fields = [
         ('commitment_sig', sig65),
-        ('proof', sig65)
     ] + Signed.fields
 
-    def __init__(self, commitment_sig, proof, signature=''):
-        super(CommitmentProof, self).__init__(commitment_sig, proof, signature)
+    def __init__(self, commitment_sig, signature=''):
+        super(CommitmentProof, self).__init__(commitment_sig, signature)
 
 
 class ProvenOffer(Signed):
@@ -387,7 +387,7 @@ class ProvenOffer(Signed):
         }
     """
     fields = [
-        ('offer', Offer),
+        ('offer', SwapOffer),
         ('commitment', Commitment),
         ('commitment_proof', CommitmentProof),
     ] + Signed.fields
@@ -482,13 +482,14 @@ class SwapCompleted(SwapExecution):
 msg_types_map = dict(
         ping=Ping,
         pong=Pong,
-        offer=Offer,
+        offer=SwapOffer,
         market_offer=ProvenOffer,
         commitment=Commitment,
         commitment_proof=CommitmentProof,
         commitment_service=CommitmentServiceAdvertisement,
         swap_executed=SwapExecution,
         swap_completed=SwapCompleted,
+        offer_taken=OfferTaken,
         )
 
 types_msg_map = {value: key for key, value in msg_types_map.items()}

@@ -4,11 +4,10 @@ from operator import attrgetter
 
 import pytest
 from ethereum.utils import sha3, big_endian_to_int
-
 from raidex.messages import (
     SignatureMissingError,
     Signed,
-    Offer,
+    SwapOffer,
     Commitment,
     CommitmentProof,
     ProvenOffer,
@@ -17,7 +16,6 @@ from raidex.messages import (
     SwapExecution,
     CommitmentServiceAdvertisement
 )
-
 from raidex.utils import milliseconds, ETHER_TOKEN_ADDRESS
 
 
@@ -78,24 +76,24 @@ def commitment_service_advertisements(commitment_services):
 
 
 def test_offer(assets, accounts):
-    o = Offer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
+    o = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
     acc = accounts[0]
-    assert isinstance(o, Offer)
+    assert isinstance(o, SwapOffer)
     serial = o.serialize(o)
     assert_serialization(o)
     assert_envelope_serialization(o)
-    assert Offer.deserialize(serial) == o
+    assert SwapOffer.deserialize(serial) == o
     assert o.timed_out()
 
 
 def test_hashable(assets):
-    o = Offer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
+    o = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
     assert o.hash
 
 
 def test_signing(accounts, assets):
-    o = Offer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
-    o_unsigned = Offer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
+    o = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
+    o_unsigned = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
     # not signed yet, so must be equal
     assert o == o_unsigned
     o.sign(accounts[0].privatekey)
@@ -109,7 +107,7 @@ def test_signing(accounts, assets):
     assert o_unsigned.signature == ''
 
     # check that getting the sender of unsigned 'Signed'-message raises an error
-    o_unsigned_deserialized = Offer.deserialize(o_unsigned.serialize(o_unsigned))
+    o_unsigned_deserialized = SwapOffer.deserialize(o_unsigned.serialize(o_unsigned))
     raised = False
     try:
         o_unsigned_deserialized.sender
@@ -123,7 +121,7 @@ def test_commitments(offer_msgs, accounts):
     commitment_service = accounts[2]
     maker = filter(lambda acc: acc.address == offer.sender, accounts)[0]
 
-    commitment = Commitment(offer.offer_id, offer.timeout, 42)
+    commitment = Commitment(offer.offer_id, offer.hash, offer.timeout, 42)
     commitment.sign(maker.privatekey)
     assert_serialization(commitment)
     assert_envelope_serialization(commitment)
@@ -176,7 +174,7 @@ def test_cs_advertisements(commitment_service_advertisements, commitment_service
 
 
 def test_swap_execution(offer_msgs, accounts, maker_swap_executions, taker_swap_executions):
-    time_ = milliseconds.time_int()
+    time_ = milliseconds.time_plus(1)
     senders = [acc.address for acc in accounts]
 
     # there need to exist two swap executions, one from the offer.sender and one from the taker
@@ -187,7 +185,7 @@ def test_swap_execution(offer_msgs, accounts, maker_swap_executions, taker_swap_
 
 
 def test_swap_completeds(offer_msgs, commitment_services, swap_completeds):
-    time_ = milliseconds.time_int()
+    time_ = milliseconds.time_plus(1)
     senders = [cs.address for cs in commitment_services]
 
     # there need to exist two swap executions, one from the offer.sender and one from the taker

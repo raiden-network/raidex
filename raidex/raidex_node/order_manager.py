@@ -1,4 +1,4 @@
-from raidex.raidex_node.order_task import OrderTask
+from raidex_service.raidex_node.order_task import OrderTask
 
 class OrderManager(object):
     """
