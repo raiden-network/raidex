@@ -1,6 +1,9 @@
+from collections import namedtuple
+
 from message_broker import MessageBroker
 from raidex import messages
 from raidex.raidex_node.offer_book import OfferType, Offer
+from raidex.raidex_node.trades import SwapCompleted
 
 
 class MessageListener(object):
@@ -95,3 +98,12 @@ class TakenListener(MessageListener):
         if not isinstance(message, messages.OfferTaken):
             return None
         return message.offer_id
+
+
+class SwapCompletedListener(MessageListener):
+    """ Listens for Completed Swaps to fill the Trade-book"""
+
+    def _transform(self, message):
+        if not isinstance(message, messages.SwapCompleted):
+            return None
+        return SwapCompleted(message.offer_id, message.timestamp)

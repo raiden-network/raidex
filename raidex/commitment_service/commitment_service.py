@@ -1,8 +1,9 @@
 from ethereum.utils import sha3
 from gevent.event import AsyncResult
 
-from raidex.messages import SwapOffer as OfferMsg, Commitment, CommitmentProof, ProvenOffer, OfferTaken
+from raidex.messages import SwapOffer as OfferMsg, Commitment, CommitmentProof, ProvenOffer, OfferTaken, SwapCompleted
 from raidex.raidex_node.offer_book import OfferType, Offer
+from raidex.utils import milliseconds
 
 
 class CommitmentService(object):
@@ -48,6 +49,13 @@ class CommitmentService(object):
         msg = OfferTaken(offer_id)
         msg.sign(self.priv_key)
         return msg
+
+    def create_swap_completed(self, offer_id):
+        # type: (int) -> SwapCompleted
+        msg = SwapCompleted(offer_id, milliseconds.time())
+        msg.sign(self.priv_key)
+        return msg
+
 
     def create_offer_msg(self, offer):
         # type: (Offer) -> OfferMsg

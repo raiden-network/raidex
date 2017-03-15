@@ -8,7 +8,7 @@ from ethereum import slogging
 from ethereum.utils import sha3, privtoaddr
 from exchange_task import MakerExchangeTask, TakerExchangeTask
 from market import TokenPair
-from offer_book import OfferBook, OfferBookTask, Offer, TakenTask
+from offer_book import OfferBook, OfferBookTask, Offer, TakenTask, SwapCompleted, SwapCompletedTask
 from order_task import OrderTask
 from raidex.commitment_service.commitment_service import CommitmentService
 from raidex.message_broker.client import MessageBroker
@@ -29,10 +29,13 @@ class Raidex(object):
         self.commitment_service = CommitmentService(self.token_pair, self.priv_key)
         self.trader = TraderClient(self.address)
         self.offer_book = OfferBook()
+        self.order_tasks_by_id = {}
+        self.next_order_id = 0
 
     def start(self):
         OfferBookTask(self.offer_book, OfferListener(self.token_pair, self.message_broker)).start()
         TakenTask(self.offer_book, TakenListener(self.message_broker)).start()
+        SwapCompletedTask()
 
     def make_offer(self, type_, amount, counter_amount):
         # TODO generate better offer id
@@ -46,8 +49,12 @@ class Raidex(object):
         gevent.sleep(0.001)
 
     def limit_order(self, type_, amount, price):
-        OrderTask(self.offer_book, type_, amount, price, self.address, self.commitment_service, self.message_broker, self.trader).start()
+        order_task = OrderTask(self.offer_book, type_, amount, price, self.address, self.commitment_service, self.message_broker, self.trader).start()
+        order_id = self.next_order_id
+        self.order_tasks_by_id[order_id] = order_task
+        self.next_order_id += 1
         gevent.sleep(0.001)
+        return order_id
 
     def print_offers(self):
         gevent.sleep(0.001)

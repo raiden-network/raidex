@@ -158,8 +158,9 @@ class OfferBook(object):
 
 
 class TakenTask(gevent.Greenlet):
-    def __init__(self, offer_book, taken_listener):
+    def __init__(self, offer_book, trades, taken_listener):
         self.offer_book = offer_book
+        self.trades = trades
         self.taken_listener = taken_listener
         gevent.Greenlet.__init__(self)
 
@@ -169,6 +170,8 @@ class TakenTask(gevent.Greenlet):
             offer_id = self.taken_listener.get()
             if self.offer_book.contains(offer_id):
                 log.debug('Offer {} is taken'.format(offer_id))
+                offer = self.offer_book.get_offer_by_id(offer_id)
+                self.trades.add_pending(offer)
                 self.offer_book.remove_offer(offer_id)
 
 
@@ -190,7 +193,7 @@ class OfferBookTask(gevent.Greenlet):
             def after_offer_timeout_func(offer_id):
                 def func():
                     if self.offer_book.contains(offer_id):
-                        log.debug('Offer {} is taken'.format(offer_id))
+                        log.debug('Offer {} timed out'.format(offer_id))
                         self.offer_book.remove_offer(offer_id)
                 return func
 
