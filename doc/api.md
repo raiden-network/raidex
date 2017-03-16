@@ -47,6 +47,7 @@ where trade is (to be extended)
   "timestamp": int,
   "amount":int,
   "price": double
+  "type": enum{0,1}  # 0=:BUY or 1=:SELL
 }
 ```
 ### make_limit_order()
