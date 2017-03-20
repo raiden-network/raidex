@@ -2,15 +2,17 @@
   <p-dataTable [value]="orderHistory" [rows]="7" [paginator]="true" [pageLinks]="0"
       styleClass="borderless">
       <p-header>Trade History</p-header>
-      <p-column field="timestamp" header="Timestamp" [sortable]="true"
-      [style]="{width: '50px', 'text-align': 'center'}">
+      <p-column field="timestamp" header="Time" [sortable]="true"
+      [style]="{ 'text-align': 'center'}">
         <template let-col let-data="rowData" pTemplate type="body">
           <span>{{data.timestamp | date: 'HH:mm:ss'}}</span>
         </template>
       </p-column>
-      <p-column field="amount" header="Amount" [sortable]="true"
-      [style]="{width: '50px', 'text-align': 'center'}"></p-column>
-      <p-column field="price" header="Price" [sortable]="true"
-      [style]="{width: '50px', 'text-align': 'center'}"></p-column>
+      <p-column field="amount" styleClass="text-right" header="Amount" [sortable]="true"
+      [style]="{ 'text-align': 'right'}">
+      </p-column>
+      <p-column field="price" styleClass="text-right" header="Price" [sortable]="true"
+      [style]="{ 'text-align': 'right'}">
+      </p-column>
   </p-dataTable>
 </div>

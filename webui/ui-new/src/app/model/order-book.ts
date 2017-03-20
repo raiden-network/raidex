@@ -1,7 +1,7 @@
 export class OrderBook {
-    public amount: number;
-    public price: number;
-    constructor(amount?:number, price?:number){
+    public amount: string;
+    public price: string;
+    constructor(amount?:string, price?:string){
         this.amount = amount;
         this.price = price;
     }
