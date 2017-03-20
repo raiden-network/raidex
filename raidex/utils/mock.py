@@ -34,6 +34,17 @@ def _accounts():
 ASSETS = [privtoaddr(sha3("asset{}".format(i))) for i in range(2)]
 ACCOUNTS = _accounts()
 
+def gen_orders(start_price=10, max_amount=1000 * ETH, num_entries=10, max_deviation=0.01):
+    assert isinstance(start_price, (int, long))
+    orders = []
+    price = start_price
+    for i in range(num_entries):
+        factor = 1 + (2 * random.random() - 1) * max_deviation
+        price = factor * price
+        amount = random.randrange(1, max_amount)
+        address = encode_hex(sha3(price * amount))[:40]
+        orders.append((address, _price(price), amount))
+    return orders
 
 def gen_orderbook_messages(market_price=10, max_amount=1000 * ETH, num_messages=200, max_deviation=0.01):
     assert isinstance(market_price, (int, long))
@@ -75,18 +86,18 @@ def gen_orderbook_dict(start_price=10, max_amount=1000 * ETH, num_entries=100, m
     orders = gen_orders(start_price, max_amount, num_entries * 2, max_deviation)
     bids = [dict(address=a, price=p, amount=am) for a, p, am in reversed(orders[:num_entries])]
     asks = [dict(address=a, price=p, amount=am) for a, p, am in orders[num_entries:]]
-    return dict(bids=bids, asks=asks)
+    return dict(buys=bids, sells=asks)
 
 
 def gen_orderhistory(start_price=10, max_amount=1000 * ETH, num_entries=100, max_deviation=0.01):
     timestamp = time.time()
-    avg_num_orders_per_second = 1.
+    avg_num_orders_per_second = 0.01
     avg_gap_between_orders = 1 / avg_num_orders_per_second
-    avg_gap_deviation = 2.
+    avg_gap_deviation = 2
 
     orders = []
 
-    for address, price, amount in gen_orders(start_price, max_amount, num_entries, max_deviation):
+    for address, price, amount in gen_orders(start_price, max_amount * ETH, num_entries, max_deviation):
         elapsed = avg_gap_between_orders + (random.random() * 2 - 1) * avg_gap_deviation
         timestamp += elapsed
         orders.append(dict(

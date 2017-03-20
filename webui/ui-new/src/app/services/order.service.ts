@@ -20,8 +20,8 @@ export class OrderService {
 
 		public getOrderHistory(): Observable<any> {
         return TimerObservable.create(0, 60000)
-                .flatMap(() =>  this.http.get('app/services/order-history.json')
-                    .map((response) => response.json().order_history))
+                .flatMap(() =>  this.http.get('http://127.0.0.1:5000/api/version/markets/dummy/trades/')
+                    .map((response) => response.json().data))
                 .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderHistory', errors));
     }
 

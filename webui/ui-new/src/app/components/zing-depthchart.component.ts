@@ -59,7 +59,12 @@ export class ZingDepthChartComponent implements OnInit, OnChanges {
           id : 'depth-chart',
           data : {
               'type' : 'area',
-              'plot':{
+              'plot': {
+                'line-width': 2,
+                'marker': {
+                    'size': 1,
+                    'visible': false
+                },
                 'tooltip':{
                   'text':
                     '<table border="0" rules=none>'+
@@ -109,7 +114,8 @@ export class ZingDepthChartComponent implements OnInit, OnChanges {
                   'values': this.bidArray,
                   'text': 'Red'
                 },
-                { 'values': this.askArray,
+                {
+                  'values': this.askArray,
                   'text': 'Blue'
                 }
               ],

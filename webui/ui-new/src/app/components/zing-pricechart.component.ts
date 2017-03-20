@@ -26,7 +26,7 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges, AfterVie
     }
 
     ngOnInit(): void {
-      setTimeout(() => this.initialisePriceChart(), 1000);
+        setTimeout(() => this.initialisePriceChart(), 1000);
     }
     ngOnChanges(changes: SimpleChanges) {
 
@@ -78,7 +78,7 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges, AfterVie
                 'items-overlap': true,
                 'max-items': 10,
                 'zooming': true,
-                'zoom-to-values': [minValue, minValue + 2*60000],
+                'zoom-to-values': [minValue, minValue + 240*60000],
                 'label': {
                   'text': 'Time'
                 }
