@@ -14,8 +14,10 @@ declare var $: any;
             <div id="date-picker-container">
                 <button class="btn btn-success btn-xs"
                 (click)="reinitialiseStockChart(15)">15 mins</button>
-                <button class="btn btn-success btn-xs">30 mins</button>
-                <button class="btn btn-success btn-xs">1 hour</button>
+                <button class="btn btn-success btn-xs"
+                (click)="reinitialiseStockChart(30)">30 mins</button>
+                <button class="btn btn-success btn-xs"
+                (click)="reinitialiseStockChart(60)">1 hour</button>
             <div>
         </div>
         `
@@ -46,7 +48,6 @@ export class ZingStockChartComponent implements OnInit, AfterViewInit {
     }
 
     initialiseStockChart(): void {
-
         this.orderhistorySubscription = this.orderService.getOrderHistory().subscribe(
             data => {
                 let tempArray: Array<any>  = data;
@@ -64,8 +65,12 @@ export class ZingStockChartComponent implements OnInit, AfterViewInit {
     }
 
     reinitialiseStockChart(interval?: number): void {
-
-
+        this.interval = interval;
+        let stockUtil = util.prepareStockChartData(this.orderHistoryArray, interval);
+        this.stockChartDataArray = stockUtil.stock;
+        this.volumeChartDataArray = stockUtil.volume;
+        this.limits = stockUtil.limits;
+        this.populateChartData(this.limits);
     }
 
     populateChartData(limits: any): void {
