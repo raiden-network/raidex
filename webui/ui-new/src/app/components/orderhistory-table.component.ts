@@ -1,11 +1,11 @@
-import { Component, OnInit, OnDestroy, OnChanges, SimpleChanges, Input } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs/Subscription';
 import { OrderService } from '../services/order.service';
 import * as util from '../services/util.service';
 import { OrderHistory } from '../model/order-history';
 declare var BigNumber: any;
 declare var Web3;
-let web3 = new Web3();
+
 @Component({
     selector: 'rex-orderhistory-table',
     templateUrl: 'orderhistory-table.component.html'
@@ -24,7 +24,7 @@ export class OrderHistoryTableComponent implements OnInit {
     getOrderHistory(): void {
         this.orderhistorySubscription = this.orderService.getOrderHistory().subscribe(
             data => {
-                this.orderHistory = util.preprocessOrderHistory(data); 
+                this.orderHistory = util.preprocessOrderHistory(data);
             }
         );
     }

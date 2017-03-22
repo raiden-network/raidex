@@ -1,11 +1,11 @@
 import { Component, OnInit, OnChanges, Input, SimpleChanges, AfterViewInit } from '@angular/core';
-import { ZingChartDirective } from '../directives/zing-chart.directive';
 import { ZingChartModel } from '../model/zing-chart.model';
 import { OrderService } from '../services/order.service';
 import { Subscription } from 'rxjs/Subscription';
 import * as util from '../services/util.service';
 import * as d3Array from 'd3-array';
-declare var $ : any;
+declare var $: any;
+
 @Component({
     selector: 'rex-zing-pricechart-component',
     template: `
@@ -71,23 +71,23 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges, AfterVie
                 'min-value': minValue,
                 'max-value': maxValue,
                 'step': '10second',
-                'transform':{
-                  'type':'date',
-                  'all':'%g:%i'
+                'transform': {
+                  'type': 'date',
+                  'all': '%g:%i'
                 },
                 'items-overlap': true,
                 'max-items': 10,
                 'zooming': true,
-                'zoom-to-values': [minValue, minValue + 240*60000],
+                'zoom-to-values': [minValue, minValue + 240 * 60000],
                 'label': {
                   'text': 'Time'
                 }
               },
               'scroll-x': {
               },
-              'crosshair-x':{
-                'plot-label':{
-                  'multiple':true
+              'crosshair-x': {
+                'plot-label': {
+                  'multiple': true
                 },
                 'scale-label': {
                   'text': '%v',
@@ -98,13 +98,13 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges, AfterVie
                 }
               },
                 'scale-y': {
-                  'offset-start': '25%', //to adjust scale offsets.
+                  'offset-start': '25%', // to adjust scale offsets.
 
                   'format': '$%v',
                   'label': {
                     'text': 'Prices'
                   },
-                  'guide':{
+                  'guide': {
                     'line-style': 'solid'
                   },
                   'item': {
@@ -112,33 +112,33 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges, AfterVie
                   }
                 },
                 'scale-y-2': {
-                  'placement': 'default', //to move scale to default (left) side.
-                  'blended': true, //to bind the scale to "scale-y".
-                  'offset-end': '75%', //to adjust scale offsets.
+                  'placement': 'default', // to move scale to default (left) side.
+                  'blended': true, // to bind the scale to "scale-y".
+                  'offset-end': '75%', // to adjust scale offsets.
 
                   'format': '%v',
                   'label': {
                     'text': 'Volume'
                   },
-                  'guide':{
+                  'guide': {
                     'line-style': 'solid'
                   },
-                  'item':{
+                  'item': {
                     'font-size': 10
                   }
                 },
               'series': [
                 {
-                  'type':'line',
+                  'type': 'line',
                   'scales': 'scale-x,scale-y',
-                  'guide-label': { //for crosshair plot labels
+                  'guide-label': { // for crosshair plot labels
                     'text': 'Price: %vt',
                     'decimals': 2
                   },
                   'line-style': 'solid',
                   'marker': {
                     'type': 'circle',
-                    'size':3,
+                    'size': 3,
                     'background-color': '#03a9f4'
                   },
                   'values': this.priceTimeSeriesArray
@@ -146,14 +146,14 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges, AfterVie
                 {
                   'type': 'vbar',
                   'bar-width': '5%',
-                  'scales': "scale-x,scale-y-2",
-                  'guide-label': { //for crosshair plot labels
+                  'scales': 'scale-x,scale-y-2',
+                  'guide-label': { // for crosshair plot labels
                     'text': 'Volume: %vt',
                     'decimals': 2,
                   },
-                  "background-color":"#6666FF",
+                  'background-color': '#6666FF',
 
-                  "values": this.volumeTimeSeriesArray
+                  'values': this.volumeTimeSeriesArray
                 }
               ],
           },
