@@ -1,5 +1,4 @@
 import { Component, OnInit, OnChanges, Input, SimpleChanges } from '@angular/core';
-import { ZingChartDirective } from '../directives/zing-chart.directive';
 import { ZingChartModel } from '../model/zing-chart.model';
 import { OrderService } from '../services/order.service';
 import { Subscription } from 'rxjs/Subscription';
@@ -18,12 +17,13 @@ export class ZingDepthChartComponent implements OnInit, OnChanges {
     @Input() bidArray: any[] = [];
     @Input() askArray: any[] = [];
     isLoaded: boolean = false;
+    public orderbookSubscription: Subscription;
 
     constructor(private orderService: OrderService) {
 
     }
 
-    public orderbookSubscription: Subscription;
+
 
     ngOnInit(): void {
       setTimeout(() => this.initialiseOrderChart(), 1000);
@@ -65,18 +65,18 @@ export class ZingDepthChartComponent implements OnInit, OnChanges {
                     'size': 1,
                     'visible': false
                 },
-                'tooltip':{
+                'tooltip': {
                   'text':
-                    '<table border="0" rules=none>'+
-                    '<col width="150">'+
-                      '<tr align="left">'+
-                        '<td>Cumulative Volume</td>'+
-                        '<td>%kt</td>'+
-                      '</tr>'+
-                      '<tr align="right">'+
-                        '<td>Price</td>'+
-                        '<td>%vt</td>'+
-                      '</tr>'+
+                    '<table border="0" rules=none>' +
+                    '<col width="150">' +
+                      '<tr align="left">' +
+                        '<td>Cumulative Volume</td>' +
+                        '<td>%kt</td>' +
+                      '</tr>' +
+                      '<tr align="right">' +
+                        '<td>Price</td>' +
+                        '<td>%vt</td>' +
+                      '</tr>' +
                       '</table>',
                   'html-mode': true,
                   'background-color': 'white',

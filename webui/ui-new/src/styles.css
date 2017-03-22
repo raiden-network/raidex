@@ -29,5 +29,16 @@
 }
 
 select option{
-color: black;
+    color: black;
+}
+
+#stockchart{
+  position: relative;
+  z-index: 1;
+}
+#date-picker-container {
+    right: 0px;
+    top: -10px;
+    position: absolute;
+    z-index: 10;
 }

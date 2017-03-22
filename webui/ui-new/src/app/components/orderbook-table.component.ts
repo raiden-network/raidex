@@ -1,11 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs/Subscription';
 import { OrderService } from '../services/order.service';
 import * as util from '../services/util.service';
 import { OrderBook } from '../model/order-book';
 declare var BigNumber: any;
 declare var Web3;
-let web3 = new Web3();
 
 @Component({
     selector: 'rex-orderbook-table',

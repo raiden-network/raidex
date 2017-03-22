@@ -13,11 +13,10 @@ import { ZingChartDirective } from './directives/zing-chart.directive';
 import { ZingDepthChartComponent } from './components/zing-depthchart.component';
 import { ZingPriceTimeSeriesComponent } from './components/zing-pricechart.component';
 import { ZingStockChartComponent } from './components/zing-stockchart.component';
-import { OrderHistoryTableComponent } from './components/orderhistory-table.component'
+import { OrderHistoryTableComponent } from './components/orderhistory-table.component';
 import { OrderBookTableComponent } from './components/orderbook-table.component';
 
 import 'hammerjs';
-import * as $ from 'jquery';
 
 @NgModule({
     declarations: [

@@ -44,12 +44,4 @@ export class ZingChartDirective implements AfterViewInit, OnDestroy {
       });
     }
 
-    zoomToDate(){
-      var scaleXValues = zingchart.exec('price-chart', 'getobjectinfo',{
-          object : 'scale',
-          name : 'scale-x'
-      });
-      var values = scaleXValues.values;
-      console.log("The values=="+values);
-    }
 }
