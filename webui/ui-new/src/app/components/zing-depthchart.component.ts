@@ -35,14 +35,14 @@ export class ZingDepthChartComponent implements OnInit, OnChanges {
 
     initialiseOrderChart(): void {
         this.orderbookSubscription = this.orderService.getOrderBook().subscribe(
-          data => {
-              let tempArray = data.order_book.bids;
+          order => {
+              let tempArray = order.data.buys;
               tempArray.sort(function(x, y) {
                   return d3Array.ascending(x.price, y.price);
               });
               tempArray = util.formatArray(tempArray);
               this.bidArray = util.cumulativePoints(tempArray);
-              tempArray = data.order_book.asks;
+              tempArray = order.data.sells;
               tempArray.sort(function(x, y){
                   return d3Array.descending(x.price, y.price);
               });

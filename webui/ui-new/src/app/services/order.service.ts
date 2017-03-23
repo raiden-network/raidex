@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Http, Response} from '@angular/http';
+import { Http } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
 import { TimerObservable} from 'rxjs/observable/TimerObservable';
 import 'rxjs/add/operator/map';
@@ -14,11 +14,11 @@ import 'rxjs/add/operator/mergeMap';
 export class OrderService {
 
 
-		constructor(private http: Http) {
+    constructor(private http: Http) {
 
-		}
+    }
 
-		public getOrderHistory(): Observable<any> {
+    public getOrderHistory(): Observable<any> {
         return TimerObservable.create(0, 60000)
                 .flatMap(() =>  this.http.get('http://127.0.0.1:5000/api/version/markets/dummy/trades/')
                     .map((response) => response.json().data))
@@ -32,18 +32,6 @@ export class OrderService {
                     .map((response) => response.json()))
                 .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderBook', errors));
     }
-
-
-    private extractData(res: Response) {
-        let body = res.json();
-        return body.data || { };
-    }
-
-
-    private handleError(error: any): Promise<any> {
-        return Promise.reject(error.json().message || error);
-    }
-
 
     private printErrorAndRetry(message: string, errors: Observable<any>): Observable<any> {
         return errors
