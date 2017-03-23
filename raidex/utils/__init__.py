@@ -1,17 +1,19 @@
-import os
-import time
-
+import string
+import random
 
 from ethereum.utils import privtoaddr, sha3, big_endian_to_int
 
-import raidex
 from raidex.exceptions import UntradableAssetPair
 
 ETHER_TOKEN_ADDRESS = privtoaddr(sha3('ether'))
-DEFAULT_RAIDEN_PORT = 9999 # no raiden dependency for now
+DEFAULT_RAIDEN_PORT = 9999  # no raiden dependency for now
 DEFAULT_RAIDEX_PORT = DEFAULT_RAIDEN_PORT + 1
 
 
+def make_privkey_address():
+    privkey = sha3(''.join(random.choice(string.printable) for _ in range(20)))
+    address = privtoaddr(privkey)
+    return privkey, address
 
 def get_market_from_asset_pair(asset_pair):
     """
@@ -37,4 +39,3 @@ def get_market_from_asset_pair(asset_pair):
         market = asset_pair[::-1]  # reverse the tuple
 
     return market
-
