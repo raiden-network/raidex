@@ -28,7 +28,7 @@ export class OrderService {
 
     public getOrderBook(): Observable<any> {
         return TimerObservable.create(0, 60000)
-                .flatMap(() =>  this.http.get('app/services/order-book.json')
+                .flatMap(() =>  this.http.get('/src/app/services/order-book.json')
                     .map((response) => response.json()))
                 .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderBook', errors));
     }
