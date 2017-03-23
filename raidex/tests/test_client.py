@@ -5,7 +5,7 @@ import gevent
 from ethereum.utils import int_to_big_endian, sha3
 
 from raidex.raidex_node.offer_book import Offer, OfferBook, OfferType, OfferBookTask, OfferView, TakenTask
-from raidex.message_broker.listeners import OfferListener, TakenListener, SwapCompletedListener
+from raidex.message_broker.listeners import OfferListener, OfferTakenListener, SwapCompletedListener
 from raidex.utils import get_market_from_asset_pair, milliseconds
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.commitment_service.commitment_service import CommitmentService
@@ -71,10 +71,11 @@ def test_offer_book_task(message_broker, commitment_service, token_pair):
     gevent.sleep(0.001)
     assert len(offer_book.sells) == 1
 
+
 def test_taken_task(message_broker, commitment_service, token_pair):
     offer_book = OfferBook()
     trades = TradesView()
-    TakenTask(offer_book, trades, TakenListener(message_broker)).start()
+    TakenTask(offer_book, trades, OfferTakenListener(message_broker)).start()
     gevent.sleep(0.001)
     offer = Offer(OfferType.SELL, 100, 1000, offer_id=123, timeout=milliseconds.time_plus(2))
     # insert manually for the first time
@@ -101,5 +102,3 @@ def test_swap_completed_task(message_broker, commitment_service, token_pair):
     message_broker.broadcast(swap_completed)
     gevent.sleep(0.001)
     assert len(trades.trade_by_id) == 1
-
-

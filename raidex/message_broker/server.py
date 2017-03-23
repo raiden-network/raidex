@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from gevent import monkey; monkey.patch_all()
+from gevent import monkey
 
 import json
 
@@ -9,6 +9,8 @@ from gevent.pywsgi import WSGIServer
 
 from message_broker import MessageBroker
 from listeners import MessageListener
+
+monkey.patch_all()
 
 app = Flask(__name__)
 message_broker = MessageBroker()

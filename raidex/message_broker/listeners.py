@@ -91,7 +91,7 @@ class OfferListener(MessageListener):
                      timeout=offer_msg.timeout, maker_address=offer_msg.sender)
 
 
-class TakenListener(MessageListener):
+class OfferTakenListener(MessageListener):
     """Listens for Taken Messages"""
 
     def _transform(self, message):

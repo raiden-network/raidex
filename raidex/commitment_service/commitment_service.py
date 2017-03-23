@@ -17,12 +17,14 @@ class CommitmentService(object):
         self.token_pair = token_pair
         self.client_priv_key = client_priv_key
 
-    def maker_commit_async(self, offer):
+    def maker_commit_async(self, offer, privkey=None):
         # type: (Offer) -> AsyncResult
+        if privkey is None:
+            privkey = self.client_priv_key
         offermsg = self.create_offer_msg(offer)
         offermsg.sign(self.client_priv_key)
         commitment = Commitment(offer.offer_id, offermsg.hash, offer.timeout, 42)
-        commitment.sign(self.client_priv_key)
+        commitment.sign(privkey)
         commitment_proof = CommitmentProof(commitment.signature)
         commitment_proof.sign(self.priv_key)
         proven_offer = ProvenOffer(offermsg, commitment, commitment_proof)
@@ -31,11 +33,13 @@ class CommitmentService(object):
         result.set(proven_offer)
         return result
 
-    def taker_commit_async(self, offer):
+    def taker_commit_async(self, offer, privkey=None):
         # type: (Offer) -> AsyncResult
+        if privkey is None:
+            privkey = self.client_priv_key
         offermsg = self.create_offer_msg(offer)
         commitment = Commitment(offer.offer_id, offermsg.hash, offer.timeout, 42)
-        commitment.sign(self.client_priv_key)
+        commitment.sign(privkey or self.client_priv_key)
         commitment_proof = CommitmentProof(commitment.signature)
         commitment_proof.sign(self.priv_key)
         proven_offer = ProvenOffer(offermsg, commitment, commitment_proof)
@@ -56,10 +60,11 @@ class CommitmentService(object):
         msg.sign(self.priv_key)
         return msg
 
-
     def create_offer_msg(self, offer):
         # type: (Offer) -> OfferMsg
         if offer.type_ == OfferType.SELL:
-            return OfferMsg(self.token_pair.counter_token, offer.counter_amount, self.token_pair.base_token, offer.base_amount, offer.offer_id, offer.timeout)
+            return OfferMsg(self.token_pair.counter_token, offer.counter_amount, self.token_pair.base_token,
+                            offer.base_amount, offer.offer_id, offer.timeout)
         else:
-            return OfferMsg(self.token_pair.base_token, offer.base_amount, self.token_pair.counter_token, offer.counter_amount, offer.offer_id, offer.timeout)
+            return OfferMsg(self.token_pair.base_token, offer.base_amount, self.token_pair.counter_token,
+                            offer.counter_amount, offer.offer_id, offer.timeout)

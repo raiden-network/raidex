@@ -44,10 +44,10 @@ class Offer(object):
 
     def __init__(self, type_, base_amount, counter_amount, offer_id, timeout, maker_address=None, taker_address=None):
         assert isinstance(type_, OfferType)
-        assert isinstance(base_amount, int)
-        assert isinstance(counter_amount, int)
-        assert isinstance(offer_id, int)
-        assert isinstance(timeout, int)
+        assert isinstance(base_amount, (int, long))
+        assert isinstance(counter_amount, (int, long))
+        assert isinstance(offer_id, (int, long))
+        assert isinstance(timeout, (int, long))
         self.offer_id = offer_id
         self.type_ = type_
         self.base_amount = base_amount
@@ -65,7 +65,7 @@ class Offer(object):
         return float(self.counter_amount) / self.base_amount
 
     def __repr__(self):
-        return "Order<order_id={} amount={} price={} type={} >".format(
+        return "Offer<offer_id={} amount={} price={} type={} >".format(
                 self.offer_id, self.amount, self.price, self.type_)
 
 
@@ -124,7 +124,7 @@ class OfferBook(object):
         self.tasks = dict()
 
     def insert_offer(self, offer):
-
+        assert isinstance(offer.type_, OfferType)
         if offer.type_ is OfferType.BUY:
             self.buys.add_offer(offer)
         elif offer.type_ is OfferType.SELL:

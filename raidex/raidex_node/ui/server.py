@@ -3,7 +3,7 @@ from werkzeug.routing import BaseConverter
 
 from raidex.client import ClientService, OfferBook, OfferManager
 from raidex.api import API
-from raidex.utils.mock import gen_orderbook_messages, ASSETS, ACCOUNTS
+from raidex.utils.mock import gen_offerbook_messages, ASSETS, ACCOUNTS
 
 
 app = Flask(__name__)
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     pair = (ASSETS[0], ASSETS[1])
     print ASSETS[0].encode('hex'), ASSETS[1].encode('hex')
     order_book = OfferBook(pair)
-    messages = gen_orderbook_messages()
+    messages = gen_offerbook_messages()
     order_ids = [order_book.insert_offer(msg) for msg in messages]
     order_manager = OfferManager()
     order_manager.add_offerbook(pair, order_book)

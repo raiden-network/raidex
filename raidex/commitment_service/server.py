@@ -11,6 +11,7 @@ from raidex import messages
 
 from raidex.raidex_node.message_abstrations import Commitment, SwapExecution
 
+
 # string? or PrivateKey -> PrivateKey
 def sign(messagedata, private_key):
     if not isinstance(private_key, PrivateKey):
@@ -19,11 +20,14 @@ def sign(messagedata, private_key):
         privkey_instance = private_key
     return _sign(messagedata, privkey_instance)
 
+
 class RaidexException(Exception):
     pass
 
+
 class CommitmentTaken(RaidexException):
     pass
+
 
 class CommitmentMismatch(RaidexException):
     pass
