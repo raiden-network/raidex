@@ -101,6 +101,6 @@ def gen_orderhistory(start_price=10, max_amount=1000 * ETH, num_entries=100, max
         elapsed = avg_gap_between_orders + (random.random() * 2 - 1) * avg_gap_deviation
         timestamp += elapsed
         orders.append(dict(
-            timestamp=int(1000 * timestamp), address=address, price=price, amount=amount
+            timestamp=int(1000 * timestamp), address=address, price=price, amount=amount, type=random.randint(0, 1)
         ))
     return orders

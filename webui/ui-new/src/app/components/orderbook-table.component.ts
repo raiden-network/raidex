@@ -23,9 +23,9 @@ export class OrderBookTableComponent implements OnInit {
 
     getOrderBook(): void {
         this.orderbookSubscription = this.orderService.getOrderBook().subscribe(
-            data => {
-                this.bids = util.preprocessOrderBook(data.order_book.bids);
-                this.asks = util.preprocessOrderBook(data.order_book.asks);
+            order => {
+                this.bids = util.preprocessOrderBook(order.data.buys);
+                this.asks = util.preprocessOrderBook(order.data.sells);
             }
         );
     }

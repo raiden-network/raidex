@@ -80,7 +80,8 @@ export function preprocessOrderHistory(orderHistoryArray: Array<any>): OrderHist
         orderHistory.push(new OrderHistory(
             element.timestamp,
             convertToEther(element.amount),
-            formatCurrency(element.price)
+            formatCurrency(element.price),
+            element.type
         ));
     });
     return orderHistory;
