@@ -1,9 +1,6 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { OrderBook } from '../model/order-book';
 
-declare var BigNumber: any;
-declare var Web3;
-
 
 @Component({
     selector: 'rex-user-interact',

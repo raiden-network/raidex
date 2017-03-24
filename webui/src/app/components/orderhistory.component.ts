@@ -1,28 +1,21 @@
-import { Component, OnInit, OnDestroy, OnChanges, SimpleChanges, Input } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, Input, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs/Subscription';
-import { AgGridNg2 } from 'ag-grid-ng2/main';
 import { GridOptions } from 'ag-grid/main';
 import { OrderService } from '../services/order.service';
 import * as util from '../services/util.service';
-
-
-declare var BigNumber: any;
-declare var Web3;
-let web3 = new Web3();
 
 
 @Component({
     selector: 'rex-order-history',
     templateUrl: 'orderhistory.component.html'
 })
-
-export class OrderHistoryComponent implements OnInit, OnChanges {
+export class OrderHistoryComponent implements OnInit, OnChanges, OnDestroy {
 
     public orderHistory = [];
     public gridOptions = <GridOptions>{};
     private orderhistorySubscription: Subscription;
     @Input() market: String;
-	  public orderHistoryColumns = [
+    public orderHistoryColumns = [
         {
             headerName: 'Timestamp',
             field: 'timestamp',
@@ -46,7 +39,7 @@ export class OrderHistoryComponent implements OnInit, OnChanges {
             field: 'price',
             sort: 'asc',
             width: 70,
-            cellRenderer: function(params){
+            cellRenderer: function (params) {
                 return '<div style="text-align: center;">' + util.formatCurrency(params.value) + '</div>';
             }
 
@@ -57,7 +50,7 @@ export class OrderHistoryComponent implements OnInit, OnChanges {
         pageSize: 25,
         overflowSize: 100,
         getRows: (params: any) => {
-            this.orderService.getOrderHistory().subscribe( rowData => {
+            this.orderService.getOrderHistory().subscribe(rowData => {
                 let rowsThisPage = rowData.slice(params.startRow, params.endRow);
                 let lastRow = -1;
                 params.successCallback(rowsThisPage, lastRow);
@@ -82,20 +75,20 @@ export class OrderHistoryComponent implements OnInit, OnChanges {
     }
 
 
-	  getOrderHistory(): void {
+    getOrderHistory(): void {
         this.orderhistorySubscription = this.orderService.getOrderHistory().subscribe(
-            data => { this.orderHistory = data; }
+            data => {
+                this.orderHistory = data;
+            }
         );
     }
 
     ngOnChanges(changes: SimpleChanges) {
         for (let propName in changes) {
             let chng = changes[propName];
-            let cur  = JSON.stringify(chng.currentValue);
+            let cur = JSON.stringify(chng.currentValue);
             let prev = JSON.stringify(chng.previousValue);
             console.log('Current Value ==' + cur + ' Previous Value==' + prev);
         }
     }
-    get diagnostic() { return this.market; }
-
 }

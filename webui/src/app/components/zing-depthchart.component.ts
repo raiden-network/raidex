@@ -19,14 +19,10 @@ export class ZingDepthChartComponent implements OnInit, OnChanges {
     isLoaded: boolean = false;
     public orderbookSubscription: Subscription;
 
-    constructor(private orderService: OrderService) {
-
-    }
-
-
+    constructor(private orderService: OrderService) {}
 
     ngOnInit(): void {
-      setTimeout(() => this.initialiseOrderChart(), 1000);
+        setTimeout(() => this.initialiseOrderChart(), 1000);
     }
 
     ngOnChanges(changes: SimpleChanges) {
@@ -35,93 +31,92 @@ export class ZingDepthChartComponent implements OnInit, OnChanges {
 
     initialiseOrderChart(): void {
         this.orderbookSubscription = this.orderService.getOrderBook().subscribe(
-          order => {
-              let tempArray = order.data.buys;
-              tempArray.sort(function(x, y) {
-                  return d3Array.ascending(x.price, y.price);
-              });
-              tempArray = util.formatArray(tempArray);
-              this.bidArray = util.cumulativePoints(tempArray);
-              tempArray = order.data.sells;
-              tempArray.sort(function(x, y){
-                  return d3Array.descending(x.price, y.price);
-              });
-              tempArray = util.formatArray(tempArray);
-              this.askArray = util.cumulativePoints(tempArray);
-              this.populateChartData( this.bidArray[0][0],
-                                      this.askArray[0][0],
-                                      0.01);
-          });
+            order => {
+                let tempArray = order.data.buys;
+                tempArray.sort(function (x, y) {
+                    return d3Array.ascending(x.price, y.price);
+                });
+                tempArray = util.formatArray(tempArray);
+                this.bidArray = util.cumulativePoints(tempArray);
+                tempArray = order.data.sells;
+                tempArray.sort(function (x, y) {
+                    return d3Array.descending(x.price, y.price);
+                });
+                tempArray = util.formatArray(tempArray);
+                this.askArray = util.cumulativePoints(tempArray);
+                this.populateChartData(this.bidArray[0][0],
+                    this.askArray[0][0],
+                    0.01);
+            });
     }
 
     populateChartData(minValue: number, maxValue: number, step: number): void {
-      this.charts = [{
-          id : 'depth-chart',
-          data : {
-              'type' : 'area',
-              'plot': {
-                'line-width': 2,
-                'marker': {
-                    'size': 1,
-                    'visible': false
-                },
-                'tooltip': {
-                  'text':
-                    '<table border="0" rules=none>' +
-                    '<col width="150">' +
-                      '<tr align="left">' +
+        this.charts = [{
+            id: 'depth-chart',
+            data: {
+                'type': 'area',
+                'plot': {
+                    'line-width': 2,
+                    'marker': {
+                        'size': 1,
+                        'visible': false
+                    },
+                    'tooltip': {
+                        'text': '<table border="0" rules=none>' +
+                        '<col width="150">' +
+                        '<tr align="left">' +
                         '<td>Cumulative Volume</td>' +
                         '<td>%kt</td>' +
-                      '</tr>' +
-                      '<tr align="right">' +
+                        '</tr>' +
+                        '<tr align="right">' +
                         '<td>Price</td>' +
                         '<td>%vt</td>' +
-                      '</tr>' +
-                      '</table>',
-                  'html-mode': true,
-                  'background-color': 'white',
-                  'border-color': 'black',
-                  'border-radius': '6px',
-                  'font-color': 'black',
-                  'alpha' : 0.5,
-                  'callout': true
-                }
-              },
-              'title': {
-                'text': 'Market Depth',
-                'font-size': 14,
-                'offset-x': -200,
-                'offset-y': -10
-              },
-              'scaleY': {
-                'label': {'text': 'Cumulative Volume'}
-              },
-              'plotarea': {
-                'adjust-layout': true /* For automatic margin adjustment. */
-              },
-              'scale-x': {
-                'auto-fit': true,
-                'min-value': minValue,
-                'max-value': maxValue,
-                'step': .001,
-                'decimals': 2,
-                'label': {
-                  'text': 'Price'
-                }
-              },
-              'series': [
-                {
-                  'values': this.bidArray,
-                  'text': 'Red'
+                        '</tr>' +
+                        '</table>',
+                        'html-mode': true,
+                        'background-color': 'white',
+                        'border-color': 'black',
+                        'border-radius': '6px',
+                        'font-color': 'black',
+                        'alpha': 0.5,
+                        'callout': true
+                    }
                 },
-                {
-                  'values': this.askArray,
-                  'text': 'Blue'
-                }
-              ],
-          },
-          height: 300,
-          width: '100%'
-      }];
+                'title': {
+                    'text': 'Market Depth',
+                    'font-size': 14,
+                    'offset-x': -200,
+                    'offset-y': -10
+                },
+                'scaleY': {
+                    'label': {'text': 'Cumulative Volume'}
+                },
+                'plotarea': {
+                    'adjust-layout': true /* For automatic margin adjustment. */
+                },
+                'scale-x': {
+                    'auto-fit': true,
+                    'min-value': minValue,
+                    'max-value': maxValue,
+                    'step': .001,
+                    'decimals': 2,
+                    'label': {
+                        'text': 'Price'
+                    }
+                },
+                'series': [
+                    {
+                        'values': this.bidArray,
+                        'text': 'Red'
+                    },
+                    {
+                        'values': this.askArray,
+                        'text': 'Blue'
+                    }
+                ],
+            },
+            height: 300,
+            width: '100%'
+        }];
     }
 }
