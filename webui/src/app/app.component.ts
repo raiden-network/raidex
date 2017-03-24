@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { OnInit } from '@angular/core';
 
 
 @Component({
@@ -8,19 +7,10 @@ import { OnInit } from '@angular/core';
 })
 
 
-export class AppComponent implements OnInit {
-
-    title = 'Decentralised Exchange based on Raiden';
+export class AppComponent {
     altText = 'Raidex';
     imageUrl = 'raidexlogo.png';
+    title = 'Decentralised Exchange based on Raiden';
     markets = ['ETH/USD', 'ETC/USD'];
     selectedMarket = 'ETH/USD';
-
-    ngOnInit(): void {
-
-    }
-
-
-    get diagnostic() { return this.selectedMarket; }
-
 }

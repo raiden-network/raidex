@@ -3,8 +3,7 @@ import { Subscription } from 'rxjs/Subscription';
 import { OrderService } from '../services/order.service';
 import * as util from '../services/util.service';
 import { OrderHistory } from '../model/order-history';
-declare var BigNumber: any;
-declare var Web3;
+
 
 @Component({
     selector: 'rex-orderhistory-table',

@@ -1,44 +1,52 @@
 <div class="container-fluid">
-	<md-tab-group>
-		<md-tab label="Buy">
-			<h6>Submit Buy Orders</h6>
-			<form>
-				<table class="example-full-width" cellspacing="0">
-					<tr><td>
-						<md-input-container>
-							<input mdInput type="number"  id="amount" name="amount"
-							[(ngModel)]="buyOrder.amount" placeholder="Amount">
-						</md-input-container>
-					</td></tr>
-					<tr><td>
-						<md-input-container>
-							<input mdInput type="number"  id="price" name="price"
-							[(ngModel)]="buyOrder.price" placeholder="Price">
-						</md-input-container>
-					</td></tr>
-				</table>
-				<button type="submit" class="btn btn-success">Submit</button>
-			</form>
-		</md-tab>
-		<md-tab label="Sell">
-			<h6>Submit Sell Orders</h6>
-			<form>
-				<table class="example-full-width" cellspacing="0">
-					<tr><td>
-						<md-input-container>
-							<input mdInput type="number"  id="amount" name="amount"
-							[(ngModel)]="buyOrder.amount" placeholder="Amount">
-						</md-input-container>
-					</td></tr>
-					<tr><td>
-						<md-input-container>
-							<input mdInput type="number"  id="price" name="price"
-							[(ngModel)]="buyOrder.price" placeholder="Price">
-						</md-input-container>
-					</td></tr>
-				</table>
-				<button type="submit" class="btn btn-success">Submit</button>
-			</form>
-		</md-tab>
-	</md-tab-group>
+  <md-tab-group>
+    <md-tab label="Buy">
+      <h6>Submit Buy Orders</h6>
+      <form>
+        <table class="example-full-width" cellspacing="0">
+          <tr>
+            <td>
+              <md-input-container>
+                <input mdInput type="number" id="amount" name="amount"
+                       [(ngModel)]="buyOrder.amount" placeholder="Amount">
+              </md-input-container>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <md-input-container>
+                <input mdInput type="number" id="price" name="price"
+                       [(ngModel)]="buyOrder.price" placeholder="Price">
+              </md-input-container>
+            </td>
+          </tr>
+        </table>
+        <button type="submit" class="btn btn-success">Submit</button>
+      </form>
+    </md-tab>
+    <md-tab label="Sell">
+      <h6>Submit Sell Orders</h6>
+      <form>
+        <table class="example-full-width" cellspacing="0">
+          <tr>
+            <td>
+              <md-input-container>
+                <input mdInput type="number" id="amount" name="amount"
+                       [(ngModel)]="buyOrder.amount" placeholder="Amount">
+              </md-input-container>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <md-input-container>
+                <input mdInput type="number" id="price" name="price"
+                       [(ngModel)]="buyOrder.price" placeholder="Price">
+              </md-input-container>
+            </td>
+          </tr>
+        </table>
+        <button type="submit" class="btn btn-success">Submit</button>
+      </form>
+    </md-tab>
+  </md-tab-group>
 </div>
