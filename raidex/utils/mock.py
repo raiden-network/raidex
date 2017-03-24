@@ -8,14 +8,12 @@ Time is milliseconds
 """
 import time
 import random
-import json
-import math
 import copy
 from collections import namedtuple
 
 from ethereum.utils import denoms, sha3, encode_hex, privtoaddr
 
-from rex.messages import Offer
+from raidex.messages import SwapOffer
 
 ETH = denoms.ether
 
@@ -66,7 +64,7 @@ def gen_orderbook_messages(market_price=10, max_amount=1000 * ETH, num_messages=
             ask_amount = int(bid_amount / bids_price)
 
         maker = ACCOUNTS[num_messages % 2]
-        offer = Offer(ASSETS[i % 2], ask_amount,
+        offer = SwapOffer(ASSETS[i % 2], ask_amount,
                       ASSETS[1 - i % 2], bid_amount,
                       sha3('offer {}'.format(i)), # TODO better offer_ids
                       int(time.time() * 10000 + 1000 * random.randint(1,10) + i)
