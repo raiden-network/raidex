@@ -1,5 +1,6 @@
 pytest
 flask
+flask_cors
 zmq
 bintrees
 click
