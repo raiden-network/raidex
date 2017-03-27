@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs/Subscription';
 import { OrderService } from '../services/order.service';
 import * as util from '../services/util.service';
-import { OrderBook } from '../model/order-book';
+import { OrderBookEntry } from '../model/order-book';
 
 
 @Component({
@@ -10,8 +10,8 @@ import { OrderBook } from '../model/order-book';
     templateUrl: 'orderbook-table.component.html'
 })
 export class OrderBookTableComponent implements OnInit {
-    public bids: OrderBook[];
-    public asks: OrderBook[];
+    public bids: OrderBookEntry[];
+    public asks: OrderBookEntry[];
     private orderbookSubscription: Subscription;
 
     constructor(private orderService: OrderService) {}

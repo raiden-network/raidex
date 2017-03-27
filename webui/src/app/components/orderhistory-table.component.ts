@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs/Subscription';
 import { OrderService } from '../services/order.service';
 import * as util from '../services/util.service';
-import { OrderHistory } from '../model/order-history';
+import { OrderHistoryEntry } from '../model/order-history';
 
 
 @Component({
@@ -11,7 +11,7 @@ import { OrderHistory } from '../model/order-history';
 })
 export class OrderHistoryTableComponent implements OnInit {
 
-    orderHistory: OrderHistory[];
+    orderHistory: OrderHistoryEntry[];
     private orderhistorySubscription: Subscription;
 
     constructor(private orderService: OrderService) { }

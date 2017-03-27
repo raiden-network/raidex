@@ -9,16 +9,15 @@ declare var $: any;
 @Component({
     selector: 'rex-zing-pricechart-component',
     template: `
-        <div *ngFor="let chartObj of charts" [chart]="chartObj" ZingChartDirective>
-        </div>
+        <zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></zingchart>
         `
 })
 export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges, AfterViewInit {
 
     charts: ZingChartModel[];
 
-    @Input() priceTimeSeriesArray: any[] = [];
-    @Input() volumeTimeSeriesArray: any[] = [];
+    priceTimeSeriesArray: any[] = [];
+    volumeTimeSeriesArray: any[] = [];
     private orderhistorySubscription: Subscription;
 
     constructor(private orderService: OrderService) {

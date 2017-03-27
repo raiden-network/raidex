@@ -1,5 +1,4 @@
 import { Component, OnInit, Input, AfterViewInit, ViewChild } from '@angular/core';
-import { ZingChartDirective } from '../directives/zing-chart.directive';
 import { ZingChartModel } from '../model/zing-chart.model';
 import { OrderService } from '../services/order.service';
 import { Subscription } from 'rxjs/Subscription';
@@ -10,30 +9,28 @@ import * as d3Array from 'd3-array';
 @Component({
     selector: 'rex-zing-stockchart-component',
     template: `
-
-        <div *ngFor="let chartObj of charts" [chart]="chartObj" ZingChartDirective>
-            <div id="date-picker-container">
-                <button class="btn btn-success btn-xs"
-                (click)="reinitialiseStockChart(15)">15 mins</button>
-                <button class="btn btn-success btn-xs"
-                (click)="reinitialiseStockChart(30)">30 mins</button>
-                <button class="btn btn-success btn-xs"
-                (click)="reinitialiseStockChart(60)">1 hour</button>
-            </div>
+        <zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></zingchart>
+        <div id="date-picker-container">
+            <button class="btn btn-success btn-xs"
+            (click)="reinitialiseStockChart(10)">10 mins</button>
+            <button class="btn btn-success btn-xs"
+            (click)="reinitialiseStockChart(15)">15 mins</button>
+            <button class="btn btn-success btn-xs"
+            (click)="reinitialiseStockChart(30)">30 mins</button>
         </div>
+
         `
 })
 export class ZingStockChartComponent implements OnInit, AfterViewInit {
 
-    @ViewChild(ZingChartDirective)
-    zingchart: ZingChartDirective;
 
     charts: ZingChartModel[];
     orderHistoryArray: Array<any> = [];
-    @Input() stockChartDataArray: any[] = [];
-    @Input() volumeChartDataArray: any[] = [];
-    @Input() interval: number = 15;
-    @Input() limits: any;
+    stockChartDataArray: any[] = [];
+    volumeChartDataArray: any[] = [];
+    interval: number = 15;
+    numberOfBars: number = 20;
+    limits: any;
     private orderhistorySubscription: Subscription;
 
     constructor(private orderService: OrderService) {
@@ -56,7 +53,7 @@ export class ZingStockChartComponent implements OnInit, AfterViewInit {
                     return d3Array.ascending(x.timestamp, y.timestamp);
                 });
                 this.orderHistoryArray = tempArray;
-                let stockUtil = util.prepareStockChartData(tempArray, this.interval);
+                let stockUtil = util.prepareStockChartData(tempArray, this.interval, this.numberOfBars);
                 this.stockChartDataArray = stockUtil.stock;
                 this.volumeChartDataArray = stockUtil.volume;
                 this.limits = stockUtil.limits;
@@ -67,7 +64,7 @@ export class ZingStockChartComponent implements OnInit, AfterViewInit {
 
     reinitialiseStockChart(interval?: number): void {
         this.interval = interval;
-        let stockUtil = util.prepareStockChartData(this.orderHistoryArray, interval);
+        let stockUtil = util.prepareStockChartData(this.orderHistoryArray, this.interval, this.numberOfBars);
         this.stockChartDataArray = stockUtil.stock;
         this.volumeChartDataArray = stockUtil.volume;
         this.limits = stockUtil.limits;

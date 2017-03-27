@@ -1,5 +1,5 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { OrderBook } from '../model/order-book';
+import { OrderBookEntry } from '../model/order-book';
 
 
 @Component({
@@ -11,8 +11,8 @@ export class UserInteractionComponent implements OnInit {
 
     @Input() market: any;
 
-    buyOrder = new OrderBook();
-    sellOrder = new OrderBook();
+    buyOrder = new OrderBookEntry();
+    sellOrder = new OrderBookEntry();
     ngOnInit(): void {
 
     }
