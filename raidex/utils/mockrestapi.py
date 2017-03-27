@@ -15,7 +15,7 @@ def get_offer_book(version, market):
 
 @app.route('/api/<string:version>/markets/<string:market>/trades/', methods=['GET'])
 def gen_order_history(version, market):
-    return jsonify({'data': gen_orderhistory(10, 1000, 300, 0.1)})
+    return jsonify({'data': gen_orderhistory(10, 1000, 400, 0.1)})
 
 
 if __name__ == '__main__':

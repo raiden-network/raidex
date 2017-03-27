@@ -1,6 +1,6 @@
 import * as d3Array from 'd3-array';
-import { OrderHistory } from '../model/order-history';
-import { OrderBook } from '../model/order-book';
+import { OrderHistoryEntry } from '../model/order-history';
+import { OrderBookEntry } from '../model/order-book';
 declare var Web3;
 let web3 = new Web3();
 
@@ -74,10 +74,10 @@ export function formatIntoVolumeTimeSeries(orderHistoryArray: Array<any>) {
     return tempArray;
 }
 
-export function preprocessOrderHistory(orderHistoryArray: Array<any>): OrderHistory[] {
-    let orderHistory: OrderHistory[] = [];
+export function preprocessOrderHistory(orderHistoryArray: Array<any>): OrderHistoryEntry[] {
+    let orderHistory: OrderHistoryEntry[] = [];
     orderHistoryArray.forEach(function (element, index) {
-        orderHistory.push(new OrderHistory(
+        orderHistory.push(new OrderHistoryEntry(
             element.timestamp,
             convertToEther(element.amount),
             formatCurrency(element.price),
@@ -87,10 +87,10 @@ export function preprocessOrderHistory(orderHistoryArray: Array<any>): OrderHist
     return orderHistory;
 }
 
-export function preprocessOrderBook(orderBookArray: Array<any>): OrderBook[] {
-    let orderBook: OrderBook[] = [];
+export function preprocessOrderBook(orderBookArray: Array<any>): OrderBookEntry[] {
+    let orderBook: OrderBookEntry[] = [];
     orderBookArray.forEach(function (element, index) {
-        orderBook.push(new OrderBook(
+        orderBook.push(new OrderBookEntry(
             convertToEther(element.amount),
             formatCurrency(element.price)
         ));
@@ -98,11 +98,12 @@ export function preprocessOrderBook(orderBookArray: Array<any>): OrderBook[] {
     return orderBook;
 }
 
-export function prepareStockChartData(orderHistoryArray: Array<any>, interval) {
+export function prepareStockChartData(orderHistoryArray: Array<any>, interval, numberOfBars) {
     let stockDataArray: Array<any> = [];
     let volumeDataArray: Array<any> = [];
     let filterArray: Array<any>;
     let firstIndex = 0;
+    let count = 0;
     do {
         let firstTimestamp = orderHistoryArray[firstIndex].timestamp;
         filterArray = orderHistoryArray.filter(function (item) {
@@ -125,7 +126,8 @@ export function prepareStockChartData(orderHistoryArray: Array<any>, interval) {
         })));
         volumeDataArray.push([firstTimestamp, sumVolume]);
         firstIndex = firstIndex + filterArray.length - 1;
-    } while (firstIndex !== orderHistoryArray.length - 1);
+        count = count + 1;
+    } while (firstIndex !== orderHistoryArray.length - 1 && count < numberOfBars);
     let limits = calculateLimits(orderHistoryArray, volumeDataArray);
     return {stock: stockDataArray, volume: volumeDataArray, limits: limits};
 }

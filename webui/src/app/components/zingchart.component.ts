@@ -1,12 +1,13 @@
-import { Directive, Input, NgZone, AfterViewInit, HostBinding, OnDestroy } from '@angular/core';
+import { Component, Input, NgZone, AfterViewInit, HostBinding, OnDestroy } from '@angular/core';
 import { ZingChartModel } from '../model/zing-chart.model';
 
 declare var zingchart: any;
 
-@Directive({
-  selector: '[ZingChartDirective]',
+@Component({
+  selector: 'zingchart',
+  template: `<div id="{{chart.id}}"></div>`
 })
-export class ZingChartDirective implements AfterViewInit, OnDestroy {
+export class ZingChart implements AfterViewInit, OnDestroy {
     @Input()
     chart: ZingChartModel;
 

@@ -8,14 +8,14 @@ import * as d3Array from 'd3-array';
 @Component({
     selector: 'rex-zing-depthchart-component',
     template: `
-        <div *ngFor="let chartObj of charts" [chart]="chartObj" ZingChartDirective></div>
+        <zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></zingchart>
     `
 })
 export class ZingDepthChartComponent implements OnInit, OnChanges {
 
     charts: ZingChartModel[];
-    @Input() bidArray: any[] = [];
-    @Input() askArray: any[] = [];
+    bidArray: any[] = [];
+    askArray: any[] = [];
     isLoaded: boolean = false;
     public orderbookSubscription: Subscription;
 
