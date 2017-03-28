@@ -1,4 +1,4 @@
-export class OrderHistoryEntry {
+export class Trade {
     public timestamp: number;
     public amount: string;
     public price: string;

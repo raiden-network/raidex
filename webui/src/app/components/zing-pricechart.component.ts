@@ -1,6 +1,6 @@
 import { Component, OnInit, OnChanges, Input, SimpleChanges, AfterViewInit } from '@angular/core';
 import { ZingChartModel } from '../model/zing-chart.model';
-import { OrderService } from '../services/order.service';
+import { RaidexService } from '../services/raidex.service';
 import { Subscription } from 'rxjs/Subscription';
 import * as util from '../services/util.service';
 import * as d3Array from 'd3-array';
@@ -18,9 +18,9 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges, AfterVie
 
     priceTimeSeriesArray: any[] = [];
     volumeTimeSeriesArray: any[] = [];
-    private orderhistorySubscription: Subscription;
+    private raidexSubscription: Subscription;
 
-    constructor(private orderService: OrderService) {
+    constructor(private raidexService: RaidexService) {
 
     }
 
@@ -37,7 +37,7 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges, AfterVie
     }
 
     initialisePriceChart(): void {
-        this.orderhistorySubscription = this.orderService.getOrderHistory().subscribe(
+        this.raidexSubscription = this.raidexService.getTrades().subscribe(
             data => {
                 let tempArray = data;
                 tempArray.sort(function (x, y) {

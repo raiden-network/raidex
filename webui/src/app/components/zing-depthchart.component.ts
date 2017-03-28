@@ -1,6 +1,6 @@
 import { Component, OnInit, OnChanges, Input, SimpleChanges } from '@angular/core';
 import { ZingChartModel } from '../model/zing-chart.model';
-import { OrderService } from '../services/order.service';
+import { RaidexService } from '../services/raidex.service';
 import { Subscription } from 'rxjs/Subscription';
 import * as util from '../services/util.service';
 import * as d3Array from 'd3-array';
@@ -17,9 +17,9 @@ export class ZingDepthChartComponent implements OnInit, OnChanges {
     bidArray: any[] = [];
     askArray: any[] = [];
     isLoaded: boolean = false;
-    public orderbookSubscription: Subscription;
+    public raidexSubscription: Subscription;
 
-    constructor(private orderService: OrderService) {}
+    constructor(private raidexService: RaidexService) {}
 
     ngOnInit(): void {
         setTimeout(() => this.initialiseOrderChart(), 1000);
@@ -30,7 +30,7 @@ export class ZingDepthChartComponent implements OnInit, OnChanges {
     }
 
     initialiseOrderChart(): void {
-        this.orderbookSubscription = this.orderService.getOrderBook().subscribe(
+        this.raidexSubscription = this.raidexService.getOffers().subscribe(
             order => {
                 let tempArray = order.data.buys;
                 tempArray.sort(function (x, y) {

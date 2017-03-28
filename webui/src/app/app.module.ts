@@ -7,14 +7,14 @@ import { MaterialModule } from '@angular/material';
 
 import { AppComponent } from './app.component';
 import { UserInteractionComponent } from './components/userinteraction.component';
-import { OrderService } from './services/order.service';
+import { RaidexService } from './services/raidex.service';
 
 import { ZingChart } from './components/zingchart.component';
 import { ZingDepthChartComponent } from './components/zing-depthchart.component';
 import { ZingPriceTimeSeriesComponent } from './components/zing-pricechart.component';
 import { ZingStockChartComponent } from './components/zing-stockchart.component';
-import { OrderHistoryTableComponent } from './components/orderhistory-table.component';
-import { OrderBookTableComponent } from './components/orderbook-table.component';
+import { TradesTableComponent } from './components/trades-table.component';
+import { OffersTableComponent } from './components/offers-table.component';
 
 
 
@@ -26,8 +26,8 @@ import { OrderBookTableComponent } from './components/orderbook-table.component'
         ZingDepthChartComponent,
         ZingPriceTimeSeriesComponent,
         ZingStockChartComponent,
-        OrderHistoryTableComponent,
-        OrderBookTableComponent
+        TradesTableComponent,
+        OffersTableComponent
     ],
     imports: [
         BrowserModule,
@@ -37,7 +37,7 @@ import { OrderBookTableComponent } from './components/orderbook-table.component'
         SharedModule,
         MaterialModule.forRoot()
     ],
-    providers: [ OrderService ],
+    providers: [ RaidexService ],
     bootstrap: [ AppComponent ]
 })
 
