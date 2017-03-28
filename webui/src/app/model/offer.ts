@@ -1,4 +1,4 @@
-export class OrderBookEntry {
+export class Offer {
     public amount: string;
     public price: string;
     constructor(amount?:string, price?:string){

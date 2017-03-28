@@ -1,6 +1,6 @@
 import { Component, OnInit, Input, AfterViewInit, ViewChild } from '@angular/core';
 import { ZingChartModel } from '../model/zing-chart.model';
-import { OrderService } from '../services/order.service';
+import { RaidexService } from '../services/raidex.service';
 import { Subscription } from 'rxjs/Subscription';
 import * as util from '../services/util.service';
 import * as d3Array from 'd3-array';
@@ -25,15 +25,15 @@ export class ZingStockChartComponent implements OnInit, AfterViewInit {
 
 
     charts: ZingChartModel[];
-    orderHistoryArray: Array<any> = [];
+    tradesArray: Array<any> = [];
     stockChartDataArray: any[] = [];
     volumeChartDataArray: any[] = [];
     interval: number = 15;
     numberOfBars: number = 20;
     limits: any;
-    private orderhistorySubscription: Subscription;
+    private raidexSubscription: Subscription;
 
-    constructor(private orderService: OrderService) {
+    constructor(private raidexService: RaidexService) {
 
     }
 
@@ -46,13 +46,13 @@ export class ZingStockChartComponent implements OnInit, AfterViewInit {
     }
 
     initialiseStockChart(): void {
-        this.orderhistorySubscription = this.orderService.getOrderHistory().subscribe(
+        this.raidexSubscription = this.raidexService.getTrades().subscribe(
             data => {
                 let tempArray: Array<any> = data;
                 tempArray.sort(function (x, y) {
                     return d3Array.ascending(x.timestamp, y.timestamp);
                 });
-                this.orderHistoryArray = tempArray;
+                this.tradesArray = tempArray;
                 let stockUtil = util.prepareStockChartData(tempArray, this.interval, this.numberOfBars);
                 this.stockChartDataArray = stockUtil.stock;
                 this.volumeChartDataArray = stockUtil.volume;
@@ -64,7 +64,7 @@ export class ZingStockChartComponent implements OnInit, AfterViewInit {
 
     reinitialiseStockChart(interval?: number): void {
         this.interval = interval;
-        let stockUtil = util.prepareStockChartData(this.orderHistoryArray, this.interval, this.numberOfBars);
+        let stockUtil = util.prepareStockChartData(this.tradesArray, this.interval, this.numberOfBars);
         this.stockChartDataArray = stockUtil.stock;
         this.volumeChartDataArray = stockUtil.volume;
         this.limits = stockUtil.limits;

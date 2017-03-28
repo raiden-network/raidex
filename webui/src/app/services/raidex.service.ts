@@ -11,14 +11,14 @@ import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/mergeMap';
 
 @Injectable()
-export class OrderService {
+export class RaidexService {
 
 
     constructor(private http: Http) {
 
     }
 
-    public getOrderHistory(): Observable<any> {
+    public getTrades(): Observable<any> {
         return TimerObservable.create(0, 60000)
                 .flatMap(() =>  this.http.get('http://127.0.0.1:5000/api/version/markets/dummy/trades/')
                     .map((response) => response.json().data))
@@ -26,7 +26,7 @@ export class OrderService {
     }
 
 
-    public getOrderBook(): Observable<any> {
+    public getOffers(): Observable<any> {
         return TimerObservable.create(0, 60000)
                 .flatMap(() =>  this.http.get('/src/app/services/order-book.json')
                     .map((response) => response.json()))

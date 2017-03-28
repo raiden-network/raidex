@@ -1,6 +1,6 @@
 import * as d3Array from 'd3-array';
-import { OrderHistoryEntry } from '../model/order-history';
-import { OrderBookEntry } from '../model/order-book';
+import { Trade } from '../model/trade';
+import { Offer } from '../model/offer';
 declare var Web3;
 let web3 = new Web3();
 
@@ -74,39 +74,39 @@ export function formatIntoVolumeTimeSeries(orderHistoryArray: Array<any>) {
     return tempArray;
 }
 
-export function preprocessOrderHistory(orderHistoryArray: Array<any>): OrderHistoryEntry[] {
-    let orderHistory: OrderHistoryEntry[] = [];
-    orderHistoryArray.forEach(function (element, index) {
-        orderHistory.push(new OrderHistoryEntry(
+export function preprocessTrades(tradesArray: Array<any>): Trade[] {
+    let trades: Trade[] = [];
+    tradesArray.forEach(function (element, index) {
+        trades.push(new Trade(
             element.timestamp,
             convertToEther(element.amount),
             formatCurrency(element.price),
             element.type
         ));
     });
-    return orderHistory;
+    return trades;
 }
 
-export function preprocessOrderBook(orderBookArray: Array<any>): OrderBookEntry[] {
-    let orderBook: OrderBookEntry[] = [];
-    orderBookArray.forEach(function (element, index) {
-        orderBook.push(new OrderBookEntry(
+export function preprocessOffers(offersArray: Array<any>): Offer[] {
+    let offers: Offer[] = [];
+    offersArray.forEach(function (element, index) {
+        offers.push(new Offer(
             convertToEther(element.amount),
             formatCurrency(element.price)
         ));
     });
-    return orderBook;
+    return offers;
 }
 
-export function prepareStockChartData(orderHistoryArray: Array<any>, interval, numberOfBars) {
+export function prepareStockChartData(tradesArray: Array<any>, interval, numberOfBars) {
     let stockDataArray: Array<any> = [];
     let volumeDataArray: Array<any> = [];
     let filterArray: Array<any>;
     let firstIndex = 0;
     let count = 0;
     do {
-        let firstTimestamp = orderHistoryArray[firstIndex].timestamp;
-        filterArray = orderHistoryArray.filter(function (item) {
+        let firstTimestamp = tradesArray[firstIndex].timestamp;
+        filterArray = tradesArray.filter(function (item) {
             return item.timestamp >= firstTimestamp &&
                 item.timestamp < firstTimestamp + interval * 60000;
         });
@@ -127,17 +127,17 @@ export function prepareStockChartData(orderHistoryArray: Array<any>, interval, n
         volumeDataArray.push([firstTimestamp, sumVolume]);
         firstIndex = firstIndex + filterArray.length - 1;
         count = count + 1;
-    } while (firstIndex !== orderHistoryArray.length - 1 && count < numberOfBars);
-    let limits = calculateLimits(orderHistoryArray, volumeDataArray);
+    } while (firstIndex !== tradesArray.length - 1 && count < numberOfBars);
+    let limits = calculateLimits(tradesArray, volumeDataArray);
     return {stock: stockDataArray, volume: volumeDataArray, limits: limits};
 }
 
-function calculateLimits(orderHistoryArray: Array<any>, volumeDataArray: Array<any>) {
-    let minPriceValue = Number(formatCurrency(d3Array.min(orderHistoryArray, function (d) {
+function calculateLimits(tradesArray: Array<any>, volumeDataArray: Array<any>) {
+    let minPriceValue = Number(formatCurrency(d3Array.min(tradesArray, function (d) {
         return d.price;
     })));
     minPriceValue = Math.floor(minPriceValue);
-    let maxPriceValue = Number(formatCurrency(d3Array.max(orderHistoryArray, function (d) {
+    let maxPriceValue = Number(formatCurrency(d3Array.max(tradesArray, function (d) {
         return d.price;
     })));
     maxPriceValue = Math.ceil(maxPriceValue);
