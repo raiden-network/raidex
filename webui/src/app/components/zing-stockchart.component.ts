@@ -129,13 +129,16 @@ export class ZingStockChartComponent implements OnInit, AfterViewInit {
                     }
                 },
                 'scale-x': {
-                    // "min-value": 1420232400000,
-                    // "step": "day",
+                    'min-value': this.stockChartDataArray[0][0],
+                    'step': this.interval * 60000,
+                    'zooming': true,
+                    'zoom-to': [0, 20],
                     'transform': {
                         'type': 'date',
                         'all': '%g:%i'
                     }
                 },
+                'scroll-x': {},
                 'series': [
                     {
                         'type': 'stock', // Stock Chart
