@@ -102,3 +102,7 @@ def gen_orderhistory(start_price=10, max_amount=1000 * ETH, num_entries=100, max
             timestamp=int(1000 * timestamp), address=address, price=price, amount=amount, type=random.randint(0, 1)
         ))
     return orders
+
+
+def save_limit_order(limit_order):
+    return random.randint(1, 100) * limit_order['price'] * limit_order['amount']

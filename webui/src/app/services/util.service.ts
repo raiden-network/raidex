@@ -127,7 +127,7 @@ export function prepareStockChartData(tradesArray: Array<any>, interval, numberO
         volumeDataArray.push([firstTimestamp, sumVolume]);
         firstIndex = firstIndex + filterArray.length - 1;
         count = count + 1;
-    } while (firstIndex !== tradesArray.length - 1 && count < numberOfBars);
+    } while (firstIndex !== tradesArray.length - 1 ); // && count < numberOfBars
     let limits = calculateLimits(tradesArray, volumeDataArray);
     return {stock: stockDataArray, volume: volumeDataArray, limits: limits};
 }

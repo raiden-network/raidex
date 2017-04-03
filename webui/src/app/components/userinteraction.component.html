@@ -11,6 +11,15 @@
                        [(ngModel)]="buyOrder.amount" placeholder="Amount">
               </md-input-container>
             </td>
+            <td>
+                <div class="alert alert-success" id="buy_order_alert" *ngIf="tempBuyId">
+                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                      <span aria-hidden="true"><i class="material-icons">clear</i></span>
+                  </button>
+                  ID For your order
+                  <b>{{tempBuyId}}</b>
+                </div>
+            </td>
           </tr>
           <tr>
             <td>
@@ -21,7 +30,7 @@
             </td>
           </tr>
         </table>
-        <button type="submit" class="btn btn-success">Submit</button>
+        <button type="submit" class="btn btn-success" (click)="submitOrder('BUY')">Submit</button>
       </form>
     </md-tab>
     <md-tab label="Sell">
@@ -32,20 +41,29 @@
             <td>
               <md-input-container>
                 <input mdInput type="number" id="amount" name="amount"
-                       [(ngModel)]="buyOrder.amount" placeholder="Amount">
+                       [(ngModel)]="sellOrder.amount" placeholder="Amount">
               </md-input-container>
+            </td>
+            <td>
+                <div class="alert alert-success" id="sell_order_alert" *ngIf="tempSellId">
+                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                      <span aria-hidden="true"><i class="material-icons">clear</i></span>
+                  </button>
+                  ID For your order
+                  <b>{{tempSellId}}</b>
+                </div>
             </td>
           </tr>
           <tr>
             <td>
               <md-input-container>
                 <input mdInput type="number" id="price" name="price"
-                       [(ngModel)]="buyOrder.price" placeholder="Price">
+                       [(ngModel)]="sellOrder.price" placeholder="Price">
               </md-input-container>
             </td>
           </tr>
         </table>
-        <button type="submit" class="btn btn-success">Submit</button>
+        <button type="submit" class="btn btn-success" (click)="submitOrder('SELL')">Submit</button>
       </form>
     </md-tab>
   </md-tab-group>
