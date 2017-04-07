@@ -14,8 +14,10 @@ class MessageBroker(object):
         for listener in self.listeners[topic]:
             topic, message_queue_async, transform = listener
             if transform is not None:
-                message = transform(message)
-            if message is not None:
+                data = transform(message)
+                if data is not None:
+                    message_queue_async.put(data)
+            else:
                 message_queue_async.put(message)
         return True
 
