@@ -1,10 +1,8 @@
 from __future__ import print_function
 
-import gevent
 from bintrees import FastRBTree
 from enum import Enum
 from ethereum import slogging
-from raidex.utils import milliseconds
 
 
 log = slogging.get_logger('node.offer_book')
@@ -48,6 +46,8 @@ class Offer(object):
         assert isinstance(counter_amount, (int, long))
         assert isinstance(offer_id, (int, long))
         assert isinstance(timeout, (int, long))
+        assert base_amount > 0
+        assert counter_amount > 0
         self.offer_id = offer_id
         self.type_ = type_
         self.base_amount = base_amount
@@ -65,7 +65,7 @@ class Offer(object):
         return float(self.counter_amount) / self.base_amount
 
     def __repr__(self):
-        return "Offer<offer_id={} amount={} price={} type={} >".format(
+        return "Offer<id={} amount={} price={} type={} >".format(
                 self.offer_id, self.amount, self.price, self.type_)
 
 
@@ -155,46 +155,3 @@ class OfferBook(object):
 
     def __repr__(self):
         return "OfferBook<buys={} sells={}>".format(len(self.buys), len(self.sells))
-
-
-class TakenTask(gevent.Greenlet):
-    def __init__(self, offer_book, trades, taken_listener):
-        self.offer_book = offer_book
-        self.trades = trades
-        self.taken_listener = taken_listener
-        gevent.Greenlet.__init__(self)
-
-    def _run(self):
-        self.taken_listener.start()
-        while True:
-            offer_id = self.taken_listener.get()
-            if self.offer_book.contains(offer_id):
-                log.debug('Offer {} is taken'.format(offer_id))
-                offer = self.offer_book.get_offer_by_id(offer_id)
-                self.trades.add_pending(offer)
-                self.offer_book.remove_offer(offer_id)
-
-
-class OfferBookTask(gevent.Greenlet):
-
-    def __init__(self, offer_book, offer_listener):
-        self.offer_book = offer_book
-        self.offer_listener = offer_listener
-        gevent.Greenlet.__init__(self)
-
-    def _run(self):
-        self.offer_listener.start()
-
-        while True:
-            offer = self.offer_listener.get()
-            log.debug('New Offer: {}'.format(offer))
-            self.offer_book.insert_offer(offer)
-
-            def after_offer_timeout_func(offer_id):
-                def func():
-                    if self.offer_book.contains(offer_id):
-                        log.debug('Offer {} timed out'.format(offer_id))
-                        self.offer_book.remove_offer(offer_id)
-                return func
-
-            gevent.spawn_later(milliseconds.seconds_to_timeout(offer.timeout), after_offer_timeout_func(offer.offer_id))

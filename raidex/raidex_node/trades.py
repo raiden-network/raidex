@@ -1,7 +1,6 @@
 from collections import namedtuple
 
 from bintrees import FastRBTree
-import gevent
 from ethereum import slogging
 
 from offer_book import Offer
@@ -35,6 +34,8 @@ class TradesView(object):
         if offer is None:
             return False
 
+        del self.pending_offer_by_id[offer_id]
+
         assert isinstance(offer, Offer)
         trade = Trade(offer, completed_timestamp)
 
@@ -56,23 +57,9 @@ class TradesView(object):
         return len(self.trades)
 
     def __iter__(self):
-        # when iterating over the OfferView, this iterates over the RBTree!
-        # self.offers = <FastRBTree>
+        # when iterating over the TradesView, this iterates over the RBTree!
+        # self.trades = <FastRBTree>
         return iter(self.trades)
 
     def values(self):
         return self.trades.values()
-
-
-class SwapCompletedTask(gevent.Greenlet):
-    def __init__(self, trades, swap_completed_listener):
-        self.trades = trades
-        self.swap_completed_listener = swap_completed_listener
-        gevent.Greenlet.__init__(self)
-
-    def _run(self):
-        self.swap_completed_listener.start()
-        while True:
-            swap_completed = self.swap_completed_listener.get()
-            log.debug('Offer {} has been successfully traded'.format(swap_completed.offer_id))
-            self.trades.report_completed(swap_completed.offer_id, swap_completed.timestamp)
