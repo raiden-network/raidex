@@ -34,15 +34,17 @@ class MakerExchangeTask(gevent.Greenlet):
             log.debug('broadcast proof')
             self.message_broker.broadcast(proof)
             log.debug('wait for taker..')
-            # TODO verify proof
-            taker_address = TakerListener(self.offer, self.message_broker, encode_hex(self.maker_address)).get_once()
+            taker_address = TakerListener(self.offer, self.commitment_service.address, self.message_broker, encode_hex(self.maker_address)).get_once()
             log.debug('found taker, execute trade')
             status = self.trader.exchange_async(self.offer.type_, self.offer.base_amount, self.offer.counter_amount,
                                                 taker_address, self.offer.offer_id).get()
             if status:
                 log.debug('trade done')
+                self.commitment_service.swap_executed(self.offer.offer_id)
+                #  TODO check refund minus fee
             else:
                 log.debug('trade failed')
+                #  TODO check refund
             return status
         except gevent.Timeout as t:
             if t is not timeout:
@@ -78,15 +80,16 @@ class TakerExchangeTask(gevent.Greenlet):
                                                              self.offer.counter_amount, self.offer.maker_address,
                                                              self.offer.offer_id)
             switch_context()  # give async function chance to execute
-            # hack for now, later cs should send this
-            self.message_broker.broadcast(self.commitment_service.create_taken(self.offer.offer_id))
             log.debug('send proof to maker')
             self.message_broker.send(encode_hex(self.offer.maker_address), proof)
             status = status_async.get()
             if status:
                 log.debug('trade done')
+                self.commitment_service.swap_executed(self.offer.offer_id)
+                #  TODO check refund minus fee
             else:
                 log.debug('trade failed')
+                #  TODO check refund
             return status
         except gevent.Timeout as t:
             if t is not timeout:

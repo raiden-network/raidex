@@ -1,7 +1,7 @@
-from ethereum.utils import sha3
+from ethereum.utils import sha3, privtoaddr
 from gevent.event import AsyncResult
 
-from raidex.messages import SwapOffer as OfferMsg, Commitment, CommitmentProof, ProvenOffer, OfferTaken
+from raidex.messages import SwapOffer, Commitment, CommitmentProof, ProvenOffer, OfferTaken
 from raidex.raidex_node.offer_book import OfferType, Offer
 
 
@@ -15,6 +15,7 @@ class CommitmentService(object):
         self.priv_key = sha3('simplecommitmentservice')
         self.token_pair = token_pair
         self.client_priv_key = client_priv_key
+        self.address = privtoaddr(self.priv_key)
 
     def maker_commit_async(self, offer):
         # type: (Offer) -> AsyncResult
@@ -52,6 +53,10 @@ class CommitmentService(object):
     def create_offer_msg(self, offer):
         # type: (Offer) -> OfferMsg
         if offer.type_ == OfferType.SELL:
-            return OfferMsg(self.token_pair.counter_token, offer.counter_amount, self.token_pair.base_token, offer.base_amount, offer.offer_id, offer.timeout)
+            return SwapOffer(self.token_pair.counter_token, offer.counter_amount, self.token_pair.base_token, offer.base_amount, offer.offer_id, offer.timeout)
         else:
-            return OfferMsg(self.token_pair.base_token, offer.base_amount, self.token_pair.counter_token, offer.counter_amount, offer.offer_id, offer.timeout)
+            return SwapOffer(self.token_pair.base_token, offer.base_amount, self.token_pair.counter_token, offer.counter_amount, offer.offer_id, offer.timeout)
+
+    def swap_executed(self, offer_id):
+        # type: (int) -> None
+        pass

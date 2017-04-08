@@ -50,16 +50,33 @@ class MessageListener(object):
             self.message_broker.stop_listen(self.listener)
 
 
-class TakerListener(MessageListener):
-    """Listens for the Taker of the offer"""
+class CheckedMessageListener(MessageListener):
+    """Listen for a specific message from a specific sender"""
 
-    def __init__(self, offer, message_broker, topic='broadcast'):
-        self.offer = offer
+    def __init__(self, message_type, sender, message_broker, topic='broadcast'):
+        self.message_type = message_type
+        self.sender = sender
         MessageListener.__init__(self, message_broker, topic)
 
     def _transform(self, message):
-        if isinstance(message,
-                      messages.ProvenOffer) and message.offer.offer_id == self.offer.offer_id:  # TODO check more
+        if isinstance(message, self.message_type) and message.sender == self.sender:
+            return message
+        else:
+            return None
+
+
+class TakerListener(MessageListener):
+    """Listens for the Taker of the offer"""
+
+    def __init__(self, offer, commitmentservice_address, message_broker, topic='broadcast'):
+        self.offer = offer
+        self.commitmentservice_address = commitmentservice_address
+        MessageListener.__init__(self, message_broker, topic)
+
+    def _transform(self, message):
+        if (isinstance(message, messages.ProvenOffer)  # TODO validate ProvenOffer
+                and message.commitment_proof.sender == self.commitmentservice_address
+                and message.offer.offer_id == self.offer.offer_id):
             return message.sender
         else:
             return None
@@ -95,3 +112,6 @@ class TakenListener(MessageListener):
         if not isinstance(message, messages.OfferTaken):
             return None
         return message.offer_id
+
+
+
