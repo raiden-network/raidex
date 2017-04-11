@@ -10,39 +10,62 @@ import { RaidexService } from '../services/raidex.service';
 
 export class UserInteractionComponent implements OnInit {
 
-    @Input() market: any;
+    @Input() public market: any;
 
-    buyOrder = new Order();
-    sellOrder = new Order();
-    tempBuyId: number;
-    tempSellId: number;
+    public buyOrder = new Order();
+    public sellOrder = new Order();
+    public tempBuyId: number;
+    public tempSellId: number;
+    public orderArray: Order[];
+    public selectedOrder: Order;
     constructor(private raidexService: RaidexService) {}
 
-    ngOnInit(): void {
+    public ngOnInit(): void {
         this.buyOrder.type = "BUY";
         this.sellOrder.type = "SELL";
+        this.getOrders();
     }
 
-
-    submitOrder(type: string) {
-        this.raidexService.submitLimitOrder(this.orderType(type)).subscribe(
-            id => {
-                type == "BUY" ? this.tempBuyId = id.data : this.tempSellId = id.data;
+    public submitOrder(type: string) {
+        this.raidexService.submitLimitOrder(this.segregateOrder(type)).subscribe(
+            (value) => {
+                type === "BUY" ? this.tempBuyId = value.data : this.tempSellId = value.data;
                 this.clearModel();
-            }
+                this.getOrders();
+            },
         );
     }
 
-    clearModel() {
-      this.buyOrder.amount = "";
-      this.buyOrder.price = "";
-      this.sellOrder.amount = "";
-      this.sellOrder.price = "";
+    public getOrders() {
+        this.raidexService.getLimitOrders().subscribe(
+            (limitOrders) => {
+                this.orderArray = <Order[]> limitOrders.data;
+            },
+        );
     }
 
-    orderType(type: string) {
-        if (type == "BUY") return this.buyOrder;
-        else return this.sellOrder;
+    public cancelOrder() {
+        if (this.selectedOrder) {
+            this.raidexService.cancelLimitOrders(this.selectedOrder).subscribe(
+                (value) => {
+                    this.getOrders();
+                },
+            );
+        }
+    }
+    private clearModel() {
+        this.buyOrder.amount = '';
+        this.buyOrder.price = '';
+        this.sellOrder.amount = '';
+        this.sellOrder.price = '';
+    }
+
+    private segregateOrder(type: string) {
+        if (type === "BUY") {
+            return this.buyOrder;
+        } else {
+          return this.sellOrder;
+        }
     }
     // TODO: Remove this when we're done
     get diagnostic() { return JSON.stringify(this.buyOrder); }

@@ -4,10 +4,9 @@ import { RaidexService } from '../services/raidex.service';
 import * as util from '../services/util.service';
 import { Offer } from '../model/offer';
 
-
 @Component({
     selector: 'rex-offers-table',
-    templateUrl: 'offers-table.component.html'
+    templateUrl: 'offers-table.component.html',
 })
 export class OffersTableComponent implements OnInit {
     public bids: Offer[];
@@ -20,12 +19,12 @@ export class OffersTableComponent implements OnInit {
         this.getOrderBook();
     }
 
-    getOrderBook(): void {
+    public getOrderBook(): void {
         this.raidexSubscription = this.raidexService.getOffers().subscribe(
-            order => {
+            (order) => {
                 this.bids = util.preprocessOffers(order.data.buys);
                 this.asks = util.preprocessOffers(order.data.sells);
-            }
+            },
         );
     }
 }

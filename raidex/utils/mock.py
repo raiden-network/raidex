@@ -15,6 +15,10 @@ from ethereum.utils import denoms, sha3, encode_hex, privtoaddr
 
 from raidex.messages import SwapOffer
 
+from tinydb import TinyDB, Query
+from tinydb.storages import MemoryStorage
+db = TinyDB(storage=MemoryStorage)
+
 ETH = denoms.ether
 
 
@@ -105,4 +109,34 @@ def gen_orderhistory(start_price=10, max_amount=1000 * ETH, num_entries=100, max
 
 
 def save_limit_order(limit_order):
-    return random.randint(1, 100) * limit_order['price'] * limit_order['amount']
+    id = random.randint(1, 100) * limit_order['price'] * limit_order['amount']
+    db.insert({'id': id, 'price': limit_order['price'], 'amount': limit_order['amount'],
+               'type': limit_order['type'], 'filledAmount': 0, 'cancel': 0})
+    return id
+
+
+def query_limit_order():
+    Order = Query()
+    return db.search(Order.cancel == 0)
+
+
+def cancel_order(limit_order):
+    Order = Query()
+    db.update({'cancel': 1}, (Order.type == limit_order['type']) &
+            (Order.price == limit_order['price']) & (Order.amount == limit_order['amount']))
+    return "sucess"
+
+if __name__ == '__main__':
+    order1 = {'type': 'BUY', 'price': 854423, 'amount': 77558}
+    order2 = {'type': 'SELL', 'price': 7899696, 'amount': 87654}
+    order3 = {'type': 'SELL', 'price': 455786, 'amount': 997965}
+    save_limit_order(order1)
+    save_limit_order(order2)
+    save_limit_order(order3)
+    print db.all()
+    print 'Searching for Orders'
+    Order = Query()
+    print db.search(Order.type == 'BUY')
+    print 'Cancel Order'
+    cancel_order(order3)
+    print db.all()

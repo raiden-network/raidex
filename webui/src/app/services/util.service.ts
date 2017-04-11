@@ -4,7 +4,6 @@ import { Offer } from '../model/offer';
 declare var Web3;
 let web3 = new Web3();
 
-
 export function convertToEther(amount: any) {
     let value = web3.fromWei(String(amount), 'ether');
     return Number(value).toFixed(2);
@@ -17,7 +16,7 @@ export function formatCurrency(price: any) {
 
 export function formatArray(orderArray: Array<any>) {
     let newArray = [];
-    orderArray.forEach(function (element, index) {
+    orderArray.forEach(function(element, index) {
         let obj = {};
         obj['amount'] = parseFloat(convertToEther(element.amount));
         obj['price'] = parseFloat(formatCurrency(element.price));
@@ -28,10 +27,10 @@ export function formatArray(orderArray: Array<any>) {
 
 export function cumulativeArray(orderArray: Array<any>) {
     let newArray = [];
-    orderArray.forEach(function (element, index, arr) {
+    orderArray.forEach(function(element, index, arr) {
         let obj = {};
         obj['price'] = parseFloat(element.price);
-        obj['amount'] = d3Array.sum(arr.slice(index), function (d) {
+        obj['amount'] = d3Array.sum(arr.slice(index), function(d) {
             return d.amount;
         });
         newArray.push(obj);
@@ -41,10 +40,10 @@ export function cumulativeArray(orderArray: Array<any>) {
 
 export function cumulativePoints(orderArray: Array<any>) {
     let newArray = [];
-    orderArray.forEach(function (element, index, arr) {
+    orderArray.forEach(function(element, index, arr) {
         let arrPoint = [];
         arrPoint[0] = parseFloat(element.price);
-        arrPoint[1] = d3Array.sum(arr.slice(index), function (d) {
+        arrPoint[1] = d3Array.sum(arr.slice(index), function(d) {
             return d.amount;
         });
         newArray.push(arrPoint);
@@ -54,7 +53,7 @@ export function cumulativePoints(orderArray: Array<any>) {
 
 export function formatIntoPriceTimeSeries(orderHistoryArray: Array<any>) {
     let newArray = [];
-    orderHistoryArray.forEach(function (element, index) {
+    orderHistoryArray.forEach(function(element, index) {
         let arrPoint = [];
         arrPoint[0] = element.timestamp;
         arrPoint[1] = formatCurrency(element.price);
@@ -65,7 +64,7 @@ export function formatIntoPriceTimeSeries(orderHistoryArray: Array<any>) {
 
 export function formatIntoVolumeTimeSeries(orderHistoryArray: Array<any>) {
     let tempArray = [];
-    orderHistoryArray.forEach(function (element, index) {
+    orderHistoryArray.forEach(function(element, index) {
         let arrPoint = [];
         arrPoint[0] = element.timestamp;
         arrPoint[1] = convertToEther(element.amount);
@@ -76,7 +75,7 @@ export function formatIntoVolumeTimeSeries(orderHistoryArray: Array<any>) {
 
 export function preprocessTrades(tradesArray: Array<any>): Trade[] {
     let trades: Trade[] = [];
-    tradesArray.forEach(function (element, index) {
+    tradesArray.forEach(function(element, index) {
         trades.push(new Trade(
             element.timestamp,
             convertToEther(element.amount),
@@ -89,7 +88,7 @@ export function preprocessTrades(tradesArray: Array<any>): Trade[] {
 
 export function preprocessOffers(offersArray: Array<any>): Offer[] {
     let offers: Offer[] = [];
-    offersArray.forEach(function (element, index) {
+    offersArray.forEach(function(element, index) {
         offers.push(new Offer(
             convertToEther(element.amount),
             formatCurrency(element.price)
@@ -106,22 +105,22 @@ export function prepareStockChartData(tradesArray: Array<any>, interval, numberO
     let count = 0;
     do {
         let firstTimestamp = tradesArray[firstIndex].timestamp;
-        filterArray = tradesArray.filter(function (item) {
+        filterArray = tradesArray.filter(function(item) {
             return item.timestamp >= firstTimestamp &&
                 item.timestamp < firstTimestamp + interval * 60000;
         });
         stockDataArray.push([firstTimestamp, [
             Number(formatCurrency(filterArray[0].price)), // open
-            Number(formatCurrency(d3Array.max(filterArray, function (d) {
+            Number(formatCurrency(d3Array.max(filterArray, function(d) {
                 return d.price;
             }))),
-            Number(formatCurrency(d3Array.min(filterArray, function (d) {
+            Number(formatCurrency(d3Array.min(filterArray, function(d) {
                 return d.price;
             }))),
             Number(formatCurrency(filterArray[filterArray.length - 1].price))
         ]
         ]);
-        let sumVolume = Number(convertToEther(d3Array.sum(filterArray, function (d) {
+        let sumVolume = Number(convertToEther(d3Array.sum(filterArray, function(d) {
             return d.amount;
         })));
         volumeDataArray.push([firstTimestamp, sumVolume]);
@@ -133,20 +132,20 @@ export function prepareStockChartData(tradesArray: Array<any>, interval, numberO
 }
 
 function calculateLimits(tradesArray: Array<any>, volumeDataArray: Array<any>) {
-    let minPriceValue = Number(formatCurrency(d3Array.min(tradesArray, function (d) {
+    let minPriceValue = Number(formatCurrency(d3Array.min(tradesArray, function(d) {
         return d.price;
     })));
     minPriceValue = Math.floor(minPriceValue);
-    let maxPriceValue = Number(formatCurrency(d3Array.max(tradesArray, function (d) {
+    let maxPriceValue = Number(formatCurrency(d3Array.max(tradesArray, function(d) {
         return d.price;
     })));
     maxPriceValue = Math.ceil(maxPriceValue);
     let minAmountValue = Math.floor(d3Array.min(volumeDataArray,
-        function (d) {
+        function(d) {
             return d[1];
         }));
     let maxAmountValue = Math.ceil(d3Array.max(volumeDataArray,
-        function (d) {
+        function(d) {
             return d[1];
         }));
     return {

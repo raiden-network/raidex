@@ -1,4 +1,4 @@
-import { Component, OnInit, OnChanges, Input, SimpleChanges, AfterViewInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ZingChartModel } from '../model/zing-chart.model';
 import { RaidexService } from '../services/raidex.service';
 import { Subscription } from 'rxjs/Subscription';
@@ -10,35 +10,26 @@ declare var $: any;
     selector: 'rex-zing-pricechart-component',
     template: `
         <zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></zingchart>
-        `
+        `,
 })
-export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges, AfterViewInit {
+export class ZingPriceTimeSeriesComponent implements OnInit {
 
-    charts: ZingChartModel[];
-
-    priceTimeSeriesArray: any[] = [];
-    volumeTimeSeriesArray: any[] = [];
+    public charts: ZingChartModel[];
+    public priceTimeSeriesArray: any[] = [];
+    public volumeTimeSeriesArray: any[] = [];
     private raidexSubscription: Subscription;
 
     constructor(private raidexService: RaidexService) {
 
     }
 
-    ngOnInit(): void {
+    public ngOnInit(): void {
         setTimeout(() => this.initialisePriceChart(), 1000);
     }
 
-    ngOnChanges(changes: SimpleChanges) {
-
-    }
-
-    ngAfterViewInit() {
-
-    }
-
-    initialisePriceChart(): void {
+    public initialisePriceChart(): void {
         this.raidexSubscription = this.raidexService.getTrades().subscribe(
-            data => {
+            (data) => {
                 let tempArray = data;
                 tempArray.sort(function (x, y) {
                     return d3Array.ascending(x.timestamp, y.timestamp);
@@ -52,7 +43,7 @@ export class ZingPriceTimeSeriesComponent implements OnInit, OnChanges, AfterVie
         );
     }
 
-    populateChartData(minValue: number, maxValue: number): void {
+    public populateChartData(minValue: number, maxValue: number): void {
         this.charts = [{
             id: 'price-chart',
             data: {

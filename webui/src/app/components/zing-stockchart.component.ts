@@ -1,10 +1,9 @@
-import { Component, OnInit, Input, AfterViewInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ZingChartModel } from '../model/zing-chart.model';
 import { RaidexService } from '../services/raidex.service';
 import { Subscription } from 'rxjs/Subscription';
 import * as util from '../services/util.service';
 import * as d3Array from 'd3-array';
-
 
 @Component({
     selector: 'rex-zing-stockchart-component',
@@ -19,33 +18,28 @@ import * as d3Array from 'd3-array';
             (click)="reinitialiseStockChart(30)">30 mins</button>
         </div>
 
-        `
+        `,
 })
-export class ZingStockChartComponent implements OnInit, AfterViewInit {
+export class ZingStockChartComponent implements OnInit {
 
-
-    charts: ZingChartModel[];
-    tradesArray: Array<any> = [];
-    stockChartDataArray: any[] = [];
-    volumeChartDataArray: any[] = [];
-    interval: number = 15;
-    numberOfBars: number = 20;
-    limits: any;
+    public charts: ZingChartModel[];
+    public tradesArray: Array<any> = [];
+    public stockChartDataArray: any[] = [];
+    public volumeChartDataArray: any[] = [];
+    public interval: number = 15;
+    public numberOfBars: number = 20;
+    public limits: any;
     private raidexSubscription: Subscription;
 
     constructor(private raidexService: RaidexService) {
 
     }
 
-    ngOnInit(): void {
+    public ngOnInit(): void {
         setTimeout(() => this.initialiseStockChart(), 3000);
     }
 
-    ngAfterViewInit() {
-
-    }
-
-    initialiseStockChart(): void {
+    public initialiseStockChart(): void {
         this.raidexSubscription = this.raidexService.getTrades().subscribe(
             data => {
                 let tempArray: Array<any> = data;
@@ -62,7 +56,7 @@ export class ZingStockChartComponent implements OnInit, AfterViewInit {
         );
     }
 
-    reinitialiseStockChart(interval?: number): void {
+    public reinitialiseStockChart(interval?: number): void {
         this.interval = interval;
         let stockUtil = util.prepareStockChartData(this.tradesArray, this.interval, this.numberOfBars);
         this.stockChartDataArray = stockUtil.stock;
@@ -71,7 +65,7 @@ export class ZingStockChartComponent implements OnInit, AfterViewInit {
         this.populateChartData(this.limits);
     }
 
-    populateChartData(limits: any): void {
+    public populateChartData(limits: any): void {
         this.charts = [{
             id: 'stockchart',
             data: {
@@ -157,6 +151,5 @@ export class ZingStockChartComponent implements OnInit, AfterViewInit {
             width: '100%'
         }];
     }
-
 
 }

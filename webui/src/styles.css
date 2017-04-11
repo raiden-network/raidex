@@ -1,7 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
 @import url('../node_modules/primeng/resources/themes/redmond/theme.css');
 @import url('../node_modules/primeng/resources/primeng.min.css');
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+/* @import url('https://fonts.googleapis.com/icon?family=Material+Icons');*/
+@import url('../node_modules/material-icons/css/material-icons.min.css');
 @import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500,700');
 @import url('../node_modules/font-awesome/css/font-awesome.min.css');
 @import '~@angular/material/core/theming/prebuilt/deeppurple-amber.css';

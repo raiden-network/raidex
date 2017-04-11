@@ -11,35 +11,31 @@ import * as d3Array from 'd3-array';
         <zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></zingchart>
     `
 })
-export class ZingDepthChartComponent implements OnInit, OnChanges {
+export class ZingDepthChartComponent implements OnInit {
 
-    charts: ZingChartModel[];
-    bidArray: any[] = [];
-    askArray: any[] = [];
-    isLoaded: boolean = false;
+    public charts: ZingChartModel[];
+    public bidArray: any[] = [];
+    public askArray: any[] = [];
+    public isLoaded: boolean = false;
     public raidexSubscription: Subscription;
 
     constructor(private raidexService: RaidexService) {}
 
-    ngOnInit(): void {
+    public ngOnInit(): void {
         setTimeout(() => this.initialiseOrderChart(), 1000);
     }
 
-    ngOnChanges(changes: SimpleChanges) {
-
-    }
-
-    initialiseOrderChart(): void {
+    public initialiseOrderChart(): void {
         this.raidexSubscription = this.raidexService.getOffers().subscribe(
-            order => {
+            (order) => {
                 let tempArray = order.data.buys;
-                tempArray.sort(function (x, y) {
+                tempArray.sort(function(x, y) {
                     return d3Array.ascending(x.price, y.price);
                 });
                 tempArray = util.formatArray(tempArray);
                 this.bidArray = util.cumulativePoints(tempArray);
                 tempArray = order.data.sells;
-                tempArray.sort(function (x, y) {
+                tempArray.sort(function(x, y) {
                     return d3Array.descending(x.price, y.price);
                 });
                 tempArray = util.formatArray(tempArray);
@@ -50,7 +46,7 @@ export class ZingDepthChartComponent implements OnInit, OnChanges {
             });
     }
 
-    populateChartData(minValue: number, maxValue: number, step: number): void {
+    public populateChartData(minValue: number, maxValue: number, step: number): void {
         this.charts = [{
             id: 'depth-chart',
             data: {

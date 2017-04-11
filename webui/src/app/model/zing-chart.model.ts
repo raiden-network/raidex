@@ -1,8 +1,8 @@
 export class ZingChartModel {
-    id: String;
-    data: any;
-    height: any;
-    width: any;
+    public id: string;
+    public data: any;
+    public height: any;
+    public width: any;
     constructor(config: Object) {
     this.id = config['id'];
     this.data = config['data'];

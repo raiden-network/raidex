@@ -66,5 +66,25 @@
         <button type="submit" class="btn btn-success" (click)="submitOrder('SELL')">Submit</button>
       </form>
     </md-tab>
+    <md-tab label="Your Orders">
+      <div *ngIf="orderArray?.length > 0">
+      <p-dataTable  [value]="orderArray" [rows]="5" [paginator]="true" [pageLinks]="0" [(selection)]="selectedOrder" dataKey="order"
+      styleClass="borderless">
+        <p-column field="type" header="Type"
+        [style]="{'text-align': 'center'}"></p-column>
+        <p-column field="amount" header="Amount"
+        [style]="{'text-align': 'center'}"></p-column>
+        <p-column field="price" header="price"
+        [style]="{'text-align': 'center'}"></p-column>
+        <p-column field="filledAmount" header="FilledAmount"
+        [style]="{'text-align': 'center'}"></p-column>
+        <p-column [style]="{'width':'38px'}" selectionMode="single"></p-column>
+      </p-dataTable>
+      <button type="submit" class="btn btn-danger btn-xs" (click)="cancelOrder()">Cancel</button>
+      </div>
+      <div *ngIf="orderArray?.length == 0">
+          You are yet to enter Orders
+      </div>
+    </md-tab>
   </md-tab-group>
 </div>

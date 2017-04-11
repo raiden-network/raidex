@@ -1,7 +1,7 @@
 #!flask/bin/python
 from flask import Flask, jsonify, request, abort
 from flask_cors import CORS
-from mock import gen_orderbook_dict, gen_orderhistory, save_limit_order
+from mock import gen_orderbook_dict, gen_orderhistory, save_limit_order, query_limit_order, cancel_order
 
 
 app = Flask(__name__)
@@ -23,6 +23,18 @@ def make_limit_order(version, market):
     if not request.json or not validate_order(request.json):
         abort(400)
     return jsonify({'data': save_limit_order(request.json)})
+
+
+@app.route('/api/<string:version>/markets/<string:market>/orders/limit', methods=['GET'])
+def get_limit_order(version, market):
+    return jsonify({'data': query_limit_order()})
+
+
+@app.route('/api/<string:version>/markets/<string:market>/orders/limit/cancel', methods=['POST'])
+def cancel_limit_order(version, market):
+    if not request.json or not validate_order(request.json):
+        abort(400)
+    return jsonify({'data': cancel_order(request.json)})
 
 
 def validate_order(json):

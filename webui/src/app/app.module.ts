@@ -16,8 +16,6 @@ import { ZingStockChartComponent } from './components/zing-stockchart.component'
 import { TradesTableComponent } from './components/trades-table.component';
 import { OffersTableComponent } from './components/offers-table.component';
 
-
-
 @NgModule({
     declarations: [
         AppComponent,
@@ -40,6 +38,5 @@ import { OffersTableComponent } from './components/offers-table.component';
     providers: [ RaidexService ],
     bootstrap: [ AppComponent ]
 })
-
 
 export class AppModule { }
