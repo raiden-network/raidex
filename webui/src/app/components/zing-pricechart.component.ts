@@ -7,9 +7,9 @@ import * as d3Array from 'd3-array';
 declare var $: any;
 
 @Component({
-    selector: 'rex-zing-pricechart-component',
+    selector: 'rex-zing-pricechart',
     template: `
-        <zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></zingchart>
+        <rex-zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></rex-zingchart>
         `,
 })
 export class ZingPriceTimeSeriesComponent implements OnInit {

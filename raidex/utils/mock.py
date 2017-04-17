@@ -120,11 +120,10 @@ def query_limit_order():
     return db.search(Order.cancel == 0)
 
 
-def cancel_order(limit_order):
+def cancel_order(id):
     Order = Query()
-    db.update({'cancel': 1}, (Order.type == limit_order['type']) &
-            (Order.price == limit_order['price']) & (Order.amount == limit_order['amount']))
-    return "sucess"
+    db.update({'cancel': 1}, (Order.id == id))
+    return "success"
 
 if __name__ == '__main__':
     order1 = {'type': 'BUY', 'price': 854423, 'amount': 77558}

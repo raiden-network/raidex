@@ -21,15 +21,15 @@ export class UserInteractionComponent implements OnInit {
     constructor(private raidexService: RaidexService) {}
 
     public ngOnInit(): void {
-        this.buyOrder.type = "BUY";
-        this.sellOrder.type = "SELL";
+        this.buyOrder.type = 'BUY';
+        this.sellOrder.type = 'SELL';
         this.getOrders();
     }
 
     public submitOrder(type: string) {
         this.raidexService.submitLimitOrder(this.segregateOrder(type)).subscribe(
-            (value) => {
-                type === "BUY" ? this.tempBuyId = value.data : this.tempSellId = value.data;
+            (id) => {
+                type === 'BUY' ? this.tempBuyId = id : this.tempSellId = id;
                 this.clearModel();
                 this.getOrders();
             },
@@ -39,7 +39,7 @@ export class UserInteractionComponent implements OnInit {
     public getOrders() {
         this.raidexService.getLimitOrders().subscribe(
             (limitOrders) => {
-                this.orderArray = <Order[]> limitOrders.data;
+                this.orderArray = <Order[]> limitOrders;
             },
         );
     }
@@ -61,7 +61,7 @@ export class UserInteractionComponent implements OnInit {
     }
 
     private segregateOrder(type: string) {
-        if (type === "BUY") {
+        if (type === 'BUY') {
             return this.buyOrder;
         } else {
           return this.sellOrder;
