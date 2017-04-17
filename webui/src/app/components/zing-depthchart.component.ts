@@ -1,4 +1,4 @@
-import { Component, OnInit, OnChanges, Input, SimpleChanges } from '@angular/core';
+import { Component, OnInit} from '@angular/core';
 import { ZingChartModel } from '../model/zing-chart.model';
 import { RaidexService } from '../services/raidex.service';
 import { Subscription } from 'rxjs/Subscription';
@@ -6,9 +6,9 @@ import * as util from '../services/util.service';
 import * as d3Array from 'd3-array';
 
 @Component({
-    selector: 'rex-zing-depthchart-component',
+    selector: 'rex-zing-depthchart',
     template: `
-        <zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></zingchart>
+        <rex-zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></rex-zingchart>
     `
 })
 export class ZingDepthChartComponent implements OnInit {
@@ -28,13 +28,13 @@ export class ZingDepthChartComponent implements OnInit {
     public initialiseOrderChart(): void {
         this.raidexSubscription = this.raidexService.getOffers().subscribe(
             (order) => {
-                let tempArray = order.data.buys;
+                let tempArray = order.buys;
                 tempArray.sort(function(x, y) {
                     return d3Array.ascending(x.price, y.price);
                 });
                 tempArray = util.formatArray(tempArray);
                 this.bidArray = util.cumulativePoints(tempArray);
-                tempArray = order.data.sells;
+                tempArray = order.sells;
                 tempArray.sort(function(x, y) {
                     return d3Array.descending(x.price, y.price);
                 });

@@ -4,10 +4,10 @@ import { ZingChartModel } from '../model/zing-chart.model';
 declare var zingchart: any;
 
 @Component({
-  selector: 'zingchart',
+  selector: 'rex-zingchart',
   template: `<div id="{{chart.id}}"></div>`
 })
-export class ZingChart implements AfterViewInit, OnDestroy {
+export class ZingChartComponent implements AfterViewInit, OnDestroy {
     @Input()
     public chart: ZingChartModel;
 

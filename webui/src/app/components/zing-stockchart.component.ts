@@ -6,9 +6,9 @@ import * as util from '../services/util.service';
 import * as d3Array from 'd3-array';
 
 @Component({
-    selector: 'rex-zing-stockchart-component',
+    selector: 'rex-zing-stockchart',
     template: `
-        <zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></zingchart>
+        <rex-zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></rex-zingchart>
         <div id="date-picker-container">
             <button class="btn btn-success btn-xs"
             (click)="reinitialiseStockChart(10)">10 mins</button>

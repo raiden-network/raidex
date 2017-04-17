@@ -14,41 +14,41 @@ import { Order } from '../model/order';
 @Injectable()
 export class RaidexService {
 
+    api = 'http://127.0.0.1:5000/api/1';
+
     constructor(private http: Http) {
 
     }
 
     public getTrades(): Observable<any> {
         return TimerObservable.create(0, 60000)
-                .flatMap(() =>  this.http.get('http://127.0.0.1:5000/api/version/markets/dummy/trades/')
+                .flatMap(() =>  this.http.get(`${this.api}/markets/dummy/trades/`)
                     .map((response) => response.json().data))
                 .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderHistory', errors));
     }
 
     public getOffers(): Observable<any> {
         return TimerObservable.create(0, 60000)
-                .flatMap(() =>  this.http.get('/src/app/services/order-book.json')
-                    .map((response) => response.json()))
+                .flatMap(() =>  this.http.get(`${this.api}/markets/dummy/offers/`)
+                    .map((response) => response.json().data))
                 .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderBook', errors));
     }
 
     public submitLimitOrder(limitOrder: Order) {
         const headers = new Headers({ 'Content-Type': 'application/json' });
         const options = new RequestOptions({ headers: headers });
-        return this.http.post('http://127.0.0.1:5000/api/version/markets/dummy/orders/limit',
-            limitOrder, options).delay(2000).map((response) => response.json()).catch(this.handleError);
+        return this.http.post(`${this.api}/markets/dummy/orders/limit/`,
+            limitOrder, options).map((response) => response.json().data).catch(this.handleError);
     }
 
     public getLimitOrders() {
-        return this.http.get('http://127.0.0.1:5000/api/version/markets/dummy/orders/limit').
-            map((response) => response.json()).catch(this.handleError);
+        return this.http.get(`${this.api}/markets/dummy/orders/limit/`).
+            map((response) => response.json().data).catch(this.handleError);
     }
 
     public cancelLimitOrders(limitOrder: Order) {
-        const headers = new Headers({ 'Content-Type': 'application/json' });
-        const options = new RequestOptions({ headers: headers });
-        return this.http.post('http://127.0.0.1:5000/api/version/markets/dummy/orders/limit/cancel',
-            limitOrder, options).map((response) => response.json()).catch(this.handleError);
+        return this.http.delete(`${this.api}/markets/dummy/orders/limit/${limitOrder.id}`)
+            .map((response) => response.json().data).catch(this.handleError);
     }
 
     private printErrorAndRetry(message: string, errors: Observable<any>): Observable<any> {

@@ -21,8 +21,8 @@ export class TradesTableComponent implements OnInit {
 
     public getTrades(): void {
         this.raidexSubscription = this.raidexService.getTrades().subscribe(
-            (data) => {
-                this.trades = util.preprocessTrades(data);
+            (trades) => {
+                this.trades = util.preprocessTrades(trades);
             },
         );
     }

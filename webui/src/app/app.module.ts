@@ -9,7 +9,7 @@ import { AppComponent } from './app.component';
 import { UserInteractionComponent } from './components/userinteraction.component';
 import { RaidexService } from './services/raidex.service';
 
-import { ZingChart } from './components/zingchart.component';
+import { ZingChartComponent } from './components/zingchart.component';
 import { ZingDepthChartComponent } from './components/zing-depthchart.component';
 import { ZingPriceTimeSeriesComponent } from './components/zing-pricechart.component';
 import { ZingStockChartComponent } from './components/zing-stockchart.component';
@@ -19,7 +19,7 @@ import { OffersTableComponent } from './components/offers-table.component';
 @NgModule({
     declarations: [
         AppComponent,
-        ZingChart,
+        ZingChartComponent,
         UserInteractionComponent,
         ZingDepthChartComponent,
         ZingPriceTimeSeriesComponent,

@@ -21,9 +21,9 @@ export class OffersTableComponent implements OnInit {
 
     public getOrderBook(): void {
         this.raidexSubscription = this.raidexService.getOffers().subscribe(
-            (order) => {
-                this.bids = util.preprocessOffers(order.data.buys);
-                this.asks = util.preprocessOffers(order.data.sells);
+            (offers) => {
+                this.bids = util.preprocessOffers(offers.buys);
+                this.asks = util.preprocessOffers(offers.sells);
             },
         );
     }
