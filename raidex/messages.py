@@ -315,9 +315,6 @@ class Commitment(Signed):
     def __init__(self, offer_id, offer_hash, timeout, amount, signature=''):
         super(Commitment, self).__init__(offer_id, offer_hash, timeout, amount, signature)
 
-    def compute_signed_signature(self, privkey):
-        return sign(self.signature, privkey)
-
 
 class OfferTaken(Signed):
     """ The CommitmentService publishes this offer on the broadcast as soon as an engaged (commited) Taker
@@ -396,6 +393,31 @@ class ProvenOffer(Signed):
         super(ProvenOffer, self).__init__(offer, commitment, commitment_proof, signature)
 
 
+class ProvenCommitment(Signed):
+    """A `ProvenCommitment` is sent from taker to maker to confirm that the taker has sucessfully engaged in
+     the swap by having a proper Commitment open at the makers commitment-service to execute the swap.
+
+    Data:
+        commitment = rlp([offer_id, sha3(offer), timeout, amount])
+        commitment_sig = raiden signature of the commitment transfer by the committer
+        commitment_proof = sign(commitment_sig, cs)
+
+    Broadcast:
+        {
+            "msg": "offer",
+            "version": 1,
+            "data": "rlp([offer, commitment, commitment_proof])"
+        }
+    """
+    fields = [
+        ('commitment', Commitment),
+        ('commitment_proof', CommitmentProof),
+    ] + Signed.fields
+
+    def __init__(self, commitment, commitment_proof, signature=''):
+        super(ProvenCommitment, self).__init__(commitment, commitment_proof, signature)
+
+
 class CommitmentServiceAdvertisement(Signed):
     """A `CommitmentServiceAdvertisement` can be send by the Commitment Service (CS) to broadcast services
     in order to announce its service to users.
@@ -426,6 +448,7 @@ class CommitmentServiceAdvertisement(Signed):
     """
 
     fields = [
+        # FIXME address field redundant
         ('address', address),
         ('commitment_asset', address),
         ('fee_rate', int32),
