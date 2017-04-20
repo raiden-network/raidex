@@ -36,13 +36,10 @@ class Offer(object):
         1) asset swaps cannot be fractional
         2) we don't want to fix the permutation of the 'market' asset-pair on the message level.
 
-
-    Note: protocol.send() takes an offer-msg (`messages.Offer`).
-    To construct an offer-msg, please use the `messages.Offer.from_offer(offer)` classmethod
-
     """
 
-    def __init__(self, type_, base_amount, counter_amount, offer_id, timeout, maker_address=None, taker_address=None):
+    def __init__(self, type_, base_amount, counter_amount, offer_id, timeout,
+                 maker_address=None, taker_address=None):
         assert isinstance(type_, OfferType)
         assert isinstance(base_amount, (int, long))
         assert isinstance(counter_amount, (int, long))
@@ -56,6 +53,21 @@ class Offer(object):
         self.maker_address = maker_address
         self.taker_address = taker_address
 
+        # FIXME hash is only known after creating the message, but maker creates the offer instance before \
+        # serializing to a msg
+        # This members will only be set when you are not the maker!
+        # Information from the associated commitment:
+        self.hash = None
+        self.commitment_amount = None
+
+    # make setting of msg hash more explicit
+    def set_offer_hash(self, hash_):
+        self.hash = hash_
+
+    # make setting of commitment_amount more explicit
+    def set_commitment_amount(self, amount):
+        self.commitment_amount = amount
+
     @property
     def amount(self):
         return self.base_amount
@@ -65,8 +77,8 @@ class Offer(object):
         return float(self.counter_amount) / self.base_amount
 
     def __repr__(self):
-        return "Offer<offer_id={} amount={} price={} type={} >".format(
-                self.offer_id, self.amount, self.price, self.type_)
+        return "Offer<offer_id={} amount={} price={} type={} hash={}>".format(
+                self.offer_id, self.amount, self.price, self.type_, self.hash)
 
 
 class OfferView(object):

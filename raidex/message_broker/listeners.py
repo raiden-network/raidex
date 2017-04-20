@@ -79,6 +79,8 @@ class OfferListener(MessageListener):
         if not isinstance(message, messages.ProvenOffer):
             return None
         offer_msg = message.offer
+        commitment_msg = message.commitment
+        commitment_proof_msg = message.commitment_proof
         if self.market == (offer_msg.ask_token, offer_msg.bid_token):
             type_ = OfferType.BUY
             base_amount, counter_amount = offer_msg.ask_amount, offer_msg.bid_amount
@@ -87,8 +89,13 @@ class OfferListener(MessageListener):
             base_amount, counter_amount = offer_msg.bid_amount, offer_msg.ask_amount
         else:
             raise AssertionError("unknown market pair")
-        return Offer(type_, base_amount, counter_amount, offer_id=offer_msg.offer_id,
-                     timeout=offer_msg.timeout, maker_address=offer_msg.sender)
+
+        offer = Offer(type_, base_amount, counter_amount, offer_id=offer_msg.offer_id, timeout=offer_msg.timeout,
+                      maker_address=message.sender)
+        # set the information that's important for Committing at the CommitmentService
+        offer.set_offer_hash(commitment_msg.offer_hash)
+        offer.set_commitment_amount(commitment_msg.amount)
+        return offer
 
 
 class OfferTakenListener(MessageListener):
