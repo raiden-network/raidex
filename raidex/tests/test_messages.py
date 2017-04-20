@@ -16,7 +16,20 @@ from raidex.messages import (
     SwapExecution,
     CommitmentServiceAdvertisement
 )
-from raidex.utils import milliseconds, ETHER_TOKEN_ADDRESS
+from raidex.utils import milliseconds, ETHER_TOKEN_ADDRESS, make_privkey_address
+from raidex.commitment_service.server import CommitmentService
+
+# TODO refactor this tests, especially the fixtures
+
+UINT32_MAX_INT = 2 ** 32
+
+
+@pytest.fixture()
+def commitment_service():
+    privkey, _ = make_privkey_address()
+    # is None here, since the broker functionality won't be used
+    message_broker = None
+    return CommitmentService(message_broker, privkey, 0.01)
 
 
 @pytest.fixture()
@@ -50,29 +63,13 @@ def maker_swap_executions(accounts, offer_msgs):
 
 
 @pytest.fixture()
-def swap_completeds(commitment_services, offer_msgs):
+def swap_completeds(commitment_service, offer_msgs):
     swap_completeds_ = []
     for offer in offer_msgs:
-        cs = random.choice(commitment_services)
-        # TODO eventually construct them in a way, that swap executions have an earlier time
         sw_completed = SwapCompleted(offer.offer_id, milliseconds.time_int())
-        sw_completed.sign(cs.private_key)
+        commitment_service._sign(sw_completed)
         swap_completeds_.append(sw_completed)
     return swap_completeds_
-
-
-@pytest.fixture()
-def commitment_service_advertisements(commitment_services):
-    commitment_service_advertisements_ = []
-    for cs in commitment_services:
-        csa = CommitmentServiceAdvertisement(
-            cs.address,
-            cs.commitment_asset,
-            cs.fee_rate
-        )
-        csa.sign(cs.private_key)
-        commitment_service_advertisements_.append(csa)
-    return commitment_service_advertisements_
 
 
 def test_offer(assets, accounts):
@@ -108,6 +105,7 @@ def test_signing(accounts, assets):
 
     # check that getting the sender of unsigned 'Signed'-message raises an error
     o_unsigned_deserialized = SwapOffer.deserialize(o_unsigned.serialize(o_unsigned))
+
     raised = False
     try:
         o_unsigned_deserialized.sender
@@ -116,9 +114,8 @@ def test_signing(accounts, assets):
     assert raised
 
 
-def test_commitments(offer_msgs, accounts):
+def test_commitments(offer_msgs, commitment_service, accounts):
     offer = offer_msgs[0]
-    commitment_service = accounts[2]
     maker = filter(lambda acc: acc.address == offer.sender, accounts)[0]
 
     commitment = Commitment(offer.offer_id, offer.hash, offer.timeout, 42)
@@ -126,9 +123,8 @@ def test_commitments(offer_msgs, accounts):
     assert_serialization(commitment)
     assert_envelope_serialization(commitment)
 
-    proof = commitment.compute_signed_signature(commitment_service.privatekey)
-    commitment_proof = CommitmentProof(commitment.signature, proof)
-    commitment_proof.sign(commitment_service.privatekey)
+    commitment_proof = CommitmentProof(commitment.signature)
+    commitment_service._sign(commitment_proof)
     assert commitment_proof.sender == commitment_service.address
     assert_serialization(commitment_proof)
     assert_envelope_serialization(commitment_proof)
@@ -161,37 +157,36 @@ def test_offers(offer_msgs, accounts):
         assert not offer.timed_out(at=milliseconds.time_int() - 3600 * 1000)  # pretend we come from the past
 
 
-def test_cs_advertisements(commitment_service_advertisements, commitment_services):
-    cservices = [cs.address for cs in commitment_service_advertisements]
-    for advertisement in commitment_service_advertisements:
-        # the only sender of a CS-Ad can be the CS itself:
-        assert advertisement.address == advertisement.sender
-        assert advertisement.address in cservices
-        assert advertisement.commitment_asset == ETHER_TOKEN_ADDRESS
-        # fee_rate represented as int(float_rate/uint32.max_int)
-        assert isinstance(advertisement.fee_rate, int)
-        assert 0 <= advertisement.fee_rate <= 2 ** 32
+def test_cs_advertisements(commitment_service):
+    csa = CommitmentServiceAdvertisement(
+        commitment_service.address,
+        ETHER_TOKEN_ADDRESS,
+        int(commitment_service.fee_rate / UINT32_MAX_INT)
+    )
+    commitment_service._sign(csa)
+    assert commitment_service.address == csa.sender
+    assert csa.address == commitment_service.address
+    assert csa.commitment_asset == ETHER_TOKEN_ADDRESS
+    # fee_rate represented as int(float_rate/uint32.max_int)
+    assert isinstance(csa.fee_rate, int)
+    assert 0 <= csa.fee_rate <= 2 ** 32
+    assert csa.fee_rate == int(commitment_service.fee_rate / UINT32_MAX_INT)
 
 
 def test_swap_execution(offer_msgs, accounts, maker_swap_executions, taker_swap_executions):
     time_ = milliseconds.time_plus(1)
     senders = [acc.address for acc in accounts]
 
-    # there need to exist two swap executions, one from the offer.sender and one from the taker
-    # dont include this logic in the unit test!
     for sw_execution in taker_swap_executions + maker_swap_executions:
         assert sw_execution.sender in senders
         assert time_ > sw_execution.timestamp  # should be in the past
 
 
-def test_swap_completeds(offer_msgs, commitment_services, swap_completeds):
+def test_swap_completeds(offer_msgs, commitment_service, swap_completeds):
     time_ = milliseconds.time_plus(1)
-    senders = [cs.address for cs in commitment_services]
 
-    # there need to exist two swap executions, one from the offer.sender and one from the taker
-    # dont include this logic in the unit test!
     for sw_completed in swap_completeds:
-        assert sw_completed.sender in senders
+        assert sw_completed.sender == commitment_service.address
         assert time_ > sw_completed.timestamp  # should be in the past
 
 
@@ -205,4 +200,3 @@ def assert_envelope_serialization(message):
         envelope_dict = json.loads(envelope)
         envelope_dict['version'] = 2
         Envelope.open(json.dumps(envelope_dict))
-
