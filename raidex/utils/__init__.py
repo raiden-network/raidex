@@ -2,7 +2,8 @@ import string
 import random
 
 from ethereum.utils import privtoaddr, sha3, big_endian_to_int
-
+from rlp.utils import decode_hex as rlp_decode_hex, encode_hex as rlp_encode_hex
+from raiden.utils import pex as rpex
 from raidex.exceptions import UntradableAssetPair
 
 ETHER_TOKEN_ADDRESS = privtoaddr(sha3('ether'))
@@ -14,6 +15,18 @@ def make_privkey_address():
     privkey = sha3(''.join(random.choice(string.printable) for _ in range(20)))
     address = privtoaddr(privkey)
     return privkey, address
+
+
+def decode_hex(data):
+    return rlp_decode_hex(data)
+
+
+def encode_hex(data):
+    return rlp_encode_hex(data)
+
+
+def pex(data):
+    return rpex(data)
 
 def get_market_from_asset_pair(asset_pair):
     """
