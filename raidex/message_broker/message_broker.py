@@ -1,6 +1,9 @@
 from collections import namedtuple, defaultdict
-
+from ethereum import slogging
 from gevent.queue import Queue
+from raidex.utils import pex
+
+log = slogging.get_logger('message_broker.global')
 
 Listener = namedtuple('Listener', 'topic message_queue_async transform')
 
@@ -11,19 +14,23 @@ class MessageBroker(object):
         self.listeners = defaultdict(list)
 
     def send(self, topic, message):
-        for listener in self.listeners[topic]:
+        queues = self.listeners[topic]
+        if not queues:
+            log.debug('CODE: no listener waiting on topic {}'.format(pex(topic)))
+        for listener in queues:
             topic, message_queue_async, transform = listener
+            transformed_message = message
             if transform is not None:
-                message = transform(message)
-            if message is not None:
-                message_queue_async.put(message)
+                transformed_message = transform(transformed_message)
+            if transformed_message is not None:
+                log.debug('Put message in queue: msg={}, topic={}, transform={}'.format(message, pex(topic), transform))
+                message_queue_async.put(transformed_message)
         return True
 
     def listen_on(self, topic, transform=None):
         message_queue_async = Queue()
         listener = Listener(topic, message_queue_async, transform)
         self.listeners[topic].append(listener)
-
         return listener
 
     def broadcast(self, message):
