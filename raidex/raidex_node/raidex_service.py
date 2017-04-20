@@ -13,11 +13,8 @@ from raidex.raidex_node.exchange_task import MakerExchangeTask, TakerExchangeTas
 from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.offer_book import OfferBook, OfferBookTask, Offer, TakenTask
 from raidex.raidex_node.order_task import OrderTask
-from raidex.raidex_node.trader.client import TraderClient
 from raidex.raidex_node.trades import TradesView, SwapCompletedTask
-from raidex.message_broker.client import MessageBroker
 from raidex.message_broker.listeners import OfferListener, OfferTakenListener, SwapCompletedListener
-from raidex.commitment_service.commitment_service import CommitmentService
 import raidex.utils.milliseconds as milliseconds
 
 
@@ -33,15 +30,15 @@ class Raidex(object):
     """just to try it out
     """
 
-    def __init__(self, token_pair=None):
+    def __init__(self, token_pair, priv_key, message_broker, trader_client, commitment_service_client):
         if token_pair is None:
             token_pair = TokenPair(privtoaddr(sha3('beer')), privtoaddr(sha3('ether')))
         self.token_pair = token_pair
-        self.priv_key = sha3('secret')
+        self.priv_key = priv_key
         self.address = privtoaddr(self.priv_key)
-        self.message_broker = MessageBroker()
-        self.commitment_service = CommitmentService(self.token_pair, self.priv_key)
-        self.trader = TraderClient(self.address)
+        self.message_broker = message_broker
+        self.trader_client = trader_client
+        self.commitment_service = commitment_service_client
         self.offer_book = OfferBook()
         self.trades = TradesView()
         self.order_tasks_by_id = {}
@@ -52,20 +49,23 @@ class Raidex(object):
         TakenTask(self.offer_book, self.trades, OfferTakenListener(self.message_broker)).start()
         SwapCompletedTask(self.trades, SwapCompletedListener(self.message_broker)).start()
 
+        # start the tasks for the commitment-service-client
+        self.commitment_service.start()
+
     def make_offer(self, type_, amount, counter_amount):
         # TODO generate better offer id
         offer = Offer(type_, amount, counter_amount, random.randint(0, 1000000000), milliseconds.time_plus(90))
-        MakerExchangeTask(offer, self.address, self.commitment_service, self.message_broker, self.trader).start()
+        MakerExchangeTask(offer, self.address, self.commitment_service, self.message_broker, self.trader_client).start()
         gevent.sleep(0.001)
 
     def take_offer(self, offer_id):
         offer = self.offer_book.get_offer_by_id(offer_id)
-        TakerExchangeTask(offer, self.commitment_service, self.message_broker, self.trader).start()
+        TakerExchangeTask(offer, self.commitment_service, self.message_broker, self.trader_client).start()
         gevent.sleep(0.001)
 
     def limit_order(self, type_, amount, price):
         order_task = OrderTask(self.offer_book, type_, amount, price, self.address, self.commitment_service,
-                               self.message_broker, self.trader).start()
+                               self.message_broker, self.trader_client).start()
         order_id = self.next_order_id
         self.order_tasks_by_id[order_id] = order_task
         self.next_order_id += 1
