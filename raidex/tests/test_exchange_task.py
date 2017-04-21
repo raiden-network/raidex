@@ -8,7 +8,6 @@ from raidex.raidex_node.offer_book import Offer, OfferType
 from raidex.raidex_node.trader.trader import TraderClient
 
 
-
 @pytest.fixture()
 def offers():
     return [Offer(OfferType.BUY, 100, 1000, offer_id=123, timeout=milliseconds.time_plus(1)),
