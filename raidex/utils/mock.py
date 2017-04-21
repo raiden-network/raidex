@@ -17,6 +17,7 @@ from ethereum.utils import denoms, sha3, privtoaddr, big_endian_to_int
 from raidex.raidex_node.offer_book import Offer, OfferType
 from raidex.utils import make_privkey_address, milliseconds
 
+
 ETH = denoms.ether
 
 
@@ -34,6 +35,19 @@ def _accounts():
 ACCOUNTS = _accounts()
 
 
+def gen_orders(start_price=10, max_amount=1000 * ETH, num_entries=10, max_deviation=0.01):
+    assert isinstance(start_price, (int, long))
+    orders = []
+    price = start_price
+    for i in range(num_entries):
+        factor = 1 + (2 * random.random() - 1) * max_deviation
+        price = factor * price
+        amount = random.randrange(1, max_amount)
+        address = encode_hex(sha3(price * amount))[:40]
+        orders.append((address, _price(price), amount))
+    return orders
+
+  
 def gen_offer(magic_number, market_price=10.0, max_amount=1000 * ETH, max_deviation=0.01):
     # assert isinstance(market_price, (int, long))
     price = market_price
