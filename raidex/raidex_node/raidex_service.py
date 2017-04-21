@@ -3,7 +3,7 @@ from __future__ import print_function
 import random
 
 import gevent
-from gevent import monkey
+from gevent import monkey; monkey.patch_all()
 from flask import Flask
 
 from ethereum import slogging
@@ -21,7 +21,6 @@ from raidex.commitment_service.commitment_service import CommitmentService
 import raidex.utils.milliseconds as milliseconds
 
 
-monkey.patch_all()
 app = Flask(__name__)
 
 slogging.configure(':DEBUG')

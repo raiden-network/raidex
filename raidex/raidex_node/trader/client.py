@@ -1,8 +1,6 @@
 from __future__ import print_function
 
-from gevent import monkey
-
-monkey.patch_socket()
+from gevent import monkey; monkey.patch_socket()
 
 import requests
 from ethereum.utils import encode_hex

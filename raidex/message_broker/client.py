@@ -3,14 +3,11 @@ from __future__ import print_function
 import json
 import requests
 from gevent import Greenlet
-from gevent import monkey
+from gevent import monkey; monkey.patch_socket()
 from gevent.queue import Queue
 
-from message_broker import Listener
+from raidex.message_broker.message_broker import Listener
 import raidex.messages as messages
-
-
-monkey.patch_socket()
 
 
 class MessageBroker(object):
