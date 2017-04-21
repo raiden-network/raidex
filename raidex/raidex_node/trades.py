@@ -31,10 +31,9 @@ class TradesView(object):
         self.pending_offer_by_id[offer.offer_id] = offer
 
     def report_completed(self, offer_id, completed_timestamp):
-        try:
-            offer = self.pending_offer_by_id[offer_id]
-        except KeyError:
-            raise Exception("Offer is not pending")
+        offer = self.pending_offer_by_id.get(offer_id)
+        if offer is None:
+            return False
 
         assert isinstance(offer, Offer)
         trade = Trade(offer, completed_timestamp)

@@ -101,4 +101,4 @@ def test_swap_completed_task(message_broker, commitment_service, token_pair):
     # send swap_completed
     message_broker.broadcast(swap_completed)
     gevent.sleep(0.001)
-    assert len(trades.trade_by_id) == 1
+    assert len(trades) == 1

@@ -36,12 +36,12 @@ ACCOUNTS = _accounts()
 
 def gen_offer(magic_number, market_price=10.0, max_amount=1000 * ETH, max_deviation=0.01):
     # assert isinstance(market_price, (int, long))
-    price = copy.deepcopy(market_price)
+    price = market_price
     operator = [1, -1]
 
     # 0 is ask, 1 is bid # TODO checkme
     switch = random.choice((0, 1))
-    type_ = OfferType.BUY if switch == 0 else OfferType.SELL
+    type_ = OfferType(switch)
     for _ in range(magic_number):
             drift = random.random() * max_deviation * operator[switch]
             factor = 1 + drift
@@ -50,7 +50,7 @@ def gen_offer(magic_number, market_price=10.0, max_amount=1000 * ETH, max_deviat
     base_amount = random.randint(1, max_amount)
     counter_amount = int(base_amount * float(price))
 
-    assert type_ is OfferType.BUY or OfferType.SELL
+    assert type_ in (OfferType.BUY, OfferType.SELL)
     offer = Offer(type_,
                   base_amount,
                   counter_amount,
@@ -75,7 +75,7 @@ class MockExchangeTask(gevent.Greenlet):
         self.message_broker = message_broker
         self.offer_book = offer_book
         self.market_price = float(initial_market_price)
-        self.time = float(0)
+        self.time = 0.
 
         for _ in range(0, self.nof_accounts):
             privkey, address = make_privkey_address()
@@ -119,7 +119,6 @@ class MockExchangeTask(gevent.Greenlet):
         magic_number = random.randint(1, self.message_volume)
         offer = gen_offer(magic_number, market_price=market_price)
         proof = self.commitment_service.maker_commit_async(offer, privkey).get()
-        gevent.sleep(0.001)  # necessary?
         self.message_broker.broadcast(proof)
 
     def take_and_swap_offer(self, offer):
@@ -131,4 +130,3 @@ class MockExchangeTask(gevent.Greenlet):
         swap_completed = self.commitment_service.create_swap_completed(offer.offer_id)
         wait = int(round(offer.timeout - (random.random() * (offer.timeout - 100))))
         gevent.spawn_later(milliseconds.to_seconds(wait), self.message_broker.broadcast, swap_completed)
-        gevent.sleep(0.001)  # necessary?
