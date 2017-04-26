@@ -1,6 +1,5 @@
 <div class="container-fluid">
-  <div class="row">
-    <div class="col-md-5">
+    <div class="row">
       <p-dataTable [value]="bids" [rows]="7" [paginator]="true" [pageLinks]="0"
                    styleClass="borderless">
         <p-header>Bids</p-header>
@@ -10,7 +9,7 @@
                   [style]="{width: '50px', 'text-align': 'right'}"></p-column>
       </p-dataTable>
     </div>
-    <div class="col-md-5">
+    <div class="row">
       <p-dataTable [value]="asks" [rows]="7" [paginator]="true" [pageLinks]="0"
                    styleClass="borderless">
         <p-header>Asks</p-header>
@@ -20,5 +19,4 @@
                   [style]="{width: '50px', 'text-align': 'right'}"></p-column>
       </p-dataTable>
     </div>
-  </div>
 </div>

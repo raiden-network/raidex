@@ -111,8 +111,8 @@ export class ZingDepthChartComponent implements OnInit {
                     }
                 ],
             },
-            height: 300,
-            width: '100%'
+            height: 275,
+            width: 550
         }];
     }
 }
