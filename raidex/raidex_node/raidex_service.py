@@ -15,7 +15,7 @@ from raidex.raidex_node.offer_book import OfferBook, OfferBookTask, Offer, Taken
 from raidex.raidex_node.order_task import OrderTask
 from raidex.raidex_node.trades import TradesView, SwapCompletedTask
 from raidex.message_broker.listeners import OfferListener, OfferTakenListener, SwapCompletedListener
-import raidex.utils.milliseconds as milliseconds
+import raidex.utils.timestamp as milliseconds
 
 
 monkey.patch_all()

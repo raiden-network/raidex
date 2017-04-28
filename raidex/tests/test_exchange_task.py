@@ -1,5 +1,5 @@
 import pytest
-import raidex.utils.milliseconds as milliseconds
+import raidex.utils.timestamp as milliseconds
 from raidex.commitment_service.commitment_service import CommitmentService
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.raidex_node.exchange_task import MakerExchangeTask, TakerExchangeTask

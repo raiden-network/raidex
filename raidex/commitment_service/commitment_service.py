@@ -3,7 +3,7 @@ from gevent.event import AsyncResult
 
 from raidex.messages import SwapOffer as OfferMsg, Commitment, CommitmentProof, ProvenOffer, OfferTaken, SwapCompleted
 from raidex.raidex_node.offer_book import OfferType, Offer
-from raidex.utils import milliseconds
+from raidex.utils import timestamp
 
 
 class CommitmentService(object):
@@ -56,7 +56,7 @@ class CommitmentService(object):
 
     def create_swap_completed(self, offer_id):
         # type: (int) -> SwapCompleted
-        msg = SwapCompleted(offer_id, milliseconds.time())
+        msg = SwapCompleted(offer_id, timestamp.time())
         msg.sign(self.priv_key)
         return msg
 

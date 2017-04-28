@@ -9,7 +9,7 @@ from raidex.messages import SwapOffer as OfferMsg, Commitment, CommitmentProof, 
 from raidex.message_broker.listeners import CommitmentProofListener, OfferTakenListener
 from raidex.raidex_node.offer_book import OfferType, Offer
 from raidex.utils.gevent_helpers import make_async
-from raidex.utils import milliseconds,pex
+from raidex.utils import timestamp
 
 log = slogging.get_logger('node.commitment_service')
 
@@ -61,7 +61,7 @@ class CommitmentService(object):
             return False
 
         # if the offer timed out, we don't want to continue waiting on the proof (e.g. CS unresponsive)
-        timeout = milliseconds.seconds_to_timeout(offer.timeout)
+        timeout = timestamp.seconds_to_timeout(offer.timeout)
         try:
             commitment_proof = commitment_proof_async_result.get(timeout=timeout)
         except gevent.Timeout:
@@ -104,7 +104,7 @@ class CommitmentService(object):
         commitment_proof_async_result = self.commitment_proofs[commitment.signature]
 
         # if the offer timed out, we don't want to continue waiting on the proof (e.g. CS unresponsive)
-        timeout = milliseconds.seconds_to_timeout(offer.timeout)
+        timeout = timestamp.seconds_to_timeout(offer.timeout)
         try:
             commitment_proof = commitment_proof_async_result.get(timeout=timeout)
         except gevent.Timeout:

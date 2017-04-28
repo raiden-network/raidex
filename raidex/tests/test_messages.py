@@ -16,7 +16,7 @@ from raidex.messages import (
     SwapExecution,
     CommitmentServiceAdvertisement
 )
-from raidex.utils import milliseconds, ETHER_TOKEN_ADDRESS, make_privkey_address
+from raidex.utils import timestamp, ETHER_TOKEN_ADDRESS, make_privkey_address
 from raidex.commitment_service.server import CommitmentService
 
 # TODO refactor this tests, especially the fixtures
@@ -39,7 +39,7 @@ def taker_swap_executions(accounts, offer_msgs):
         taker = None
         while taker is None or taker.address == offer.sender:
             taker = random.choice(accounts)
-        sw_execution = SwapExecution(offer.offer_id, milliseconds.time_int())
+        sw_execution = SwapExecution(offer.offer_id, timestamp.time_int())
         sw_execution.sign(taker.privatekey)
         taker_swap_executions.append(sw_execution)
     return taker_swap_executions
@@ -56,7 +56,7 @@ def maker_swap_executions(accounts, offer_msgs):
                 break
         if maker is None:
             continue
-        sw_execution = SwapExecution(offer.offer_id, milliseconds.time_int())
+        sw_execution = SwapExecution(offer.offer_id, timestamp.time_int())
         sw_execution.sign(maker.privatekey)
         maker_swap_executions_.append(sw_execution)
     return maker_swap_executions_
@@ -66,7 +66,7 @@ def maker_swap_executions(accounts, offer_msgs):
 def swap_completeds(commitment_service, offer_msgs):
     swap_completeds_ = []
     for offer in offer_msgs:
-        sw_completed = SwapCompleted(offer.offer_id, milliseconds.time_int())
+        sw_completed = SwapCompleted(offer.offer_id, timestamp.time_int())
         commitment_service._sign(sw_completed)
         swap_completeds_.append(sw_completed)
     return swap_completeds_
@@ -154,7 +154,7 @@ def test_offers(offer_msgs, accounts):
     senders = [acc.address for acc in accounts]
     for offer in offer_msgs:
         assert offer.sender in senders
-        assert not offer.timed_out(at=milliseconds.time_int() - 3600 * 1000)  # pretend we come from the past
+        assert not offer.timed_out(at=timestamp.time_int() - 3600 * 1000)  # pretend we come from the past
 
 
 def test_cs_advertisements(commitment_service):
@@ -174,7 +174,7 @@ def test_cs_advertisements(commitment_service):
 
 
 def test_swap_execution(offer_msgs, accounts, maker_swap_executions, taker_swap_executions):
-    time_ = milliseconds.time_plus(1)
+    time_ = timestamp.time_plus(1)
     senders = [acc.address for acc in accounts]
 
     for sw_execution in taker_swap_executions + maker_swap_executions:
@@ -183,7 +183,7 @@ def test_swap_execution(offer_msgs, accounts, maker_swap_executions, taker_swap_
 
 
 def test_swap_completeds(offer_msgs, commitment_service, swap_completeds):
-    time_ = milliseconds.time_plus(1)
+    time_ = timestamp.time_plus(1)
 
     for sw_completed in swap_completeds:
         assert sw_completed.sender == commitment_service.address

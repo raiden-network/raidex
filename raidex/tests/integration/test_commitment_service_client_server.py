@@ -8,7 +8,7 @@ from raidex.commitment_service.server import CommitmentService
 from raidex.raidex_node.trader.trader import Trader, TraderClient
 from raidex import messages
 from raidex.message_broker.message_broker import MessageBroker
-from raidex.utils import milliseconds, make_privkey_address
+from raidex.utils import timestamp, make_privkey_address
 from raidex.raidex_node.raidex_service import Raidex
 from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.offer_book import Offer, OfferType
@@ -83,7 +83,7 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
 
     assert maker.message_broker == taker.message_broker == commitment_service.message_broker
 
-    offer = Offer(OfferType.SELL, 100, 1000, offer_id=123, timeout=milliseconds.time_plus(5))
+    offer = Offer(OfferType.SELL, 100, 1000, offer_id=123, timeout=timestamp.time_plus(seconds=0, milliseconds=500))
     maker_commit_result = maker.commitment_service.maker_commit_async(offer, commitment_amount=5)
     gevent.sleep(0.01)
     assert commitment_service.trader_client.commitment_balance == 15
@@ -139,9 +139,9 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     assert failed_taker.trader_client.commitment_balance == 10
 
     # Now the Maker and taker say they executed the swap
-    maker_swap_exec = messages.SwapExecution(offer.offer_id, milliseconds.time())
+    maker_swap_exec = messages.SwapExecution(offer.offer_id, timestamp.time())
     maker_swap_exec.sign(maker.priv_key)
-    taker_swap_exec = messages.SwapExecution(offer.offer_id, milliseconds.time())
+    taker_swap_exec = messages.SwapExecution(offer.offer_id, timestamp.time())
     taker_swap_exec.sign(taker.priv_key)
 
     maker.message_broker.send(commitment_service.address, maker_swap_exec)

@@ -15,7 +15,7 @@ from noise import pnoise1
 from ethereum.utils import denoms, sha3, privtoaddr, big_endian_to_int
 
 from raidex.raidex_node.offer_book import Offer, OfferType
-from raidex.utils import make_privkey_address, milliseconds
+from raidex.utils import make_privkey_address, timestamp
 
 ETH = denoms.ether
 
@@ -57,7 +57,7 @@ def gen_offer(magic_number, market_price=10.0, max_amount=1000 * ETH, max_deviat
                   # reuse random privkey generation for random offer-ids:
                   big_endian_to_int(make_privkey_address()[0]),
                   # timeout int 10-100 seconds
-                  milliseconds.time_plus(random.randint(10, 100))
+                  timestamp.time_plus(random.randint(10, 100))
                   )
     return offer
 
@@ -130,5 +130,5 @@ class MockExchangeTask(gevent.Greenlet):
         # spawn later randomly, but before timeout
         swap_completed = self.commitment_service.create_swap_completed(offer.offer_id)
         wait = int(round(offer.timeout - (random.random() * (offer.timeout - 100))))
-        gevent.spawn_later(milliseconds.to_seconds(wait), self.message_broker.broadcast, swap_completed)
+        gevent.spawn_later(timestamp.to_seconds(wait), self.message_broker.broadcast, swap_completed)
         gevent.sleep(0.001)  # necessary?

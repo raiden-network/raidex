@@ -7,7 +7,7 @@ from gevent.queue import Queue
 from ethereum import slogging
 
 from raidex.raidex_node.offer_book import OfferType
-from raidex.utils import milliseconds, pex
+from raidex.utils import timestamp, pex
 from raidex.utils.gevent_helpers import make_async
 
 log = slogging.get_logger('trader.client')
@@ -254,7 +254,7 @@ class TransferReceivedListener(EventListener):
     def _transform(self, event):
         if isinstance(event, TransferReceivedEvent):
             # transform event into receipt, with additional timestamp
-            receipt = TransferReceipt(event.sender, event.amount, event.identifier, milliseconds.time())
+            receipt = TransferReceipt(event.sender, event.amount, event.identifier, timestamp.time())
             return receipt
         else:
             return None

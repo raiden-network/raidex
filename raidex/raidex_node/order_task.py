@@ -3,7 +3,7 @@ import random
 import gevent
 from exchange_task import MakerExchangeTask, TakerExchangeTask
 from offer_book import OfferType, Offer
-from raidex.utils import milliseconds
+from raidex.utils import timestamp
 
 
 class OrderTask(gevent.Greenlet):
@@ -58,7 +58,7 @@ class OrderTask(gevent.Greenlet):
         while bought + step <= self.amount:
             bought += step
             offer = Offer(self.type_, step, int(self.price * step), random.randint(0, 1000000000),
-                          milliseconds.time_plus(60))  # TODO generate better offer id
+                          timestamp.time_plus(60))  # TODO generate better offer id
             task = MakerExchangeTask(offer, self.address, self.commitment_service, self.message_broker, self.trader)
             task.start()
             self.tasks.append(task)

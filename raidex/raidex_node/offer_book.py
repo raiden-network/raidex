@@ -4,7 +4,7 @@ import gevent
 from bintrees import FastRBTree
 from enum import Enum
 from ethereum import slogging
-from raidex.utils import milliseconds
+from raidex.utils import timestamp, pex
 
 
 log = slogging.get_logger('node.offer_book')
@@ -209,4 +209,4 @@ class OfferBookTask(gevent.Greenlet):
                         self.offer_book.remove_offer(offer_id)
                 return func
 
-            gevent.spawn_later(milliseconds.seconds_to_timeout(offer.timeout), after_offer_timeout_func(offer.offer_id))
+            gevent.spawn_later(timestamp.seconds_to_timeout(offer.timeout), after_offer_timeout_func(offer.offer_id))

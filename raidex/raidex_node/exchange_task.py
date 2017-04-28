@@ -1,5 +1,5 @@
 import gevent
-import raidex.utils.milliseconds as rtime
+from raidex.utils import timestamp
 from ethereum import slogging
 from ethereum.utils import encode_hex
 from raidex.message_broker.listeners import TakerListener
@@ -24,7 +24,7 @@ class MakerExchangeTask(gevent.Greenlet):
         gevent.Greenlet.__init__(self)
 
     def _run(self):
-        seconds_to_timeout = rtime.seconds_to_timeout(self.offer.timeout)
+        seconds_to_timeout = timestamp.seconds_to_timeout(self.offer.timeout)
         if seconds_to_timeout <= 0:
             return False
         timeout = gevent.Timeout(seconds_to_timeout)
@@ -67,7 +67,7 @@ class TakerExchangeTask(gevent.Greenlet):
         gevent.Greenlet.__init__(self)
 
     def _run(self):
-        seconds_to_timeout = rtime.seconds_to_timeout(self.offer.timeout)
+        seconds_to_timeout = timestamp.seconds_to_timeout(self.offer.timeout)
         if seconds_to_timeout <= 0:
             return False
         timeout = gevent.Timeout(seconds_to_timeout)

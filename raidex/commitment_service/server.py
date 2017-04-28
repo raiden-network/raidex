@@ -8,7 +8,7 @@ from raiden.encoding.signing import  GLOBAL_CTX
 from raiden.encoding.signing import sign as _sign
 from secp256k1 import PrivateKey, ALL_FLAGS
 
-from raidex.utils import milliseconds, pex
+from raidex.utils import timestamp, pex
 from raidex import messages
 from raidex.raidex_node.trader.trader import TraderClient, TransferReceipt, TransferReceivedListener
 from raidex.message_broker.listeners import CommitmentListener, SwapExecutionListener
@@ -101,7 +101,7 @@ class SwapCommitment(object):
 
     @property
     def timed_out(self):
-        return self.timeout < time.time() * 1000
+        return timestamp.timed_out(self.timeout)
 
     @property
     def offer_id(self):
@@ -184,7 +184,7 @@ class SwapCommitment(object):
 
             if self.is_completed:
                 # TODO should this be saved as well?
-                return messages.SwapCompleted(offer_id=self._maker_commitment.offer_id, timestamp=milliseconds.time_int())
+                return messages.SwapCompleted(offer_id=self._maker_commitment.offer_id, timestamp=timestamp.time_int())
             else:
                 return None
 
@@ -246,6 +246,7 @@ class CommitmentTask(gevent.Greenlet):
 
                 def after_offer_timeout_func(swaps, timedout_swap, refund_backlog):
                     def func():
+                        assert timedout_swap.timed_out
                         log_swaps.debug('Swap timed out: {}'.format(timedout_swap))
                         # check if still in swaps, if not, has been handled before
                         if timedout_swap.offer_id not in swaps:
@@ -275,8 +276,8 @@ class CommitmentTask(gevent.Greenlet):
 
                     return func
 
-                # FIXME timing isn't accurate at all!
-                gevent.spawn_later(milliseconds.seconds_to_timeout(commitment_msg.timeout) + 5,
+                seconds_to_timeout = timestamp.seconds_to_timeout(commitment_msg.timeout)
+                gevent.spawn_later(seconds_to_timeout,
                                    after_offer_timeout_func(self.swaps, swap, self.refund_queue))
 
             # committer is a taker

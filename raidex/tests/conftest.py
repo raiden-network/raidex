@@ -7,7 +7,7 @@ from ethereum.utils import sha3, privtoaddr, big_endian_to_int
 from ethereum import slogging
 
 from raidex import messages
-from raidex.utils import milliseconds, DEFAULT_RAIDEX_PORT
+from raidex.utils import timestamp, DEFAULT_RAIDEX_PORT
 
 
 @pytest.fixture(autouse=True)
@@ -44,7 +44,7 @@ def offer_msgs(request, accounts, assets):
                                    assets[1 - i % 2],
                                    random.randint(1, 100),
                                    big_endian_to_int(sha3('offer {}'.format(i))),
-                                   milliseconds.time_int() + i * 1000
+                                   timestamp.time_int() + i * 1000
                                    )
         offer.sign(maker.privatekey)
         offers.append(offer)

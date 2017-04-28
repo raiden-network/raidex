@@ -25,7 +25,7 @@ from raidex.commitment_service.server import (
     RefundTask,
     MessageSenderTask
 )
-from raidex.utils import make_privkey_address, milliseconds
+from raidex.utils import make_privkey_address, timestamp
 
 
 @pytest.fixture
@@ -69,8 +69,10 @@ def test_commitment_task(commitment_service, accounts):
     taker2 = accounts[2]
     # TODO hashes and ID clarification
     seconds_to_timeout = 0.5
+    timeout = timestamp.time_plus(seconds_to_timeout)
+
     commitment_msg = messages.Commitment(offer_id=offer_id, offer_hash=sha3(offer_id),
-                                         timeout=milliseconds.time_plus(seconds_to_timeout), amount=5)
+                                         timeout=timeout, amount=5)
 
     # let the maker sign and send commitment
     commitment_msg_maker = deepcopy(commitment_msg)
@@ -132,7 +134,7 @@ def test_swap_execution_task(commitment_service, message_broker, accounts):
     offer_id = big_endian_to_int(sha3('offer1'))
     seconds_to_timeout = 0.5
     commitment_msg = messages.Commitment(offer_id=offer_id, offer_hash=sha3(offer_id),
-                                         timeout=milliseconds.time_plus(seconds_to_timeout), amount=5)
+                                         timeout=timestamp.time_plus(seconds_to_timeout), amount=5)
 
     gevent.sleep(0.01)
 
@@ -146,17 +148,17 @@ def test_swap_execution_task(commitment_service, message_broker, accounts):
 
     # manually set the transfer_receipts:
     swap._maker_transfer_receipt = TransferReceipt(maker.address, amount=5, identifier=offer_id,
-                                                   timestamp=milliseconds.time())
+                                                   timestamp=timestamp.time())
     swap._taker_transfer_receipt = TransferReceipt(taker.address, amount=5, identifier=offer_id,
-                                                   timestamp=milliseconds.time())
+                                                   timestamp=timestamp.time())
 
     # inject the swap in the CS's dict
     commitment_service.swaps[offer_id] = swap
 
 
-    swap_exec_msg_maker = messages.SwapExecution(offer_id, milliseconds.time())
+    swap_exec_msg_maker = messages.SwapExecution(offer_id, timestamp.time())
     swap_exec_msg_maker.sign(maker.privatekey)
-    swap_exec_msg_taker = messages.SwapExecution(offer_id, milliseconds.time())
+    swap_exec_msg_taker = messages.SwapExecution(offer_id, timestamp.time())
     swap_exec_msg_taker.sign(taker.privatekey)
 
     commitment_service.message_broker.send(commitment_service.address, swap_exec_msg_maker)
@@ -167,7 +169,7 @@ def test_swap_execution_task(commitment_service, message_broker, accounts):
     assert swap._maker_swap_execution == swap_exec_msg_maker
 
     commitment_service.message_broker.send(commitment_service.address, swap_exec_msg_taker)
-    sent_time = milliseconds.time()
+    sent_time = timestamp.time()
     gevent.sleep(0.01)
 
     print(swap._maker_transfer_receipt)
@@ -213,7 +215,7 @@ def test_transfer_received_task(commitment_service, accounts, trader):
     amount = 5
     seconds_to_timeout = 0.5
     commitment_msg = messages.Commitment(offer_id=offer_id, offer_hash=sha3(offer_id),
-                                         timeout=milliseconds.time_plus(seconds_to_timeout), amount=amount)
+                                         timeout=timestamp.time_plus(seconds_to_timeout), amount=amount)
     commitment_msg.sign(maker.privatekey)
     swap = SwapCommitment(commitment_msg)
 
@@ -228,7 +230,7 @@ def test_transfer_received_task(commitment_service, accounts, trader):
     # do the maker commitment transfer
     transfer_successful = sender_trader.transfer(commitment_service.address, amount, offer_id)
     assert transfer_successful
-    sent_time = milliseconds.time()
+    sent_time = timestamp.time()
     gevent.sleep(0.01)
 
     receipt = swap._maker_transfer_receipt
@@ -248,10 +250,10 @@ def test_refund_task(commitment_service, trader, trader_client1):
     refund_task = RefundTask(commitment_service.trader_client, commitment_service.refund_queue, fee_rate)
 
     receipt1 = TransferReceipt(sender=trader_client1.address, identifier=sha3('beer'), amount=transfer_amount,
-                               timestamp=milliseconds.time())
+                               timestamp=timestamp.time())
 
     receipt2 = TransferReceipt(sender=trader_client1.address, identifier=sha3('gin'), amount=transfer_amount,
-                               timestamp=milliseconds.time())
+                               timestamp=timestamp.time())
 
     # claim fee, higher priority
     refund1 = Refund(receipt1, priority=5, claim_fee=True)
@@ -287,7 +289,7 @@ def test_message_sender_task(commitment_service, message_broker, accounts):
 
     # send whatever message to recipient:
     message_unsigned = messages.Commitment(big_endian_to_int(sha3('beer')), sha3('gin'),
-                                           timeout=milliseconds.time_plus(0.5), amount=10)
+                                           timeout=timestamp.time_plus(0.5), amount=10)
     assert not message_unsigned.has_sig
     message_sender_task.start()
     commitment_service.message_queue.put((message_unsigned, recipient))
