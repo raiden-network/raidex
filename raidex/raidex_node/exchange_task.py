@@ -41,8 +41,11 @@ class MakerExchangeTask(gevent.Greenlet):
                                                 taker_address, self.offer.offer_id).get()
             if status:
                 log.debug('trade done')
+                self.commitment_service.swap_executed(self.offer.offer_id)
+                #  TODO check refund minus fee
             else:
                 log.debug('trade failed')
+                #  TODO check refund
             return status
         except gevent.Timeout as t:
             if t is not timeout:
@@ -85,8 +88,10 @@ class TakerExchangeTask(gevent.Greenlet):
             status = status_async.get()
             if status:
                 log.debug('trade done')
+                self.commitment_service.swap_executed(self.offer.offer_id)
             else:
                 log.debug('trade failed')
+                # TODO check refund
             return status
         except gevent.Timeout as t:
             if t is not timeout:

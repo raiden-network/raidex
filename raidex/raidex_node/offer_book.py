@@ -44,10 +44,10 @@ class Offer(object):
 
     def __init__(self, type_, base_amount, counter_amount, offer_id, timeout, maker_address=None, taker_address=None):
         assert isinstance(type_, OfferType)
-        assert isinstance(base_amount, int)
-        assert isinstance(counter_amount, int)
-        assert isinstance(offer_id, int)
-        assert isinstance(timeout, int)
+        assert isinstance(base_amount, (int, long))
+        assert isinstance(counter_amount, (int, long))
+        assert isinstance(offer_id, (int, long))
+        assert isinstance(timeout, (int, long))
         self.offer_id = offer_id
         self.type_ = type_
         self.base_amount = base_amount
@@ -65,7 +65,7 @@ class Offer(object):
         return float(self.counter_amount) / self.base_amount
 
     def __repr__(self):
-        return "Order<order_id={} amount={} price={} type={} >".format(
+        return "Offer<offer_id={} amount={} price={} type={} >".format(
                 self.offer_id, self.amount, self.price, self.type_)
 
 
@@ -124,7 +124,7 @@ class OfferBook(object):
         self.tasks = dict()
 
     def insert_offer(self, offer):
-
+        assert isinstance(offer.type_, OfferType)
         if offer.type_ is OfferType.BUY:
             self.buys.add_offer(offer)
         elif offer.type_ is OfferType.SELL:
@@ -158,8 +158,9 @@ class OfferBook(object):
 
 
 class TakenTask(gevent.Greenlet):
-    def __init__(self, offer_book, taken_listener):
+    def __init__(self, offer_book, trades, taken_listener):
         self.offer_book = offer_book
+        self.trades = trades
         self.taken_listener = taken_listener
         gevent.Greenlet.__init__(self)
 
@@ -169,6 +170,8 @@ class TakenTask(gevent.Greenlet):
             offer_id = self.taken_listener.get()
             if self.offer_book.contains(offer_id):
                 log.debug('Offer {} is taken'.format(offer_id))
+                offer = self.offer_book.get_offer_by_id(offer_id)
+                self.trades.add_pending(offer)
                 self.offer_book.remove_offer(offer_id)
 
 
@@ -190,7 +193,7 @@ class OfferBookTask(gevent.Greenlet):
             def after_offer_timeout_func(offer_id):
                 def func():
                     if self.offer_book.contains(offer_id):
-                        log.debug('Offer {} is taken'.format(offer_id))
+                        log.debug('Offer {} timed out'.format(offer_id))
                         self.offer_book.remove_offer(offer_id)
                 return func
 
