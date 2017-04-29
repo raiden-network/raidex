@@ -15,7 +15,7 @@ def make_error_response(status_code, message):
 
 
 def bad_request(error):
-        return make_error_response(400, 'The request was malformed: ' + str(error))
+        return make_error_response(400, 'The request was malformed: ' + str(error.description))
 
 
 def not_found(error):

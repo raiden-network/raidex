@@ -5,7 +5,7 @@ from raidex.raidex_node.api.v0_1.errors import bad_request, internal_error, not_
 
 def build_blueprint(raidex):
 
-    blueprint = Blueprint('v01', __name__, url_prefix='/api/v01')
+    blueprint = Blueprint('v01', __name__, url_prefix='/api/v01/markets/dummy')
 
     blueprint.add_url_rule('/trades', view_func=Trades.as_view('trades', raidex))
     blueprint.add_url_rule('/offers', view_func=Offers.as_view('offers', raidex))

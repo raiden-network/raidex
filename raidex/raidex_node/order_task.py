@@ -38,10 +38,10 @@ class OrderTask(gevent.Greenlet):
 
         for offer in offers:
             if self.type_ is OfferType.SELL:
-                if offer.price > self.price:
+                if offer.price < self.price:
                     break
             elif self.type_ is OfferType.BUY:
-                if offer.price < self.price:
+                if offer.price > self.price:
                     break
             else:
                 ValueError('Unknown OfferType')
@@ -54,7 +54,7 @@ class OrderTask(gevent.Greenlet):
             task.start()
             self.tasks.append(task)
 
-        step = 2
+        step = 2 * 10**18 # for ether
         while bought + step <= self.amount:
             bought += step
             offer = Offer(self.type_, step, int(self.price * step), random.randint(0, 1000000000),

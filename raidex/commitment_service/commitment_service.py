@@ -12,10 +12,11 @@ class CommitmentService(object):
     Every raidex node has its own with the same key
     """
 
-    def __init__(self, token_pair, client_priv_key):
+    def __init__(self, token_pair, client_priv_key, message_broker):
         self.priv_key = sha3('simplecommitmentservice')
         self.token_pair = token_pair
         self.client_priv_key = client_priv_key
+        self.message_broker = message_broker
 
     def maker_commit_async(self, offer, privkey=None):
         # type: (Offer) -> AsyncResult
@@ -68,3 +69,9 @@ class CommitmentService(object):
         else:
             return OfferMsg(self.token_pair.base_token, offer.base_amount, self.token_pair.counter_token,
                             offer.counter_amount, offer.offer_id, offer.timeout)
+
+    def swap_executed(self, offer_id):
+        # type: (int) -> None
+        swap_completed = SwapCompleted(offer_id, milliseconds.time_int())
+        swap_completed.sign(self.priv_key)
+        self.message_broker.broadcast(swap_completed)

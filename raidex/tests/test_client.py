@@ -24,8 +24,8 @@ def message_broker():
 
 
 @pytest.fixture()
-def commitment_service(token_pair):
-    return CommitmentService(token_pair, sha3("test1"))
+def commitment_service(token_pair, message_broker):
+    return CommitmentService(token_pair, sha3("test1"), message_broker)
 
 
 def test_market_from_asset_pair():

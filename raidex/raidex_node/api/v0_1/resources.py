@@ -1,6 +1,8 @@
 from flask import jsonify, request, abort
 from flask.views import MethodView
 
+from raidex.raidex_node.offer_book import OfferType
+
 # API-Resources - the json encoding and decoding is handled manually for simplicity and readability
 # Type-checking, encoding/decoding and error-responses are kept very basic
 
@@ -42,15 +44,15 @@ class Trades(MethodView):
         self.interface = interface
 
     def get(self):
-        trades = self.interface.trades
+        trades = list(self.interface.trades.values())
         dict_ = dict(
             data=[
                 dict(
                     timestamp=trade.timestamp,
                     amount=trade.offer.amount,
                     price=trade.offer.price,
-                    type=trade.offer.type_
-                    ) for trade in trades
+                    type=trade.offer.type_.value
+                ) for trade in trades
             ]
         )
         return jsonify(dict_)
@@ -66,18 +68,27 @@ class LimitOrders(MethodView):
 
         type_ = kwargs['type']
         if type_ not in ('BUY', 'SELL'):
-            abort(400)
+            abort(400, 'Invalid type')
 
         amount = kwargs['amount']
-        if not isinstance(amount, int) or amount < 1:
-            abort(400)
+        if not isinstance(amount, (int, long)) or amount < 1:
+            abort(400, 'Invalid amount or type: {}'.format(type(amount)))
 
         price = kwargs['price']
-        if not isinstance(price, float):
-            abort(400)
+        if not isinstance(price, (float, int, long)):
+            abort(400, 'Invalid price')
+        price = float(price)
 
-        order_id = self.interface.limit_order(self, type_, amount, price)
+        order_id = self.interface.limit_order(OfferType[type_], amount, price)
         dict_ = dict(
             data=order_id
         )
         return jsonify(dict_)
+
+    def get(self):
+        # TODO
+        dict_ = dict(
+            data=[]
+        )
+        return jsonify(dict_)
+

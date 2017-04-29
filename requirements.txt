@@ -1,9 +1,6 @@
 pytest
 flask
-flask_cors
-zmq
 bintrees
-click
 devp2p
 werkzeug
 ethereum
@@ -12,4 +9,7 @@ raiden
 secp256k1==0.12.1  # FIXME only temporary to remove installation failures
 rlp==0.4.6  # FIXME only temporary to remove installation failures
 enum34
-noise  # TODO move to develop requirements later on
+# TODO move to develop requirements later on
+noise
+tinydb
+flask_cors
