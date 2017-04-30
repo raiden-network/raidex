@@ -2,9 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ZingChartModel } from '../model/zing-chart.model';
 import { RaidexService } from '../services/raidex.service';
 import { Subscription } from 'rxjs/Subscription';
-import * as util from '../services/util.service';
 import * as d3Array from 'd3-array';
-declare var $: any;
 
 @Component({
     selector: 'rex-zing-pricechart',
@@ -34,16 +32,14 @@ export class ZingPriceTimeSeriesComponent implements OnInit {
                 tempArray.sort(function (x, y) {
                     return d3Array.ascending(x.timestamp, y.timestamp);
                 });
-                this.priceTimeSeriesArray = util.formatIntoPriceTimeSeries(tempArray);
-                this.volumeTimeSeriesArray = util.formatIntoVolumeTimeSeries(tempArray);
-                let length = this.priceTimeSeriesArray.length - 1;
-                this.populateChartData(this.priceTimeSeriesArray[0][0],
-                    this.priceTimeSeriesArray[length][0]);
+                this.priceTimeSeriesArray = formatIntoPriceTimeSeries(tempArray);
+                this.volumeTimeSeriesArray = formatIntoVolumeTimeSeries(tempArray);
+                this.populateChartData();
             }
         );
     }
 
-    public populateChartData(minValue: number, maxValue: number): void {
+    public populateChartData(): void {
         this.charts = [{
             id: 'price-chart',
             data: {
@@ -59,8 +55,6 @@ export class ZingPriceTimeSeriesComponent implements OnInit {
                 },
                 'scale-x': {
                     'auto-fit': true,
-                    'min-value': minValue,
-                    'max-value': maxValue,
                     'step': '10second',
                     'transform': {
                         'type': 'date',
@@ -69,7 +63,6 @@ export class ZingPriceTimeSeriesComponent implements OnInit {
                     'items-overlap': true,
                     'max-items': 10,
                     'zooming': true,
-                    'zoom-to-values': [minValue, minValue + 240 * 60000],
                     'label': {
                         'text': 'Time'
                     }
@@ -152,4 +145,18 @@ export class ZingPriceTimeSeriesComponent implements OnInit {
         }];
     }
 
+}
+
+function formatIntoPriceTimeSeries(orderHistoryArray: Array<any>) {
+    return orderHistoryArray.map((element) => [
+            element.timestamp,
+            parseFloat(element.price)
+    ]);
+}
+
+function formatIntoVolumeTimeSeries(orderHistoryArray: Array<any>) {
+    return orderHistoryArray.map((element) => [
+        element.timestamp,
+        parseFloat(element.amount)
+    ]);
 }
