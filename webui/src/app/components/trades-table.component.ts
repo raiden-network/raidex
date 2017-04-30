@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs/Subscription';
 import { RaidexService } from '../services/raidex.service';
-import * as util from '../services/util.service';
 import { Trade } from '../model/trade';
 
 @Component({
@@ -22,7 +21,7 @@ export class TradesTableComponent implements OnInit {
     public getTrades(): void {
         this.raidexSubscription = this.raidexService.getTrades().subscribe(
             (trades) => {
-                this.trades = util.preprocessTrades(trades);
+                this.trades = trades;
             },
         );
     }

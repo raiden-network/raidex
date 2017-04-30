@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs/Subscription';
 import { RaidexService } from '../services/raidex.service';
-import * as util from '../services/util.service';
 import { Offer } from '../model/offer';
 
 @Component({
@@ -9,8 +8,8 @@ import { Offer } from '../model/offer';
     templateUrl: 'offers-table.component.html',
 })
 export class OffersTableComponent implements OnInit {
-    public bids: Offer[];
-    public asks: Offer[];
+    public buys: Offer[];
+    public sells: Offer[];
     private raidexSubscription: Subscription;
 
     constructor(private raidexService: RaidexService) {}
@@ -22,8 +21,8 @@ export class OffersTableComponent implements OnInit {
     public getOrderBook(): void {
         this.raidexSubscription = this.raidexService.getOffers().subscribe(
             (offers) => {
-                this.bids = util.preprocessOffers(offers.buys);
-                this.asks = util.preprocessOffers(offers.sells);
+                this.buys = offers.buys;
+                this.sells = offers.sells;
             },
         );
     }

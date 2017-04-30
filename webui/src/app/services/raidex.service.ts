@@ -10,39 +10,71 @@ import 'rxjs/add/operator/retryWhen';
 import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/mergeMap';
 import { Order } from '../model/order';
+import { Trade } from '../model/trade';
+import { Offer } from '../model/offer';
+import * as format from '../utils/format';
 
 @Injectable()
 export class RaidexService {
 
-    api = 'http://127.0.0.1:5000/api/1';
+    api = 'http://127.0.0.1:5002/api/v01';
 
     constructor(private http: Http) {
 
     }
 
-    public getTrades(): Observable<any> {
-        return TimerObservable.create(0, 60000)
-                .flatMap(() =>  this.http.get(`${this.api}/markets/dummy/trades/`)
-                    .map((response) => response.json().data))
+    public getTrades(): Observable<Array<Trade>> {
+        return TimerObservable.create(0, 10000)
+            .flatMap(() => this.http.get(`${this.api}/markets/dummy/trades`)
+                .map((response) => {
+                    let data = response.json().data;
+                    return data.map((elem) => new Trade(
+                        elem.timestamp,
+                        format.formatCurrency(elem.amount),
+                        format.formatCurrency(elem.price, 2),
+                        elem.type
+                    ));
+                }))
                 .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderHistory', errors));
     }
 
     public getOffers(): Observable<any> {
-        return TimerObservable.create(0, 60000)
-                .flatMap(() =>  this.http.get(`${this.api}/markets/dummy/offers/`)
-                    .map((response) => response.json().data))
-                .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderBook', errors));
+        return TimerObservable.create(0, 10000)
+            .flatMap(() => this.http.get(`${this.api}/markets/dummy/offers`)
+                .map((response) => {
+                    let data = response.json().data;
+                    let buys = data.buys;
+                    let sells = data.sells;
+                    return {
+                        'buys': buys.map((elem) =>
+                            new Offer(
+                                format.formatCurrency(elem.amount),
+                                format.formatCurrency(elem.price, 2)
+                            )),
+                        'sells': sells.map((elem) =>
+                            new Offer(
+                                format.formatCurrency(elem.amount),
+                                format.formatCurrency(elem.price, 2)
+                            ))
+                    };
+                }))
+            .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderBook', errors));
     }
 
     public submitLimitOrder(limitOrder: Order) {
+        let data = {
+            'type': limitOrder.type,
+            'amount': format.parseCurrency(limitOrder.amount),
+            'price': format.parseCurrency(limitOrder.price, 2)
+        };
         const headers = new Headers({ 'Content-Type': 'application/json' });
         const options = new RequestOptions({ headers: headers });
-        return this.http.post(`${this.api}/markets/dummy/orders/limit/`,
-            limitOrder, options).map((response) => response.json().data).catch(this.handleError);
+        return this.http.post(`${this.api}/markets/dummy/orders/limit`,
+            data, options).map((response) => response.json().data).catch(this.handleError);
     }
 
     public getLimitOrders() {
-        return this.http.get(`${this.api}/markets/dummy/orders/limit/`).
+        return this.http.get(`${this.api}/markets/dummy/orders/limit`).
             map((response) => response.json().data).catch(this.handleError);
     }
 

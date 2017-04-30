@@ -2,7 +2,6 @@ import { Component, OnInit} from '@angular/core';
 import { ZingChartModel } from '../model/zing-chart.model';
 import { RaidexService } from '../services/raidex.service';
 import { Subscription } from 'rxjs/Subscription';
-import * as util from '../services/util.service';
 import * as d3Array from 'd3-array';
 
 @Component({
@@ -16,7 +15,6 @@ export class ZingDepthChartComponent implements OnInit {
     public charts: ZingChartModel[];
     public bidArray: any[] = [];
     public askArray: any[] = [];
-    public isLoaded: boolean = false;
     public raidexSubscription: Subscription;
 
     constructor(private raidexService: RaidexService) {}
@@ -27,26 +25,22 @@ export class ZingDepthChartComponent implements OnInit {
 
     public initialiseOrderChart(): void {
         this.raidexSubscription = this.raidexService.getOffers().subscribe(
-            (order) => {
-                let tempArray = order.buys;
+            (offer) => {
+                let tempArray = offer.buys;
                 tempArray.sort(function(x, y) {
-                    return d3Array.ascending(x.price, y.price);
+                    return d3Array.ascending(Number(x.price), Number(y.price));
                 });
-                tempArray = util.formatArray(tempArray);
-                this.bidArray = util.cumulativePoints(tempArray);
-                tempArray = order.sells;
+                this.bidArray = cumulativePoints(tempArray);
+                tempArray = offer.sells;
                 tempArray.sort(function(x, y) {
-                    return d3Array.descending(x.price, y.price);
+                    return d3Array.descending(Number(x.price), Number(y.price));
                 });
-                tempArray = util.formatArray(tempArray);
-                this.askArray = util.cumulativePoints(tempArray);
-                this.populateChartData(this.bidArray[0][0],
-                    this.askArray[0][0],
-                    0.01);
+                this.askArray = cumulativePoints(tempArray);
+                this.populateChartData();
             });
     }
 
-    public populateChartData(minValue: number, maxValue: number, step: number): void {
+    public populateChartData(): void {
         this.charts = [{
             id: 'depth-chart',
             data: {
@@ -62,11 +56,11 @@ export class ZingDepthChartComponent implements OnInit {
                         '<col width="150">' +
                         '<tr align="left">' +
                         '<td>Cumulative Volume</td>' +
-                        '<td>%kt</td>' +
+                        '<td>%vt</td>' +
                         '</tr>' +
                         '<tr align="right">' +
                         '<td>Price</td>' +
-                        '<td>%vt</td>' +
+                        '<td>%kt</td>' +
                         '</tr>' +
                         '</table>',
                         'html-mode': true,
@@ -92,10 +86,6 @@ export class ZingDepthChartComponent implements OnInit {
                 },
                 'scale-x': {
                     'auto-fit': true,
-                    'min-value': minValue,
-                    'max-value': maxValue,
-                    'step': .001,
-                    'decimals': 2,
                     'label': {
                         'text': 'Price'
                     }
@@ -115,4 +105,14 @@ export class ZingDepthChartComponent implements OnInit {
             width: '100%'
         }];
     }
+
+}
+
+function cumulativePoints(orderArray: Array<any>) {
+    return orderArray.map((element, index, arr) => [
+        parseFloat(element.price),
+        d3Array.sum(arr.slice(index), function (d) {
+            return parseFloat(d.amount);
+        })
+    ]);
 }
