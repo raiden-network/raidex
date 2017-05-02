@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { ZingChartModel } from '../model/zing-chart.model';
 import { RaidexService } from '../services/raidex.service';
 import { Subscription } from 'rxjs/Subscription';
-import * as util from '../services/util.service';
 import * as d3Array from 'd3-array';
 
 @Component({
@@ -28,12 +27,9 @@ export class ZingStockChartComponent implements OnInit {
     public volumeChartDataArray: any[] = [];
     public interval: number = 15;
     public numberOfBars: number = 20;
-    public limits: any;
     private raidexSubscription: Subscription;
 
-    constructor(private raidexService: RaidexService) {
-
-    }
+    constructor(private raidexService: RaidexService) {}
 
     public ngOnInit(): void {
         setTimeout(() => this.initialiseStockChart(), 3000);
@@ -47,25 +43,23 @@ export class ZingStockChartComponent implements OnInit {
                     return d3Array.ascending(x.timestamp, y.timestamp);
                 });
                 this.tradesArray = tempArray;
-                let stockUtil = util.prepareStockChartData(tempArray, this.interval, this.numberOfBars);
+                let stockUtil = prepareStockChartData(tempArray, this.interval, this.numberOfBars);
                 this.stockChartDataArray = stockUtil.stock;
                 this.volumeChartDataArray = stockUtil.volume;
-                this.limits = stockUtil.limits;
-                this.populateChartData(this.limits);
+                this.populateChartData();
             }
         );
     }
 
     public reinitialiseStockChart(interval?: number): void {
         this.interval = interval;
-        let stockUtil = util.prepareStockChartData(this.tradesArray, this.interval, this.numberOfBars);
+        let stockUtil = prepareStockChartData(this.tradesArray, this.interval, this.numberOfBars);
         this.stockChartDataArray = stockUtil.stock;
         this.volumeChartDataArray = stockUtil.volume;
-        this.limits = stockUtil.limits;
-        this.populateChartData(this.limits);
+        this.populateChartData();
     }
 
-    public populateChartData(limits: any): void {
+    public populateChartData(): void {
         this.charts = [{
             id: 'stockchart',
             data: {
@@ -83,8 +77,6 @@ export class ZingStockChartComponent implements OnInit {
                 'scale-y': { // for Stock Chart
                     'offset-start': '25%', // to adjust scale offsets.
                     // "values": "29:33:2",
-                    'min-value': limits.minprice,
-                    'max-value': limits.maxprice,
                     // "step": "10second",
                     'format': '$%v',
                     'label': {
@@ -97,8 +89,6 @@ export class ZingStockChartComponent implements OnInit {
                     'blended': true, // to bind the scale to "scale-y".
                     'offset-end': '75%', // to adjust scale offsets.
                     // "values": "0:3:3",
-                    'min-value': limits.minamount,
-                    'max-value': limits.maxamount,
                     'format': '%vETH',
                     'label': {
                         'text': 'Volume'
@@ -123,10 +113,6 @@ export class ZingStockChartComponent implements OnInit {
                     }
                 },
                 'scale-x': {
-                    'min-value': this.stockChartDataArray[0][0],
-                    'step': this.interval * 60000,
-                    'zooming': true,
-                    'zoom-to': [0, 20],
                     'transform': {
                         'type': 'date',
                         'all': '%g:%i'
@@ -153,3 +139,40 @@ export class ZingStockChartComponent implements OnInit {
     }
 
 }
+
+function prepareStockChartData(tradesArray: Array<any>, interval, numberOfBars) {
+    let stockDataArray: Array<any> = [];
+    let volumeDataArray: Array<any> = [];
+    let filterArray: Array<any>;
+    let firstIndex = 0;
+    let startTimestamp = tradesArray[firstIndex] ? tradesArray[firstIndex].timestamp : 0;
+    let lastTimestamp = tradesArray[tradesArray.length - 1] ? tradesArray[tradesArray.length - 1].timestamp : 0;
+    do {
+        let endTimestamp = startTimestamp + interval * 60000;
+        filterArray = tradesArray.filter( (item) => {
+            return item.timestamp >= startTimestamp &&
+                item.timestamp < endTimestamp;
+        });
+        if (filterArray.length > 0) {
+            stockDataArray.push([startTimestamp, [
+                parseFloat(filterArray[0].price), // open
+                d3Array.max(filterArray, (d) => {
+                    return d.price;
+                }),
+                d3Array.min(filterArray, (d) => {
+                    return d.price;
+                }),
+                parseFloat(filterArray[filterArray.length - 1].price)
+        ]
+        ]);
+        }
+        let sumVolume = d3Array.sum(filterArray, (d) => {
+            return d.amount;
+        });
+        volumeDataArray.push([startTimestamp, sumVolume]);
+        startTimestamp = endTimestamp;
+    } while (startTimestamp <= lastTimestamp); // && count < numberOfBars
+    return {stock: stockDataArray, volume: volumeDataArray};
+}
+
+

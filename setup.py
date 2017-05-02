@@ -52,6 +52,11 @@ setup(
     packages=[
         'raidex',
     ],
+    entry_points={
+        'console_scripts': [
+            'raidex = raidex.__main__:main'
+        ]
+    },
     include_package_data=True,
     license='BSD',
     zip_safe=False,
