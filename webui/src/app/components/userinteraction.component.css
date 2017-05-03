@@ -11,3 +11,7 @@
 .full-width {
     width: 100%;
 }
+
+.suffix {
+    font-weight: bold;
+}

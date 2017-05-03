@@ -10,10 +10,12 @@
     <form class="interaction-form">
       <div *ngIf="(selectedType === 'BUY')">
         <md-input-container class="full-width">
+          <span class="suffix" md-suffix>ETH</span>
           <input mdInput type="number" id="amount" name="amount"
           [(ngModel)]="buyOrder.amount" placeholder="Amount">
         </md-input-container>
         <md-input-container class="full-width">
+          <span class="suffix" md-suffix>USD</span>
           <input mdInput type="number" id="price" name="price"
           [(ngModel)]="buyOrder.price" placeholder="Price">
         </md-input-container>
@@ -22,11 +24,13 @@
         </button>
       </div>
       <div *ngIf="(selectedType === 'SELL')">
-        <md-input-container>
+        <md-input-container class="full-width">
+          <span class="suffix" md-suffix>ETH</span>
           <input mdInput type="number" id="amount" name="amount"
                  [(ngModel)]="sellOrder.amount" placeholder="Amount">
         </md-input-container>
-        <md-input-container>
+        <md-input-container class="full-width">
+          <span class="suffix" md-suffix>USD</span>
           <input mdInput type="number" id="price" name="price"
                  [(ngModel)]="sellOrder.price" placeholder="Price">
         </md-input-container>
