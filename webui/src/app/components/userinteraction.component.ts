@@ -20,12 +20,18 @@ export class UserInteractionComponent implements OnInit {
     public orderArray: Order[];
     public selectedOrder: Order;
     public msgs: Message[] = [];
+    public selectedType: String;
     constructor(private raidexService: RaidexService) {}
 
     public ngOnInit(): void {
         this.buyOrder.type = 'BUY';
         this.sellOrder.type = 'SELL';
+        this.selectedType = 'BUY';
         this.getOrders();
+    }
+
+    public selectType(type: string) {
+        this.selectedType = type;
     }
 
     public submitOrder(type: string) {

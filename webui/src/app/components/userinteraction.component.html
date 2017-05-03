@@ -1,56 +1,40 @@
 <div class="container-fluid user">
   <p-growl [value]="msgs"></p-growl>
   <div class="row">
-    <md-tab-group>
-      <md-tab label="Buy">
-        <h6>Submit Buy Orders</h6>
-        <form>
-          <table class="example-full-width" cellspacing="0">
-            <tr>
-              <td>
-                <md-input-container>
-                  <input mdInput type="number" id="amount" name="amount"
-                         [(ngModel)]="buyOrder.amount" placeholder="Amount">
-                </md-input-container>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <md-input-container>
-                  <input mdInput type="number" id="price" name="price"
-                         [(ngModel)]="buyOrder.price" placeholder="Price">
-                </md-input-container>
-              </td>
-            </tr>
-          </table>
-          <button type="submit" class="btn btn-success" (click)="submitOrder('BUY')">Submit</button>
-        </form>
-      </md-tab>
-      <md-tab label="Sell">
-        <h6>Submit Sell Orders</h6>
-        <form>
-          <table class="example-full-width" cellspacing="0">
-            <tr>
-              <td>
-                <md-input-container>
-                  <input mdInput type="number" id="amount" name="amount"
-                         [(ngModel)]="sellOrder.amount" placeholder="Amount">
-                </md-input-container>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <md-input-container>
-                  <input mdInput type="number" id="price" name="price"
-                         [(ngModel)]="sellOrder.price" placeholder="Price">
-                </md-input-container>
-              </td>
-            </tr>
-          </table>
-          <button type="submit" class="btn btn-success" (click)="submitOrder('SELL')">Submit</button>
-        </form>
-      </md-tab>
-    </md-tab-group>
+    <button class="btn col-md-6" [ngClass]="(selectedType==='BUY')?'btn-success':'btn-white'"
+            (click)="selectType('BUY')">BUY</button>
+    <button class="btn col-md-6" [ngClass]="(selectedType==='SELL')?'btn-danger':'btn-white'"
+            (click)="selectType('SELL')">SELL</button>
+  </div>
+  <div class="row">
+    <form class="interaction-form">
+      <div *ngIf="(selectedType === 'BUY')">
+        <md-input-container class="full-width">
+          <input mdInput type="number" id="amount" name="amount"
+          [(ngModel)]="buyOrder.amount" placeholder="Amount">
+        </md-input-container>
+        <md-input-container class="full-width">
+          <input mdInput type="number" id="price" name="price"
+          [(ngModel)]="buyOrder.price" placeholder="Price">
+        </md-input-container>
+        <button type="submit" class="btn btn-success col-md-12" (click)="submitOrder('BUY')">
+          PLACE BUY ORDER
+        </button>
+      </div>
+      <div *ngIf="(selectedType === 'SELL')">
+        <md-input-container>
+          <input mdInput type="number" id="amount" name="amount"
+                 [(ngModel)]="sellOrder.amount" placeholder="Amount">
+        </md-input-container>
+        <md-input-container>
+          <input mdInput type="number" id="price" name="price"
+                 [(ngModel)]="sellOrder.price" placeholder="Price">
+        </md-input-container>
+        <button type="submit" class="btn btn-danger col-md-12" (click)="submitOrder('SELL')">
+          PLACE SELL ORDER
+        </button>
+      </div>
+    </form>
   </div>
   <div class="row top10">
       <div>Open Orders</div>
