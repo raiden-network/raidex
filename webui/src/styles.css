@@ -7,6 +7,22 @@
 @import url('../node_modules/font-awesome/css/font-awesome.min.css');
 @import '~@angular/material/core/theming/prebuilt/deeppurple-amber.css';
 
+/* colors */
+.primary-text { color: #41BAAE; }
+.white-text { color: white; }
+.dark-background { background-color: rgba(37, 37, 37, 1); }
+
+/* navigation */
+.navbar { background-color: rgba(37, 37, 37, 1); }
+.navbar-brand {
+    font-family: arial;
+    font-size: xx-Large;
+}
+
+.btn {
+    border: 0px !important;
+    margin: 0px !important;
+}
 
 .top5 { margin-top:5px; }
 .top7 { margin-top:7px; }

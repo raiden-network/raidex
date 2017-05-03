@@ -7,7 +7,7 @@ import { Component } from '@angular/core';
 })
 
 export class AppComponent {
-    public altText = 'Raidex';
+    public altText = 'raidEX';
     public imageUrl = 'raidexlogo.png';
     public title = 'Decentralised Exchange based on Raiden';
     public markets = ['ETH/USD', 'ETC/USD'];
