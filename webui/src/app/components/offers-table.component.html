@@ -1,23 +1,23 @@
 <div class="container-fluid">
   <div class="row">
-    <div class="col-md-5">
-      <p-dataTable [value]="buys" [rows]="7" [paginator]="true" [pageLinks]="0"
-                   styleClass="borderless">
+    <div class="row">
+      <p-dataTable [value]="buys" scrollable="true" scrollHeight="300px" [rows]="14"
+                   virtualScroll="virtualScroll" styleClass="borderless">
         <p-header>Bids</p-header>
         <p-column field="amount" header="Amount"
-                  [style]="{width: '50px', 'text-align': 'right'}"></p-column>
+                  [style]="{'font-size': '11px', 'text-align': 'right'}"></p-column>
         <p-column field="price" header="Price"
-                  [style]="{width: '50px', 'text-align': 'right'}"></p-column>
+                  [style]="{'font-size': '11px', 'text-align': 'right'}"></p-column>
       </p-dataTable>
     </div>
-    <div class="col-md-5">
-      <p-dataTable [value]="sells" [rows]="7" [paginator]="true" [pageLinks]="0"
-                   styleClass="borderless">
+    <div class="row">
+      <p-dataTable [value]="sells" scrollable="true" scrollHeight="300px" [rows]="14"
+                   virtualScroll="virtualScroll" styleClass="borderless custom-scrollbar">
         <p-header>Asks</p-header>
         <p-column field="amount" header="Amount"
-                  [style]="{width: '50px', 'text-align': 'right'}"></p-column>
-        <p-column field="price" header="price"
-                  [style]="{width: '50px', 'text-align': 'right'}"></p-column>
+                  [style]="{'font-size': '11px', 'text-align': 'right'}"></p-column>
+        <p-column field="price" header="Price"
+                  [style]="{'font-size': '11px', 'text-align': 'right'}"></p-column>
       </p-dataTable>
     </div>
   </div>

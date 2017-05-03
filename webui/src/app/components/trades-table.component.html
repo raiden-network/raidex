@@ -1,24 +1,24 @@
 <div class="container-fluid">
-  <p-dataTable [value]="trades" [rows]="17" [paginator]="true" [pageLinks]="0"
-      styleClass="borderless">
-      <p-header>Trade History</p-header>
-      <p-column field="timestamp" header="Time" [sortable]="true"
-      [style]="{'text-align': 'center'}">
-        <template let-col let-data="rowData" pTemplate type="body">
-          <span>{{data.timestamp | date: 'HH:mm:ss'}}</span>
-        </template>
-      </p-column>
-      <p-column field="type" header="Type" styleClass="text-center"
-      [style]="{ 'text-align': 'center'}">
-        <template let-col let-data="rowData" pTemplate type="body">
-          {{ data.type == 0 ? "BUY" : "SELL" }}
-        </template>
-      </p-column>
-      <p-column field="amount" styleClass="text-right" header="Amount" [sortable]="true"
-      [style]="{ 'text-align': 'center'}">
-      </p-column>
-      <p-column field="price" styleClass="text-right" header="Price" [sortable]="true"
-      [style]="{ 'text-align': 'center'}">
-      </p-column>
+  <p-dataTable [value]="trades" [rows]="20" scrollable="true" scrollHeight="700px"
+               virtualScroll="virtualScroll" styleClass="borderless">
+    <p-header>Trade History</p-header>
+    <p-column field="timestamp" header="Time" [sortable]="true"
+              [style]="{'font-size': '11px', 'text-align': 'center'}">
+      <template let-col let-data="rowData" pTemplate type="body">
+        <span>{{data.timestamp | date: 'HH:mm:ss'}}</span>
+      </template>
+    </p-column>
+    <p-column field="type" header="Type" styleClass="text-center"
+              [style]="{'width': '50px','font-size': '11px', 'text-align': 'center'}">
+      <template let-col let-data="rowData" pTemplate type="body">
+        {{ data.type == 0 ? "BUY" : "SELL" }}
+      </template>
+    </p-column>
+    <p-column field="amount" styleClass="text-right" header="Amount" [sortable]="true"
+              [style]="{'font-size': '11px', 'text-align': 'center'}">
+    </p-column>
+    <p-column field="price" styleClass="text-right" header="Price" [sortable]="true"
+              [style]="{'font-size': '11px', 'text-align': 'center'}">
+    </p-column>
   </p-dataTable>
 </div>
