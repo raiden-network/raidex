@@ -1,7 +1,7 @@
 ## root of the api
 everything in this api should be under
 `/api/<version>/`
-where <version> is the version number
+where `<version>` is the version number
 
 ## market
 everything has to happen on a certain market
@@ -28,6 +28,7 @@ where offer is (to be extended)
 {
   "amount": int,
   "price": double
+  "timestamp": int
 }
 ```
 
@@ -47,6 +48,7 @@ where trade is (to be extended)
   "timestamp": int,
   "amount":int,
   "price": double
+  "type": string "BUY" or "SELL"
 }
 ```
 ### make_limit_order()
@@ -70,6 +72,26 @@ parameters:
   type: string
   amount: int
   price: double
+}
+```
+
+### get_limit_order()
+`(GET) orders/limit`
+
+returns the currently open limit orders
+```
+{
+  data: order[]
+}
+```
+
+where order is (to be extended)
+```
+{
+  "amount":int,
+  "price": double
+  "type": string "BUY" or "SELL"
+  "filledAmount": int
 }
 ```
 ## errors

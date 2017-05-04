@@ -1,5 +1,5 @@
 import pytest
-import raidex.utils.timestamp as milliseconds
+from raidex.utils import timestamp
 from raidex.commitment_service.commitment_service import CommitmentService
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.raidex_node.exchange_task import MakerExchangeTask, TakerExchangeTask
@@ -10,23 +10,23 @@ from raidex.raidex_node.trader.trader import TraderClient
 
 @pytest.fixture()
 def offers():
-    return [Offer(OfferType.BUY, 100, 1000, offer_id=123, timeout=milliseconds.time_plus(1)),
-            Offer(OfferType.BUY, 200, 2000, offer_id=124, timeout=milliseconds.time_plus(1))]
-
-
-@pytest.fixture()
-def commitment_service_maker(assets, accounts):
-    return CommitmentService(TokenPair(assets[0], assets[1]), accounts[0].privatekey)
-
-
-@pytest.fixture()
-def commitment_service_taker(assets, accounts):
-    return CommitmentService(TokenPair(assets[0], assets[1]), accounts[1].privatekey)
+    return [Offer(OfferType.BUY, 100, 1000, offer_id=123, timeout=timestamp.time_plus(1)),
+            Offer(OfferType.BUY, 200, 2000, offer_id=124, timeout=timestamp.time_plus(1))]
 
 
 @pytest.fixture()
 def message_broker():
     return MessageBroker()
+
+
+@pytest.fixture()
+def commitment_service_maker(assets, accounts, message_broker):
+    return CommitmentService(TokenPair(assets[0], assets[1]), accounts[0].privatekey, message_broker)
+
+
+@pytest.fixture()
+def commitment_service_taker(assets, accounts, message_broker):
+    return CommitmentService(TokenPair(assets[0], assets[1]), accounts[1].privatekey, message_broker)
 
 
 @pytest.fixture()

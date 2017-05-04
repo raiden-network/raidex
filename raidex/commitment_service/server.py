@@ -202,7 +202,6 @@ class SwapCommitment(object):
             assert self._taker_transfer_receipt is None
             assert self._maker_transfer_receipt is not None
 
-            assert not self._taker_transfer_receipt
             # don't claim fee, since the Offer wasn't taken
             refunds.append(Refund(self._maker_transfer_receipt, 5, claim_fee=False))
         else:
@@ -213,6 +212,8 @@ class SwapCommitment(object):
 
 
 class CommitmentTask(gevent.Greenlet):
+    # TODO refactor to create the listener in the task object
+    # TODO business-logic should go in separated process() method
     """
     Listens on the message-broker to Commitment-messages sent to the CS's address.
     The offer_id from the commitment is matched against existing, not finished Swaps.
@@ -254,10 +255,10 @@ class CommitmentTask(gevent.Greenlet):
                         if timedout_swap.is_taken:
                             if not timedout_swap.is_completed:
                                 # FIXME don't access private member
-                                receipt_maker = swap._maker_transfer_receipt
-                                receipt_taker = swap._taker_transfer_receipt
-                                log_refunds.info('Keeping maker\'s commitment-funds: {}'.format(receipt_maker))
-                                log_refunds.info('Keeping taker\'s commitment-funds: {}'.format(receipt_taker))
+                                log_refunds.info('Keeping maker\'s commitment-funds: {}'.format(
+                                    swap._maker_transfer_receipt))
+                                log_refunds.info('Keeping taker\'s commitment-funds: {}'.format(
+                                    swap._taker_transfer_receipt))
                         else:
                             assert timedout_swap.taker_commitment is None
                             # medium priority, arbitrary for now
@@ -302,6 +303,7 @@ class Refund(object):
 
 
 class RefundTask(gevent.Greenlet):
+    # TODO business-logic should go in separated process() method
     def __init__(self, trader, refund_queue, fee_rate=None):
         self.trader = trader
         self.refund_queue = refund_queue
@@ -329,6 +331,7 @@ class RefundTask(gevent.Greenlet):
 
 
 class MessageSenderTask(gevent.Greenlet):
+    # TODO business-logic should go in separated process() method
 
     def __init__(self, message_broker, message_queue, sign_func):
         self.message_broker = message_broker
@@ -339,23 +342,22 @@ class MessageSenderTask(gevent.Greenlet):
     def _run(self):
         while True:
             msg, recipient = self.message_queue.get()
-            print(msg, pex(recipient))
             self._sign_func(msg)
             # FIXME make async
             # recipient == None is indicating a broadcast
             if recipient is None:
-                # careful, may block?
                 success = self.message_broker.broadcast(msg)
                 if success is True:
                     log_messaging.debug('Broadcast successful: {}'.format(msg))
             else:
-                # careful, may block?
                 success = self.message_broker.send(topic=recipient, message=msg)
                 if success:
                     log_messaging.debug('Sending successful: {} // recipient={}'.format(msg, pex(recipient)))
 
 
 class TransferReceivedTask(gevent.Greenlet):
+    # TODO refactor to create the listener in the task object
+    # TODO business-logic should go in separated process() method
 
     def __init__(self, swaps, message_queue, refund_queue, transfer_received_listener):
         self.swaps = swaps
@@ -402,6 +404,8 @@ class TransferReceivedTask(gevent.Greenlet):
 
 
 class SwapExecutionTask(gevent.Greenlet):
+    # TODO refactor to create the listener in the task object
+    # TODO business-logic should go in separated process() method
 
     def __init__(self, swaps, message_queue, refund_queue, swap_execution_listener):
         self.swaps = swaps

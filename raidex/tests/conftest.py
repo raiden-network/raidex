@@ -1,4 +1,6 @@
 import random
+import gc
+import gevent
 from collections import namedtuple
 
 import pytest
@@ -14,6 +16,17 @@ from raidex.utils import timestamp, DEFAULT_RAIDEX_PORT
 def logging_level():
     slogging.configure(':DEBUG')
 
+
+def number_of_greenlets_running():
+    return len([obj for obj in gc.get_objects() if isinstance(obj, gevent.Greenlet) and obj])
+
+
+@pytest.fixture(autouse=True)
+def shutdown_greenlets():
+    assert number_of_greenlets_running() == 0
+    yield
+    gevent.killall([obj for obj in gc.get_objects() if isinstance(obj, gevent.Greenlet)])
+    assert number_of_greenlets_running() == 0
 
 @pytest.fixture()
 def assets():

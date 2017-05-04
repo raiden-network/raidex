@@ -56,6 +56,7 @@ def register_type_converters(app):
 
 
 if __name__ == '__main__':
+    raise NotImplementedError()
     pair = (ASSETS[0], ASSETS[1])
     print ASSETS[0].encode('hex'), ASSETS[1].encode('hex')
     order_book = OfferBook(pair)

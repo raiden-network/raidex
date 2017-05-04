@@ -4,7 +4,7 @@ from ethereum import slogging
 import gevent
 from gevent.event import AsyncResult
 
-from raidex.messages import SwapOffer as OfferMsg, Commitment, CommitmentProof, ProvenOffer, ProvenCommitment
+from raidex import messages
 from raidex.message_broker.listeners import CommitmentProofListener, OfferTakenListener
 from raidex.raidex_node.trader.trader import TransferReceivedListener
 from raidex.raidex_node.offer_book import OfferType, Offer
@@ -47,7 +47,7 @@ class CommitmentService(object):
         offermsg = self.create_offer_msg(offer)
         self._sign_func(offermsg)
 
-        commitment = Commitment(offer.offer_id, offermsg.hash, offer.timeout, commitment_amount)
+        commitment = messages.Commitment(offer.offer_id, offermsg.hash, offer.timeout, commitment_amount)
         self._sign_func(commitment)
 
         # map offer_id -> commitment
@@ -85,20 +85,20 @@ class CommitmentService(object):
             log.debug('CS didn\'t respond with a CommitmentProof')
             return False
 
-        assert isinstance(commitment_proof, CommitmentProof)
+        assert isinstance(commitment_proof, messages.CommitmentProof)
         assert commitment_proof.sender == self.commitment_service_address
 
-        proven_offer = ProvenOffer(offermsg, commitment, commitment_proof)
+        proven_offer = messages.ProvenOffer(offermsg, commitment, commitment_proof)
         self._sign_func(proven_offer)
         return proven_offer
 
     @make_async
     def taker_commit_async(self, offer):
-        # type: (Offer) -> (bool, ProvenCommitment)
+        # type: (Offer) -> (bool, messages.ProvenCommitment)
         assert offer.hash
         assert offer.commitment_amount
 
-        commitment = Commitment(offer.offer_id, offer.hash, offer.timeout, offer.commitment_amount)
+        commitment = messages.Commitment(offer.offer_id, offer.hash, offer.timeout, offer.commitment_amount)
         self._sign_func(commitment)
 
         # map offer_id -> commitment
@@ -136,21 +136,35 @@ class CommitmentService(object):
             log.debug('CS didn\'t respond with a CommitmentProof')
             return False
 
-        assert isinstance(commitment_proof, CommitmentProof)
+        assert isinstance(commitment_proof, messages.CommitmentProof)
         assert commitment_proof.sender == self.commitment_service_address
 
-        proven_commitment = ProvenCommitment(commitment, commitment_proof)
+        proven_commitment = messages.ProvenCommitment(commitment, commitment_proof)
         self._sign_func(proven_commitment)
         return proven_commitment
 
     def create_offer_msg(self, offer):
-        # type: (Offer) -> OfferMsg
+        # type: (Offer) -> messages.SwapOffer
         if offer.type_ == OfferType.SELL:
-            return OfferMsg(self.token_pair.counter_token, offer.counter_amount, self.token_pair.base_token,
-                                 offer.base_amount, offer.offer_id, offer.timeout)
+            return messages.SwapOffer(self.token_pair.counter_token, offer.counter_amount, self.token_pair.base_token,
+                                      offer.base_amount, offer.offer_id, offer.timeout)
         else:
-            return OfferMsg(self.token_pair.base_token, offer.base_amount, self.token_pair.counter_token,
-                            offer.counter_amount, offer.offer_id, offer.timeout)
+            return messages.SwapOffer(self.token_pair.base_token, offer.base_amount, self.token_pair.counter_token,
+                                      offer.counter_amount, offer.offer_id, offer.timeout)
+
+    def create_taken(self, offer_id):
+        # leave until the code using this method is changed
+        raise AttributeError("Mock-CS functionality not available inside of CS-client implementation")
+
+    def create_swap_completed(self, offer_id):
+        # leave until the code using this method is changed
+        raise AttributeError("Mock-CS functionality not available inside of CS-client implementation")
+
+    def swap_executed(self, offer_id):
+        # type: (int) -> None
+        swap_completed = messages.SwapExecution(offer_id, timestamp.time_int())
+        self._sign_func(swap_completed)
+        self.message_broker.broadcast(swap_completed)
 
 
 class CommitmentProofTask(gevent.Greenlet):
@@ -164,7 +178,7 @@ class CommitmentProofTask(gevent.Greenlet):
         while True:
             commitment_proof = self.commitment_proof_listener.get()
             log.debug('Received commitment proof {}'.format(commitment_proof))
-            assert isinstance(commitment_proof, CommitmentProof)
+            assert isinstance(commitment_proof, messages.CommitmentProof)
 
             async_result = self.commitment_proofs.get(commitment_proof.commitment_sig)
             if async_result:

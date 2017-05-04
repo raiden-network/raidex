@@ -3,13 +3,12 @@ import gevent
 
 from raidex.tests.utils import float_isclose
 
-from raidex.commitment_service.client import CommitmentService as CommitmentServiceClient
 from raidex.commitment_service.server import CommitmentService
-from raidex.raidex_node.trader.trader import Trader, TraderClient
+from raidex.raidex_node.trader.trader import Trader
 from raidex import messages
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.utils import timestamp, make_privkey_address
-from raidex.raidex_node.raidex_service import Raidex
+from raidex.raidex_node.raidex_node import RaidexNode
 from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.offer_book import Offer, OfferType
 
@@ -44,23 +43,9 @@ def commitment_service(message_broker, trader):
 def raidex_nodes(token_pair, trader, accounts, message_broker, commitment_service):
     nodes = []
     for account in accounts:
-        node_address = account.address
-        privkey = account.privatekey
-        cs_address = commitment_service.address
-
-        trader_client = TraderClient(node_address, commitment_balance=10, trader=trader)
-
-        def _sign(message, privkey_):
-            message.sign(privkey_)
-
-        cs_client = CommitmentServiceClient(node_address, token_pair,
-                                            lambda message, privkey_=privkey: _sign(message, privkey_),
-                                            trader_client,
-                                            message_broker,
-                                            cs_address,
-                                            fee_rate=commitment_service.fee_rate)
-
-        nodes.append(Raidex(token_pair, privkey, message_broker, trader_client, cs_client))
+        nodes.append(RaidexNode(token_pair.base_token, token_pair.counter_token, priv_key=account.privatekey,
+                                cs_address=commitment_service.address, cs_fee_rate=commitment_service.fee_rate,
+                                message_broker=message_broker, trader=trader))
     return nodes
 
 

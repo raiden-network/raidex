@@ -55,8 +55,6 @@ def commitment_service(message_broker):
     return CommitmentService(message_broker, privkey, fee_rate=0.01)
 
 
-# FIXME
-# @pytest.mark.xfail(reason='After-offer-timeout cleanup not working at the moment ')
 def test_commitment_task(commitment_service, accounts):
     commitment_listener = CommitmentListener(commitment_service.message_broker, topic=commitment_service.address)
     CommitmentTask(commitment_service.swaps,
@@ -167,8 +165,6 @@ def test_swap_execution_task(commitment_service, message_broker, accounts):
     sent_time = timestamp.time()
     gevent.sleep(0.01)
 
-    print(swap._maker_transfer_receipt)
-    print(swap._taker_transfer_receipt)
 
     assert swap.is_completed
     assert not swap.timed_out

@@ -1,4 +1,4 @@
-from message_broker import MessageBroker
+from raidex.message_broker.message_broker import MessageBroker
 from raidex import messages
 from raidex.raidex_node.offer_book import OfferType, Offer
 from raidex.raidex_node.trades import SwapCompleted

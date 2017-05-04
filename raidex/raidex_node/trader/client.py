@@ -2,10 +2,10 @@ from __future__ import print_function
 
 import json
 import gevent
-from gevent import monkey, Greenlet
+from gevent import monkey; monkey.patch_socket()
+from gevent import Greenlet
 from gevent.queue import Queue
 
-monkey.patch_socket()
 
 import requests
 from ethereum.utils import encode_hex

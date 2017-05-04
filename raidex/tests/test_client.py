@@ -4,15 +4,14 @@ import gevent
 
 from ethereum.utils import int_to_big_endian, sha3
 
-from raidex.utils import get_market_from_asset_pair, timestamp
-from raidex.message_broker.listeners import OfferListener, OfferTakenListener, SwapCompletedListener
+from raidex.raidex_node.offer_book import Offer, OfferBook, OfferType, OfferView
+from raidex.raidex_node.listener_tasks import OfferBookTask, SwapCompletedTask, OfferTakenTask
+from raidex.utils import timestamp
+from raidex.utils import get_market_from_asset_pair
 from raidex.message_broker.message_broker import MessageBroker
-from raidex.commitment_service.commitment_service import CommitmentService as CommitmentServiceClientMock
-
-from raidex.raidex_node.offer_book import Offer, OfferBook, OfferType, OfferBookTask, OfferView, TakenTask
+from raidex.commitment_service.commitment_service import CommitmentService
 from raidex.raidex_node.market import TokenPair
-
-from raidex.raidex_node.trades import TradesView, SwapCompletedTask
+from raidex.raidex_node.trades import TradesView
 
 
 @pytest.fixture()
@@ -26,8 +25,8 @@ def message_broker():
 
 
 @pytest.fixture()
-def mock_commitment_service(token_pair):
-    return CommitmentServiceClientMock(token_pair, sha3("test1"))
+def commitment_service(token_pair, message_broker):
+    return CommitmentService(token_pair, sha3("test1"), message_broker)
 
 
 def test_market_from_asset_pair():
@@ -63,27 +62,27 @@ def test_offer_comparison():
     assert list(offers.values()) == [offer2, offer4, offer3, offer1]
 
 
-def test_offer_book_task(message_broker, mock_commitment_service, token_pair):
+def test_offer_book_task(message_broker, commitment_service, token_pair):
     offer_book = OfferBook()
-    OfferBookTask(offer_book, OfferListener(token_pair, message_broker)).start()
+    OfferBookTask(offer_book, token_pair, message_broker).start()
     gevent.sleep(0.001)
     offer = Offer(OfferType.SELL, 100, 1000, offer_id=123, timeout=timestamp.time_plus(2))
-    proof = mock_commitment_service.maker_commit_async(offer).get()
+    proof = commitment_service.maker_commit_async(offer).get()
     message_broker.broadcast(proof)
     gevent.sleep(0.001)
     assert len(offer_book.sells) == 1
 
 
-def test_taken_task(message_broker, mock_commitment_service, token_pair):
+def test_taken_task(message_broker, commitment_service):
     offer_book = OfferBook()
     trades = TradesView()
-    TakenTask(offer_book, trades, OfferTakenListener(message_broker)).start()
+    OfferTakenTask(offer_book, trades, message_broker).start()
     gevent.sleep(0.001)
     offer = Offer(OfferType.SELL, 100, 1000, offer_id=123, timeout=timestamp.time_plus(2))
     # insert manually for the first time
     offer_book.insert_offer(offer)
     assert len(offer_book.sells) == 1
-    offer_taken = mock_commitment_service.create_taken(offer.offer_id)
+    offer_taken = commitment_service.create_taken(offer.offer_id)
     # send offer_taken
     message_broker.broadcast(offer_taken)
     gevent.sleep(0.001)
@@ -91,19 +90,16 @@ def test_taken_task(message_broker, mock_commitment_service, token_pair):
     assert len(trades.pending_offer_by_id) == 1
 
 
-def test_swap_completed_task(message_broker, mock_commitment_service, token_pair):
+def test_swap_completed_task(message_broker, commitment_service):
     trades = TradesView()
-    SwapCompletedTask(trades, SwapCompletedListener( message_broker)).start()
+    SwapCompletedTask(trades, message_broker).start()
     gevent.sleep(0.001)
     offer = Offer(OfferType.SELL, 100, 1000, offer_id=123, timeout=timestamp.time_plus(2))
     # set it to pending, as it was taken
     trades.add_pending(offer)
     assert len(trades.pending_offer_by_id) == 1
-    swap_completed = mock_commitment_service.create_swap_completed(offer.offer_id)
+    swap_completed = commitment_service.create_swap_completed(offer.offer_id)
     # send swap_completed
     message_broker.broadcast(swap_completed)
     gevent.sleep(0.001)
-    assert len(trades.trade_by_id) == 1
-
-
-
+    assert len(trades) == 1

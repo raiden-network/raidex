@@ -10,7 +10,7 @@ log = slogging.get_logger('node.exchange')
 
 class MakerExchangeTask(gevent.Greenlet):
     """
-    Spawns and manages one offer & handles/initiates the acording commitment,
+    Spawns and manages one offer & handles/initiates the respective commitment,
     when a taker is found, it executes the token swap and reports the execution
 
     """
@@ -31,18 +31,21 @@ class MakerExchangeTask(gevent.Greenlet):
         timeout.start()
         try:
             proof = self.commitment_service.maker_commit_async(self.offer).get()
-            log.debug('broadcast proof')
+            log.debug('Broadcast proof for {}'.format(self.offer.offer_id))
             self.message_broker.broadcast(proof)
-            log.debug('wait for taker..')
+            log.debug('Wait for taker of {}..'.format(self.offer.offer_id))
             # TODO verify proof
             taker_address = TakerListener(self.offer, self.message_broker, encode_hex(self.maker_address)).get_once()
-            log.debug('found taker, execute trade')
+            log.debug('Found taker, execute swap of {}'.format(self.offer.offer_id))
             status = self.trader.exchange_async(self.offer.type_, self.offer.base_amount, self.offer.counter_amount,
                                                 taker_address, self.offer.offer_id).get()
             if status:
-                log.debug('trade done')
+                log.debug('Swap of {} done'.format(self.offer.offer_id))
+                self.commitment_service.swap_executed(self.offer.offer_id)
+                #  TODO check refund minus fee
             else:
-                log.debug('trade failed')
+                log.debug('Swap of {} failed'.format(self.offer.offer_id))
+                #  TODO check refund
             return status
         except gevent.Timeout as t:
             if t is not timeout:
@@ -50,6 +53,10 @@ class MakerExchangeTask(gevent.Greenlet):
             return False
         finally:
             timeout.cancel()
+
+    @property
+    def amount(self):
+        return self.offer.amount
 
 
 class TakerExchangeTask(gevent.Greenlet):
@@ -78,15 +85,17 @@ class TakerExchangeTask(gevent.Greenlet):
                                                              self.offer.counter_amount, self.offer.maker_address,
                                                              self.offer.offer_id)
             switch_context()  # give async function chance to execute
-            # hack for now, later cs should send this
+            # FIXME hack for now, later cs should send this:
             self.message_broker.broadcast(self.commitment_service.create_taken(self.offer.offer_id))
-            log.debug('send proof to maker')
+            log.debug('Send proof of {} to maker'.format(self.offer.offer_id))
             self.message_broker.send(encode_hex(self.offer.maker_address), proof)
             status = status_async.get()
             if status:
-                log.debug('trade done')
+                log.debug('Swap of {} done'.format(self.offer.offer_id))
+                self.commitment_service.swap_executed(self.offer.offer_id)
             else:
-                log.debug('trade failed')
+                log.debug('Swap of {} failed'.format(self.offer.offer_id))
+                # TODO check refund
             return status
         except gevent.Timeout as t:
             if t is not timeout:
@@ -94,3 +103,7 @@ class TakerExchangeTask(gevent.Greenlet):
             return False
         finally:
             timeout.cancel()
+
+    @property
+    def amount(self):
+        return self.offer.amount
