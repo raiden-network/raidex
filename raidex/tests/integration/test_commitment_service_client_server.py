@@ -34,7 +34,7 @@ def trader():
 @pytest.fixture()
 def commitment_service(message_broker, trader):
     privkey, _ = make_privkey_address()
-    commitment_service = CommitmentService(message_broker, privkey, 0.01)
+    commitment_service = CommitmentService(message_broker, privkey, fee_rate=0.01)
     # manually set member to singleton trader:
     commitment_service.trader_client.trader = trader
     return commitment_service
@@ -57,7 +57,8 @@ def raidex_nodes(token_pair, trader, accounts, message_broker, commitment_servic
                                             lambda message, privkey_=privkey: _sign(message, privkey_),
                                             trader_client,
                                             message_broker,
-                                            cs_address)
+                                            cs_address,
+                                            fee_rate=commitment_service.fee_rate)
 
         nodes.append(Raidex(token_pair, privkey, message_broker, trader_client, cs_client))
     return nodes

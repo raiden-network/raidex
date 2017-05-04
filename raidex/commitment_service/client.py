@@ -1,5 +1,4 @@
-from collections import defaultdict
-from ethereum.utils import sha3
+from collections import defaultdict, namedtuple
 from ethereum import slogging
 
 import gevent
@@ -7,9 +6,11 @@ from gevent.event import AsyncResult
 
 from raidex.messages import SwapOffer as OfferMsg, Commitment, CommitmentProof, ProvenOffer, ProvenCommitment
 from raidex.message_broker.listeners import CommitmentProofListener, OfferTakenListener
+from raidex.raidex_node.trader.trader import TransferReceivedListener
 from raidex.raidex_node.offer_book import OfferType, Offer
 from raidex.utils.gevent_helpers import make_async
 from raidex.utils import timestamp
+from raidex.tests.utils import float_isclose
 
 log = slogging.get_logger('node.commitment_service')
 
@@ -21,17 +22,22 @@ class CommitmentService(object):
     Methods will return the proper confirmation-messages of commitments (ProvenOffer/maker, ProvenCommitment/taker)
     """
 
-    def __init__(self, node_address, token_pair, sign_func, trader_client, message_broker, commitment_service_address):
+    def __init__(self, node_address, token_pair, sign_func, trader_client, message_broker, commitment_service_address,
+                 fee_rate):
         self.node_address = node_address
         self.token_pair = token_pair
         self.commitment_service_address = commitment_service_address
+        self.fee_rate = fee_rate
         self.trader_client = trader_client
         self.message_broker = message_broker
         self._sign_func = sign_func
-        self.commitment_proofs = defaultdict(AsyncResult)  # commitment_sig -> (AsyncResult<messages.CommitmentProof, False)>
+        self.commitment_proofs = dict()  # commitment_sig -> (AsyncResult<messages.CommitmentProof, False)>
+        self.commitments = dict()  # offer_id -> commitment
 
     def start(self):
-        TakenTask(self.commitment_proofs, OfferTakenListener(self.message_broker)).start()
+        RefundReceivedTask(self.commitment_service_address, self.fee_rate, self.commitments,
+                           self.commitment_proofs, TransferReceivedListener(self.trader_client)).start()
+
         CommitmentProofTask(self.commitment_proofs, CommitmentProofListener(self.message_broker,
                                                                             topic=self.node_address)).start()
 
@@ -44,13 +50,19 @@ class CommitmentService(object):
         commitment = Commitment(offer.offer_id, offermsg.hash, offer.timeout, commitment_amount)
         self._sign_func(commitment)
 
+        # map offer_id -> commitment
+        self.commitments[offer.offer_id] = commitment
+
         success = self.message_broker.send(self.commitment_service_address, commitment)
         # TODO better handling of unsuccessful sents (e.g. resend-queue)
         if success is False:
             log.debug('Message broker failed to send: {}'.format(commitment))
             return False
 
-        commitment_proof_async_result = self.commitment_proofs[commitment.signature]
+        commitment_proof_async_result = AsyncResult()
+
+        # register the async result
+        self.commitment_proofs[commitment.signature] = commitment_proof_async_result
 
         transfer_async_result = self.trader_client.transfer(self.commitment_service_address, commitment_amount,
                                                             offer.offer_id)
@@ -65,11 +77,12 @@ class CommitmentService(object):
         try:
             commitment_proof = commitment_proof_async_result.get(timeout=timeout)
         except gevent.Timeout:
+            # don't set the AsyncResult, since we still should receive a Refund
+            # but return False later on nevertheless
             commitment_proof = False
 
         if commitment_proof is False:
             log.debug('CS didn\'t respond with a CommitmentProof')
-            # TODO account for refunding, start task that waits on specific refunds
             return False
 
         assert isinstance(commitment_proof, CommitmentProof)
@@ -88,31 +101,39 @@ class CommitmentService(object):
         commitment = Commitment(offer.offer_id, offer.hash, offer.timeout, offer.commitment_amount)
         self._sign_func(commitment)
 
+        # map offer_id -> commitment
+        self.commitments[offer.offer_id] = commitment
+
         success = self.message_broker.send(self.commitment_service_address, commitment)
-        # TODO better handling of unsuccessful sents (e.g. resend-queue)
         if success is False:
             log.debug('Message broker failed to send: {}'.format(commitment))
             return False
 
-        transfer_async_result = self.trader_client.transfer(self.commitment_service_address, offer.commitment_amount, offer.offer_id)
+        commitment_proof_async_result = AsyncResult()
+        # register the AsyncResult:
+        self.commitment_proofs[commitment.signature] = commitment_proof_async_result
+
+        transfer_async_result = self.trader_client.transfer(self.commitment_service_address, offer.commitment_amount,
+                                                            offer.offer_id)
         success = transfer_async_result.get()
 
         if success is False:
             log.debug('Trader failed to transfer commitment for offer: {}'.format(offer))
+            commitment_proof_async_result.set(False)
             return False
-
-        commitment_proof_async_result = self.commitment_proofs[commitment.signature]
 
         # if the offer timed out, we don't want to continue waiting on the proof (e.g. CS unresponsive)
         timeout = timestamp.seconds_to_timeout(offer.timeout)
+        # TODO: check Timeout! and dict delection etc
         try:
             commitment_proof = commitment_proof_async_result.get(timeout=timeout)
         except gevent.Timeout:
+            # don't set the AsyncResult, since we still should receive a Refund
+            # but return False later on nevertheless
             commitment_proof = False
 
         if commitment_proof is False:
             log.debug('CS didn\'t respond with a CommitmentProof')
-            # TODO account for refunding, start task that waits on specific refunds
             return False
 
         assert isinstance(commitment_proof, CommitmentProof)
@@ -133,8 +154,8 @@ class CommitmentService(object):
 
 
 class CommitmentProofTask(gevent.Greenlet):
-    def __init__(self, commitment_proofs, commitment_proof_listener):
-        self.commitment_proofs = commitment_proofs
+    def __init__(self, commitment_proofs_dict, commitment_proof_listener):
+        self.commitment_proofs = commitment_proofs_dict
         self.commitment_proof_listener = commitment_proof_listener
         gevent.Greenlet.__init__(self)
 
@@ -144,21 +165,50 @@ class CommitmentProofTask(gevent.Greenlet):
             commitment_proof = self.commitment_proof_listener.get()
             log.debug('Received commitment proof {}'.format(commitment_proof))
             assert isinstance(commitment_proof, CommitmentProof)
-            async_result = self.commitment_proofs[commitment_proof.commitment_sig]
-            async_result.set(commitment_proof)
+
+            async_result = self.commitment_proofs.get(commitment_proof.commitment_sig)
+            if async_result:
+                async_result.set(commitment_proof)
+            else:
+                # we should be waiting on the commitment-proof!
+                # assume non-malicious actors:
+                # if we receive a proof we are not waiting on, there is something wrong
+                assert False
 
 
-class TakenTask(gevent.Greenlet):
-    def __init__(self, proven_offers, taken_listener):
-        self.proven_offers = proven_offers
-        self.taken_listener = taken_listener
+class RefundReceivedTask(gevent.Greenlet):
+
+    def __init__(self, cs_address, fee_rate, commitments_dict, commitment_proofs_dict,
+                 transfer_received_listener):
+        self.commitments = commitments_dict
+        self.commitment_proofs = commitment_proofs_dict
+        self.transfer_received_listener = transfer_received_listener
+        self.commitment_service_address = cs_address
+        self.fee_rate = fee_rate
         gevent.Greenlet.__init__(self)
 
     def _run(self):
-        self.taken_listener.start()
+        self.transfer_received_listener.start()
         while True:
-            offer_id = self.taken_listener.get()
-            # only set if we actually wait for it
-            if offer_id in self.proven_offers:
-                async_result = self.proven_offers[offer_id]
+            receipt = self.transfer_received_listener.get()
+            try:
+                commitment = self.commitments[receipt.identifier]
+            except KeyError:
+                # we're not waiting for this refund
+                log.debug("Received unexpected Refund: {}".format(receipt))
+                continue
+
+            # assume non-malicious cs, so only asserting correctness for now:
+            minus_fee = commitment.amount - commitment.amount * self.fee_rate
+            assert float_isclose(commitment.amount, receipt.amount) or float_isclose(receipt.amount, minus_fee)
+            assert receipt.identifier == commitment.offer_id
+            assert receipt.sender == self.commitment_service_address
+
+            # set the AsyncResult for the Commitment-Proof we are expecting
+            async_result = self.commitment_proofs.get(commitment.signature)
+            if async_result:
                 async_result.set(False)
+                log.debug("Refund received: {}".format(receipt))
+
+                # once we receive a refund, everything is settled for us and we can delete the commitment
+                del self.commitments[receipt.identifier]
