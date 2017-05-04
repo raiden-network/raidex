@@ -78,7 +78,7 @@ class Offer(object):
 
     def __repr__(self):
         return "Offer<offer_id={} amount={} price={} type={} hash={}>".format(
-                self.offer_id, self.amount, self.price, self.type_, self.hash)
+                self.offer_id, self.amount, self.price, self.type_, pex(self.hash))
 
 
 class OfferView(object):

@@ -23,7 +23,7 @@ class MessageBroker(object):
             if transform is not None:
                 transformed_message = transform(transformed_message)
             if transformed_message is not None:
-                log.debug('Put message in queue: msg={}, topic={}, transform={}'.format(message, pex(topic), transform))
+                log.debug('Sending message: msg={}, topic={}'.format(message, pex(topic)))
                 message_queue_async.put(transformed_message)
         return True
 

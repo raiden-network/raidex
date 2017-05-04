@@ -80,7 +80,7 @@ class Trader(object):
     @make_async
     def transfer(self, self_address, target_address, amount, identifier):
         transfer_received_event = TransferReceivedEvent(sender=self_address, amount=amount, identifier=identifier)
-        log_tglobal.debug('Incoming transfer: target_address={}, identifier={}>'.format(pex(target_address), identifier))
+        # log_tglobal.debug('Incoming transfer: target_address={}, identifier={}>'.format(pex(target_address), identifier))
         # for this mock-implementation:
         # a transfer can only go through when a listener is found
         try:
@@ -97,7 +97,7 @@ class Trader(object):
             if transform is not None:
                 event = transform(event)
             if event is not None:
-                log_tglobal.debug('Put event in Queue: <address={}, transform={}>'.format(pex(address), transform))
+                # log_tglobal.debug('Put event in Queue: <address={}, transform={}>'.format(pex(address), transform))
                 event_queue_async.put(event)
         return True
 
