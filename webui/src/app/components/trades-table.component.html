@@ -1,25 +1,23 @@
-<div class="container-fluid">
-  <p-dataTable [value]="trades" [rows]="20" scrollable="true" scrollHeight="700px"
-               virtualScroll="virtualScroll" styleClass="borderless">
-    <p-header>Trade History</p-header>
-    <p-column field="timestamp" header="Time" [sortable]="true"
-              [style]="{'font-size': '11px', 'text-align': 'center'}">
-      <template let-col let-data="rowData" pTemplate type="body">
-        <span>{{data.timestamp | date: 'HH:mm:ss'}}</span>
-      </template>
-    </p-column>
-    <p-column field="type" header="Type" styleClass="text-center"
-              [style]="{'width': '50px','font-size': '11px', 'text-align': 'center'}">
-      <template let-col let-data="rowData" pTemplate type="body">
-        <div *ngIf="(data.type == 0); else elseBlock" class="green-text">BUY</div>
-        <ng-template #elseBlock><div class="red-text">SELL</div></ng-template>
-      </template>
-    </p-column>
-    <p-column field="amount" styleClass="text-right" header="Amount" [sortable]="true"
-              [style]="{'font-size': '11px', 'text-align': 'center'}">
-    </p-column>
-    <p-column field="price" styleClass="text-right" header="Price" [sortable]="true"
-              [style]="{'font-size': '11px', 'text-align': 'center'}">
-    </p-column>
-  </p-dataTable>
-</div>
+<p-dataTable [value]="trades" [rows]="20" scrollable="true" scrollHeight="700px"
+             virtualScroll="virtualScroll" styleClass="borderless">
+  <p-header>Trade History</p-header>
+  <p-column field="timestamp" header="Time" [sortable]="true"
+            [style]="{'font-size': '11px', 'text-align': 'center'}">
+    <template let-col let-data="rowData" pTemplate type="body">
+      <span>{{data.timestamp | date: 'HH:mm:ss'}}</span>
+    </template>
+  </p-column>
+  <p-column field="type" header="Type" styleClass="text-center"
+            [style]="{'width': '50px','font-size': '11px', 'text-align': 'center'}">
+    <template let-col let-data="rowData" pTemplate type="body">
+      <div *ngIf="(data.type == 0); else elseBlock" class="green-text">BUY</div>
+      <ng-template #elseBlock><div class="red-text">SELL</div></ng-template>
+    </template>
+  </p-column>
+  <p-column field="amount" styleClass="text-right" header="Amount" [sortable]="true"
+            [style]="{'font-size': '11px', 'text-align': 'right'}">
+  </p-column>
+  <p-column field="price" styleClass="text-right" header="Price" [sortable]="true"
+            [style]="{'font-size': '11px', 'text-align': 'right'}">
+  </p-column>
+</p-dataTable>
