@@ -4,7 +4,7 @@ import gevent
 from gevent.queue import PriorityQueue
 from ethereum.utils import privtoaddr
 from ethereum import slogging
-from raiden.encoding.signing import  GLOBAL_CTX
+from raiden.encoding.signing import GLOBAL_CTX
 from raiden.encoding.signing import sign as _sign
 from secp256k1 import PrivateKey, ALL_FLAGS
 
@@ -170,6 +170,7 @@ class SwapCommitment(object):
 
     def construct_swap_completed(self, swap_exec_msg):
         # type: (messages.SwapExecution) -> (None, messages.SwapCompleted)
+        # only returns the SwapCompleted message, when taker and maker reported SwapExecution
 
         assert isinstance(swap_exec_msg, messages.SwapExecution)
         assert swap_exec_msg.offer_id == self._maker_commitment.offer_id
@@ -183,7 +184,6 @@ class SwapCommitment(object):
                 raise Exception('Address mismatch')
 
             if self.is_completed:
-                # TODO should this be saved as well?
                 return messages.SwapCompleted(offer_id=self._maker_commitment.offer_id, timestamp=timestamp.time_int())
             else:
                 return None
@@ -252,12 +252,12 @@ class CommitmentTask(gevent.Greenlet):
                         if timedout_swap.offer_id not in swaps:
                             return
                         if timedout_swap.is_taken:
-                            assert not swap.is_complete
-                            # FIXME don't access private member
-                            receipt_maker = swap._maker_transfer_receipt
-                            receipt_taker = swap._taker_transfer_receipt
-                            log_refunds.info('Keeping maker\'s commitment-funds: {}'.format(receipt_maker))
-                            log_refunds.info('Keeping taker\'s commitment-funds: {}'.format(receipt_taker))
+                            if not timedout_swap.is_completed:
+                                # FIXME don't access private member
+                                receipt_maker = swap._maker_transfer_receipt
+                                receipt_taker = swap._taker_transfer_receipt
+                                log_refunds.info('Keeping maker\'s commitment-funds: {}'.format(receipt_maker))
+                                log_refunds.info('Keeping taker\'s commitment-funds: {}'.format(receipt_taker))
                         else:
                             assert timedout_swap.taker_commitment is None
                             # medium priority, arbitrary for now
@@ -268,11 +268,7 @@ class CommitmentTask(gevent.Greenlet):
                                 log_refunds.info('Refunding maker: {}'.format(refund))
                                 refund_backlog.put(refund)
 
-                        # delete from swaps and make room for offer-id reusal
-                        log.debug('CODE: Would delete swap now from dict')
-
-                        # FIXME this results in heavy data races!!
-                        # del swaps[swap.offer_id]
+                        del swaps[swap.offer_id]
 
                     return func
 
@@ -422,6 +418,7 @@ class SwapExecutionTask(gevent.Greenlet):
             if swap is not None:
                 swap_completed = swap.construct_swap_completed(swap_execution_msg)
                 log_messaging.debug('Received swap-excution message: {}'.format(swap))
+                # will only evaluate to true, if both maker and taker have reported execution:
                 if swap_completed is not None:
                     assert isinstance(swap_completed, messages.SwapCompleted)
                     self.message_queue.put((swap_completed, None))

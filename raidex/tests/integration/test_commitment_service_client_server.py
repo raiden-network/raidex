@@ -72,15 +72,10 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     failed_taker = raidex_nodes[2]
 
     # this are the initial commitment balances
-    maker_commitment_balance = maker.trader_client.commitment_balance
-    taker_commitment_balance = taker.trader_client.commitment_balance
-    failed_taker_commitment_balance = failed_taker.trader_client.commitment_balance
-    cs_commitment_balance = commitment_service.trader_client.commitment_balance
-
-    assert maker_commitment_balance == 10
-    assert taker_commitment_balance == 10
-    assert failed_taker_commitment_balance == 10
-    assert cs_commitment_balance == 10
+    assert maker.trader_client.commitment_balance == 10
+    assert taker.trader_client.commitment_balance == 10
+    assert failed_taker.trader_client.commitment_balance == 10
+    assert commitment_service.trader_client.commitment_balance == 10
 
     assert maker.message_broker == taker.message_broker == commitment_service.message_broker
 
@@ -173,5 +168,9 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     assert float_isclose(commitment_service.trader_client.commitment_balance, 10 + 2 * (5 * commitment_service.fee_rate))
 
     # overall balance shouldn't have changed
-    assert maker_commitment_balance + taker_commitment_balance + failed_taker_commitment_balance \
-           + cs_commitment_balance == 40
+    assert maker.trader_client.commitment_balance + taker.trader_client.commitment_balance \
+           + failed_taker.trader_client.commitment_balance + commitment_service.trader_client.commitment_balance == 40
+
+    # wait for the timeout to check finalisation
+    while timestamp.time() < offer.timeout + 50:
+        gevent.sleep(0.01)

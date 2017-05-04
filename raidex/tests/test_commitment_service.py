@@ -56,7 +56,7 @@ def commitment_service(message_broker):
 
 
 # FIXME
-@pytest.mark.xfail(reason='After-offer-timeout cleanup not working at the moment ')
+# @pytest.mark.xfail(reason='After-offer-timeout cleanup not working at the moment ')
 def test_commitment_task(commitment_service, accounts):
     commitment_listener = CommitmentListener(commitment_service.message_broker, topic=commitment_service.address)
     CommitmentTask(commitment_service.swaps,
@@ -81,46 +81,41 @@ def test_commitment_task(commitment_service, accounts):
 
     gevent.sleep(0.01)
     swap = commitment_service.swaps[offer_id]
-    with pytest.raises(gevent.Timeout):
-            with gevent.Timeout(seconds_to_timeout + 0.1):
-                assert len(commitment_service.swaps.keys()) == 1
-                assert isinstance(swap, SwapCommitment)
-                assert swap.maker_commitment == commitment_msg_maker
-                assert swap.commitment_exists_for(maker.address)
+    assert len(commitment_service.swaps.keys()) == 1
+    assert isinstance(swap, SwapCommitment)
+    assert swap.maker_commitment == commitment_msg_maker
+    assert swap.commitment_exists_for(maker.address)
 
-                # FIXME the task is accepting takers for SwapCommitments that haven't been paid by the maker!
-                # (although this is implicit, since takers should only accept valid ProvenOffers )
+    # FIXME the task is accepting takers for SwapCommitments that haven't been paid by the maker!
+    # (although this is implicit, since takers should only accept valid ProvenOffers )
 
-                # first taker sends commitment
-                commitment_msg_taker1 = deepcopy(commitment_msg)
-                commitment_msg_taker1.sign(taker1.privatekey)
-                commitment_service.message_broker.send(commitment_service.address, commitment_msg_taker1)
-                gevent.sleep(0.01)
+    # first taker sends commitment
+    commitment_msg_taker1 = deepcopy(commitment_msg)
+    commitment_msg_taker1.sign(taker1.privatekey)
+    commitment_service.message_broker.send(commitment_service.address, commitment_msg_taker1)
+    gevent.sleep(0.01)
 
-                assert len(commitment_service.swaps.keys()) == 1
-                assert swap.commitment_exists_for(taker1.address)
+    assert len(commitment_service.swaps.keys()) == 1
+    assert swap.commitment_exists_for(taker1.address)
 
-                # second taker sends commitment
-                commitment_msg_taker2 = deepcopy(commitment_msg)
-                commitment_msg_taker2.sign(taker2.privatekey),
-                commitment_service.message_broker.send(commitment_service.address, commitment_msg_taker2)
+    # second taker sends commitment
+    commitment_msg_taker2 = deepcopy(commitment_msg)
+    commitment_msg_taker2.sign(taker2.privatekey),
+    commitment_service.message_broker.send(commitment_service.address, commitment_msg_taker2)
 
-                gevent.sleep(0.01)
+    gevent.sleep(0.01)
 
-                assert len(commitment_service.swaps.keys()) == 1
-                assert swap.commitment_exists_for(taker2.address)
+    assert len(commitment_service.swaps.keys()) == 1
+    assert swap.commitment_exists_for(taker2.address)
 
-                assert not swap.is_taken
-                # wait longer than the timeout to let it raise
-                gevent.sleep(10)
+    assert not swap.is_taken
+
+    # wait for the timeout, give a little time to get in the next gevent loop iteration
+    while timestamp.time() <= timeout + 10:
+        gevent.sleep(0.01)
 
     assert swap.timed_out
     assert len(commitment_service.swaps.keys()) == 0
-    # nobody took the offer (they didn't send a follow-up transfer), so maker will get refunded without fee subtr.
-    assert len(commitment_service.refund_queue) == 1
-    refund = commitment_service.refund_queue.get()
-    assert refund.claim_fee is False
-    assert refund.receipt is None
 
 
 def test_swap_execution_task(commitment_service, message_broker, accounts):
@@ -297,3 +292,8 @@ def test_message_sender_task(commitment_service, message_broker, accounts):
     message_received = message_listener.get()
 
     assert message_received.sender == commitment_service.address
+
+@pytest.mark.xfail(reason='Not implemented yet')
+def test_client():
+    # TODO test the client implementation and tasks
+    pass
