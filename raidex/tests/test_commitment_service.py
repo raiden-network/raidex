@@ -14,16 +14,14 @@ from raidex.raidex_node.trader.trader import (
 )
 from raidex.commitment_service.server import (
     CommitmentService,
-    SwapExecutionListener,
     SwapExecutionTask,
-    CommitmentListener,
     TransferReceivedTask,
-    TransferReceivedListener,
     CommitmentTask,
     SwapCommitment,
     Refund,
     RefundTask,
-    MessageSenderTask
+    MessageSenderTask,
+    TransferReceivedListener
 )
 from raidex.utils import make_privkey_address, timestamp
 
@@ -56,9 +54,9 @@ def commitment_service(message_broker):
 
 
 def test_commitment_task(commitment_service, accounts):
-    commitment_listener = CommitmentListener(commitment_service.message_broker, topic=commitment_service.address)
     CommitmentTask(commitment_service.swaps,
-                   commitment_listener,
+                   commitment_service.message_broker,
+                   commitment_service.address,
                    commitment_service.refund_queue).start()
     gevent.sleep(0.01)
     offer_id = big_endian_to_int(sha3('offer1'))
@@ -117,9 +115,8 @@ def test_commitment_task(commitment_service, accounts):
 
 
 def test_swap_execution_task(commitment_service, message_broker, accounts):
-    swap_execution_listener = SwapExecutionListener(message_broker, topic=commitment_service.address)
     SwapExecutionTask(commitment_service.swaps, commitment_service.message_queue, commitment_service.refund_queue,
-                      swap_execution_listener).start()
+                      message_broker, commitment_service.address).start()
     gevent.sleep(0.1)
 
     maker = accounts[0]
@@ -148,7 +145,6 @@ def test_swap_execution_task(commitment_service, message_broker, accounts):
     # inject the swap in the CS's dict
     commitment_service.swaps[offer_id] = swap
 
-
     swap_exec_msg_maker = messages.SwapExecution(offer_id, timestamp.time())
     swap_exec_msg_maker.sign(maker.privatekey)
     swap_exec_msg_taker = messages.SwapExecution(offer_id, timestamp.time())
@@ -164,7 +160,6 @@ def test_swap_execution_task(commitment_service, message_broker, accounts):
     commitment_service.message_broker.send(commitment_service.address, swap_exec_msg_taker)
     sent_time = timestamp.time()
     gevent.sleep(0.01)
-
 
     assert swap.is_completed
     assert not swap.timed_out
@@ -195,9 +190,8 @@ def test_transfer_received_task(commitment_service, accounts, trader):
     # inject the singleton trader fixture manually
     commitment_service.trader_client = TraderClient(commitment_service.address, trader=trader)
 
-    transfer_received_listener = TransferReceivedListener(commitment_service.trader_client)
     TransferReceivedTask(commitment_service.swaps, commitment_service.message_queue,
-                         commitment_service.refund_queue, transfer_received_listener).start()
+                         commitment_service.refund_queue, commitment_service.trader_client).start()
 
     gevent.sleep(0.01)
 
@@ -288,6 +282,7 @@ def test_message_sender_task(commitment_service, message_broker, accounts):
     message_received = message_listener.get()
 
     assert message_received.sender == commitment_service.address
+
 
 @pytest.mark.xfail(reason='Not implemented yet')
 def test_client():

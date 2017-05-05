@@ -211,77 +211,6 @@ class SwapCommitment(object):
         return refunds
 
 
-class CommitmentTask(gevent.Greenlet):
-    # TODO refactor to create the listener in the task object
-    # TODO business-logic should go in separated process() method
-    """
-    Listens on the message-broker to Commitment-messages sent to the CS's address.
-    The offer_id from the commitment is matched against existing, not finished Swaps.
-    ...
-    As soon as a Swap-instance is created, the Task will also spawn a function that get's executed after
-    the commitment timeout, which cleans up inclomplete swaps.
-    It (implicitly) keeps the commitment-funds by NOT refunding them.
-    """
-
-    def __init__(self, swaps, commitment_listener, refund_queue):
-        self.swaps = swaps
-        self.commitment_listener = commitment_listener
-        self.refund_queue = refund_queue
-        gevent.Greenlet.__init__(self)
-
-    def _run(self):
-        self.commitment_listener.start()
-        while True:
-            commitment_msg = self.commitment_listener.get()
-            assert isinstance(commitment_msg, messages.Commitment)
-            log_messaging.info('Received commitment {}'.format(commitment_msg))
-            swap = self.swaps.get(commitment_msg.offer_id)
-
-            # committer is the maker
-            if swap is None:
-                # FIXME if Taker is too late with trying to commit, and Swap is deleted from swaps, he will be seen as a maker
-                # -> separate Maker/TakerCommitment Messages
-                swap = SwapCommitment(commitment_msg)
-                self.swaps[commitment_msg.offer_id] = swap
-                log_messaging.debug('Maker registered swap: {}'.format(swap))
-
-                def after_offer_timeout_func(swaps, timedout_swap, refund_backlog):
-                    def func():
-                        assert timedout_swap.timed_out
-                        log_swaps.debug('Swap timed out: {}'.format(timedout_swap))
-                        # check if still in swaps, if not, has been handled before
-                        if timedout_swap.offer_id not in swaps:
-                            return
-                        if timedout_swap.is_taken:
-                            if not timedout_swap.is_completed:
-                                # FIXME don't access private member
-                                log_refunds.info('Keeping maker\'s commitment-funds: {}'.format(
-                                    swap._maker_transfer_receipt))
-                                log_refunds.info('Keeping taker\'s commitment-funds: {}'.format(
-                                    swap._taker_transfer_receipt))
-                        else:
-                            assert timedout_swap.taker_commitment is None
-                            # medium priority, arbitrary for now
-                            # FIXME don't access private member
-                            receipt = swap._maker_transfer_receipt
-                            if receipt:
-                                refund = Refund(swap._maker_transfer_receipt, priority=3, claim_fee=False)
-                                log_refunds.info('Refunding maker: {}'.format(refund))
-                                refund_backlog.put(refund)
-
-                        del swaps[swap.offer_id]
-
-                    return func
-
-                seconds_to_timeout = timestamp.seconds_to_timeout(commitment_msg.timeout)
-                gevent.spawn_later(seconds_to_timeout,
-                                   after_offer_timeout_func(self.swaps, swap, self.refund_queue))
-
-            # committer is a taker
-            else:
-                swap.queue_taker_commitment(commitment_msg)
-
-
 class Refund(object):
 
     def __init__(self, receipt, priority, claim_fee):
@@ -302,8 +231,89 @@ class Refund(object):
         return 0
 
 
+class ListenerTask(gevent.Greenlet):
+
+    def __init__(self, listener):
+        self.listener = listener
+        gevent.Greenlet.__init__(self)
+
+    def _run(self):
+        self.listener.start()
+        while True:
+            data = self.listener.get()
+            self.process(data)
+
+    def process(self, data):
+        raise NotImplementedError
+
+
+class CommitmentTask(ListenerTask):
+    """
+    Listens on the message-broker to Commitment-messages sent to the CS's address.
+    The offer_id from the commitment is matched against existing, not finished Swaps.
+    ...
+    As soon as a Swap-instance is created, the Task will also spawn a function that get's executed after
+    the commitment timeout, which cleans up inclomplete swaps.
+    It (implicitly) keeps the commitment-funds by NOT refunding them.
+    """
+
+    def __init__(self, swaps, message_broker, self_address, refund_queue):
+        self.swaps = swaps
+        self.refund_queue = refund_queue
+        super(CommitmentTask, self).__init__(CommitmentListener(message_broker, topic=self_address))
+
+    def process(self, data):
+        commitment_msg = data
+        assert isinstance(commitment_msg, messages.Commitment)
+        log_messaging.info('Received commitment {}'.format(commitment_msg))
+        swap = self.swaps.get(commitment_msg.offer_id)
+
+        # committer is the maker
+        if swap is None:
+            # FIXME if Taker too late with trying to commit, and Swap is deleted from swaps, he will be seen as a maker
+            # -> separate Maker/TakerCommitment Messages
+            swap = SwapCommitment(commitment_msg)
+            self.swaps[commitment_msg.offer_id] = swap
+            log_messaging.debug('Maker registered swap: {}'.format(swap))
+
+            def after_offer_timeout_func(swaps, timedout_swap, refund_queue):
+                def func():
+                    assert timedout_swap.timed_out
+                    log_swaps.debug('Swap timed out: {}'.format(timedout_swap))
+                    # check if still in swaps, if not, has been handled before
+                    if timedout_swap.offer_id not in swaps:
+                        return
+                    if timedout_swap.is_taken:
+                        if not timedout_swap.is_completed:
+                            # FIXME don't access private member
+                            log_refunds.info('Keeping maker\'s commitment-funds: {}'.format(
+                                             swap._maker_transfer_receipt))
+                            log_refunds.info('Keeping taker\'s commitment-funds: {}'.format(
+                                             swap._taker_transfer_receipt))
+                    else:
+                        assert timedout_swap.taker_commitment is None
+                        # medium priority, arbitrary for now
+                        # FIXME don't access private member
+                        receipt = swap._maker_transfer_receipt
+                        if receipt:
+                            refund = Refund(swap._maker_transfer_receipt, priority=3, claim_fee=False)
+                            log_refunds.info('Refunding maker: {}'.format(refund))
+                            refund_queue.put(refund)
+
+                    del swaps[swap.offer_id]
+
+                return func
+
+            seconds_to_timeout = timestamp.seconds_to_timeout(commitment_msg.timeout)
+            gevent.spawn_later(seconds_to_timeout,
+                               after_offer_timeout_func(self.swaps, swap, self.refund_queue))
+
+        # committer is a taker
+        else:
+            swap.queue_taker_commitment(commitment_msg)
+
+
 class RefundTask(gevent.Greenlet):
-    # TODO business-logic should go in separated process() method
     def __init__(self, trader, refund_queue, fee_rate=None):
         self.trader = trader
         self.refund_queue = refund_queue
@@ -321,6 +331,8 @@ class RefundTask(gevent.Greenlet):
             def wait_and_requeue(async_result, refund_, queue):
                 # timeout arbitrary
                 success = async_result.wait(timeout=0.5)
+                # we don't want send the refund twice,
+                # FIXME so timeout might not be a good measurement of transfer-success
                 if success is True:
                     log_trader.debug('Refund successful {}'.format(refund_))
                 else:
@@ -331,7 +343,6 @@ class RefundTask(gevent.Greenlet):
 
 
 class MessageSenderTask(gevent.Greenlet):
-    # TODO business-logic should go in separated process() method
 
     def __init__(self, message_broker, message_queue, sign_func):
         self.message_broker = message_broker
@@ -355,84 +366,73 @@ class MessageSenderTask(gevent.Greenlet):
                     log_messaging.debug('Sending successful: {} // recipient={}'.format(msg, pex(recipient)))
 
 
-class TransferReceivedTask(gevent.Greenlet):
-    # TODO refactor to create the listener in the task object
-    # TODO business-logic should go in separated process() method
+class TransferReceivedTask(ListenerTask):
 
-    def __init__(self, swaps, message_queue, refund_queue, transfer_received_listener):
+    def __init__(self, swaps, message_queue, refund_queue, trader_client):
         self.swaps = swaps
         self.message_queue = message_queue
         self.refund_queue = refund_queue
-        self.listener = transfer_received_listener
-        gevent.Greenlet.__init__(self)
+        super(TransferReceivedTask, self).__init__(TransferReceivedListener(trader_client))
 
-    def _run(self):
-        self.listener.start()
-        while True:
-            transfer_receipt = self.listener.get()
-            log_trader.info('Received transfer: {}'.format(transfer_receipt))
-            swap = self.swaps.get(transfer_receipt.identifier)
-            if swap is None:
-                # keep funds as spam protection, so do nothing to refund
-                log_swaps.debug('No swap registered for transfer: {}'.format(transfer_receipt))
-                log_refunds.info('Keeping funds as penalty: {}'.format(transfer_receipt))
-                continue
-            proof = swap.construct_proof(transfer_receipt)
-            if proof:
-                assert isinstance(proof, messages.CommitmentProof)
-                log_swaps.debug('Commitment-Proof created: {}'.format(proof))
+    def process(self, data):
+        transfer_receipt = data
+        log_trader.info('Received transfer: {}'.format(transfer_receipt))
+        swap = self.swaps.get(transfer_receipt.identifier)
+        if swap is None:
+            # keep funds as spam protection, so do nothing to refund
+            log_swaps.debug('No swap registered for transfer: {}'.format(transfer_receipt))
+            log_refunds.info('Keeping funds as penalty: {}'.format(transfer_receipt))
+            return
+        proof = swap.construct_proof(transfer_receipt)
+        if proof:
+            assert isinstance(proof, messages.CommitmentProof)
+            log_swaps.debug('Commitment-Proof created: {}'.format(proof))
 
-                # send proof to taker
-                self.message_queue.put((proof, transfer_receipt.sender))
+            # send proof to taker
+            self.message_queue.put((proof, transfer_receipt.sender))
 
-                # if the transfer originated from a successful Taker:
-                if swap.is_taken:
-                    log_swaps.info('Swap is taken: {}'.format(swap))
-                    # broadcast OfferTaken
-                    taken_msg = messages.OfferTaken(swap.offer_id)
-                    self.message_queue.put((taken_msg, None))
+            # if the transfer originated from a successful Taker:
+            if swap.is_taken:
+                log_swaps.info('Swap is taken: {}'.format(swap))
+                # broadcast OfferTaken
+                taken_msg = messages.OfferTaken(swap.offer_id)
+                self.message_queue.put((taken_msg, None))
 
-
-            # swap was taken already, refund transfer without claiming a fee:
-            else:
-                assert swap.is_taken
-                # put on refund queue with appropriate priority
-                refund_priority = 2  # arbitrary for now
-                refund = Refund(transfer_receipt, priority=refund_priority, claim_fee=False)
-                log.debug('CODE: Received transfer for taken swap, trying to refund: {}'.format(refund))
-                self.refund_queue.put(refund)
+        # swap was taken already, refund transfer without claiming a fee:
+        else:
+            assert swap.is_taken
+            # put on refund queue with appropriate priority
+            refund_priority = 2  # arbitrary for now
+            refund = Refund(transfer_receipt, priority=refund_priority, claim_fee=False)
+            log.debug('CODE: Received transfer for taken swap, trying to refund: {}'.format(refund))
+            self.refund_queue.put(refund)
 
 
-class SwapExecutionTask(gevent.Greenlet):
-    # TODO refactor to create the listener in the task object
-    # TODO business-logic should go in separated process() method
+class SwapExecutionTask(ListenerTask):
 
-    def __init__(self, swaps, message_queue, refund_queue, swap_execution_listener):
+    def __init__(self, swaps, message_queue, refund_queue, message_broker, self_address):
         self.swaps = swaps
         self.message_queue = message_queue
         self.refund_queue = refund_queue
-        self.swap_execution_listener = swap_execution_listener
-        gevent.Greenlet.__init__(self)
+        super(SwapExecutionTask, self).__init__(SwapExecutionListener(message_broker, topic=self_address))
 
-    def _run(self):
-        self.swap_execution_listener.start()
-        while True:
-            swap_execution_msg = self.swap_execution_listener.get()
-            swap = self.swaps.get(swap_execution_msg.offer_id)
-            if swap is not None:
-                swap_completed = swap.construct_swap_completed(swap_execution_msg)
-                log_messaging.debug('Received swap-excution message: {}'.format(swap))
-                # will only evaluate to true, if both maker and taker have reported execution:
-                if swap_completed is not None:
-                    assert isinstance(swap_completed, messages.SwapCompleted)
-                    self.message_queue.put((swap_completed, None))
-                    refunds = swap.construct_maker_taker_refunds()
-                    if refunds:
-                        for refund in refunds:
-                            self.refund_queue.put(refund)
+    def process(self, data):
+        swap_execution_msg = data
+        swap = self.swaps.get(swap_execution_msg.offer_id)
+        if swap is not None:
+            swap_completed = swap.construct_swap_completed(swap_execution_msg)
+            log_messaging.debug('Received swap-excution message: {}'.format(swap))
+            # will only evaluate to true, if both maker and taker have reported execution:
+            if swap_completed is not None:
+                assert isinstance(swap_completed, messages.SwapCompleted)
+                self.message_queue.put((swap_completed, None))
+                refunds = swap.construct_maker_taker_refunds()
+                if refunds:
+                    for refund in refunds:
+                        self.refund_queue.put(refund)
 
-            else:
-                log.debug('Received non-matching swap-excution message: {}'.format(swap))
+        else:
+            log.debug('Received non-matching swap-excution message: {}'.format(swap))
 
 
 class CommitmentService(object):
@@ -454,10 +454,9 @@ class CommitmentService(object):
         return privtoaddr(self._private_key)
 
     def start(self):
-        CommitmentTask(self.swaps, CommitmentListener(self.message_broker, topic=self.address), self.refund_queue).start()
-        SwapExecutionTask(self.swaps, self.message_queue, self.refund_queue,
-                          SwapExecutionListener(self.message_broker, topic=self.address)).start()
-        TransferReceivedTask(self.swaps, self.message_queue, self.refund_queue, TransferReceivedListener(self.trader_client)).start()
+        CommitmentTask(self.swaps, self.message_broker, self.address, self.refund_queue).start()
+        SwapExecutionTask(self.swaps, self.message_queue, self.refund_queue, self.message_broker, self.address).start()
+        TransferReceivedTask(self.swaps, self.message_queue, self.refund_queue, self.trader_client).start()
         RefundTask(self.trader_client, self.refund_queue, self.fee_rate).start()
         MessageSenderTask(self.message_broker, self.message_queue, self._sign).start()
 
