@@ -88,7 +88,6 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     # he should have got it from the broadcasted ProvenOffer
     taker_internal_offer = taker.offer_book.get_offer_by_id(offer.offer_id)
 
-    assert taker_internal_offer.hash
     assert taker_internal_offer.commitment_amount
 
     taker_commit_result = taker.commitment_service.taker_commit_async(taker_internal_offer)

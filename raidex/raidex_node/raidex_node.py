@@ -40,6 +40,8 @@ class RaidexNode(object):
         OfferTakenTask(self.offer_book, self.trades, self.message_broker).start()
         SwapCompletedTask(self.trades, self.message_broker).start()
 
+        # start task for updating the balance of the trader:
+        self.trader_client.start()
         # start the tasks for the commitment-service-client
         self.commitment_service.start()
 

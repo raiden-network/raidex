@@ -448,6 +448,7 @@ class CommitmentService(object):
         self.message_queue = PriorityQueue()  # type: (messages.Signed, recipient (str) or None)
 
     def start(self):
+        self.trader_client.start()
         CommitmentTask(self.swaps, self.message_broker, self.address, self.refund_queue).start()
         SwapExecutionTask(self.swaps, self.message_queue, self.refund_queue, self.message_broker, self.address).start()
         TransferReceivedTask(self.swaps, self.message_queue, self.refund_queue, self.trader_client).start()

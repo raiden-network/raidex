@@ -63,6 +63,10 @@ def test_transfer(trader_client1, trader_client2):
     identifier = sha3('id')
     amount = 5
 
+    # start the balanceupdate tasks
+    trader_client1.start()
+    trader_client2.start()
+
     received_listener = TransferReceivedListener(trader_client2)
     received_listener.start()
 

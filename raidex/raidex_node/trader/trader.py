@@ -7,6 +7,7 @@ from gevent.queue import Queue
 from ethereum import slogging
 
 from raidex.raidex_node.offer_book import OfferType
+from raidex.raidex_node.listener_tasks import ListenerTask
 from raidex.utils import timestamp, pex
 from raidex.utils.gevent_helpers import make_async
 
@@ -29,7 +30,7 @@ class TransferReceivedEvent(object):
             self.__class__.__name__,
             pex(self.sender),
             self.amount,
-            self.identifier,
+            pex(self.identifier),
         )
 
 
@@ -46,7 +47,7 @@ class TransferReceipt(object):
             self.__class__.__name__,
             pex(self.sender),
             self.amount,
-            self.identifier,
+            pex(self.identifier),
             self.timestamp
         )
 
@@ -140,20 +141,19 @@ class TraderClient(object):
         self.commitment_balance = commitment_balance
         if trader is not None:
             self.trader = trader
-
-        # HACK update balances with another TransferReceivedListener
-        # no dedicated task but rather a function that gets spawned
-        def _balance_update_loop(this):
-            balance_received_listener = TransferReceivedListener(this)
-            balance_received_listener.start()
-            while True:
-                transfer_receipt = balance_received_listener.get()
-                this.commitment_balance += transfer_receipt.amount
-
-        gevent.spawn(_balance_update_loop, self)
+        self._is_running = False
 
     def __repr__(self):
         return 'TraderClient<{}>'.format(pex(self.address), self.commitment_balance)
+
+    @property
+    def is_running(self):
+        return self._is_running
+
+    def start(self):
+        if not self.is_running:
+            BalanceUpdateTask(self).start()
+            self._is_running = True
 
     @make_async
     def expect_exchange_async(self, type_, base_amount, counter_amount, target_address, identifier):
@@ -205,7 +205,7 @@ class TraderClient(object):
 
 
 class EventListener(object):
-    """Represents a listener currently listening for new messages"""
+    """Represents a listener currently listening for new event"""
 
     def __init__(self, trader):
         self.trader = trader
@@ -240,11 +240,11 @@ class EventListener(object):
         return result
 
     def start(self):
-        """Starts listening for new messages"""
+        """Starts listening for new events"""
         self.listener = self.trader.listen_for_events(self._transform)
 
     def stop(self):
-        """Stops listening for new messages"""
+        """Stops listening for new events"""
         if self.listener is not None:
             self.trader.stop_listen(self.listener)
 
@@ -258,3 +258,14 @@ class TransferReceivedListener(EventListener):
             return receipt
         else:
             return None
+
+
+class BalanceUpdateTask(ListenerTask):
+
+    def __init__(self, trader_client):
+        self.trader_client = trader_client
+        super(BalanceUpdateTask, self).__init__(TransferReceivedListener(trader_client))
+
+    def process(self, data):
+        transfer_receipt = data
+        self.trader_client.commitment_balance += transfer_receipt.amount

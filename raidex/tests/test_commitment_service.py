@@ -230,6 +230,11 @@ def test_transfer_received_task(commitment_service, accounts, trader):
 def test_refund_task(commitment_service, trader_client1):
     transfer_amount = 5
     fee_rate = 0.1
+
+    # start the balanceupdate-task of the traders
+    trader_client1.start()
+    commitment_service.trader_client.start()
+
     refund_task = RefundTask(commitment_service.trader_client, commitment_service.refund_queue, fee_rate)
 
     receipt1 = TransferReceipt(sender=trader_client1.address, identifier=sha3('beer'), amount=transfer_amount,
