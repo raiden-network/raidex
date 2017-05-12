@@ -10,7 +10,7 @@ from raidex.message_broker.message_broker import MessageBroker
 from raidex.utils import timestamp
 from raidex.raidex_node.raidex_node import RaidexNode
 from raidex.raidex_node.market import TokenPair
-from raidex.raidex_node.offer_book import Offer, OfferType
+from raidex.raidex_node.offer_book import Offer, OfferType, generate_random_offer_id
 from raidex.signing import Signer
 
 
@@ -64,8 +64,8 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     assert commitment_service.trader_client.commitment_balance == 10
 
     assert maker.message_broker == taker.message_broker == commitment_service.message_broker
-
-    offer = Offer(OfferType.SELL, 100, 1000, offer_id=123, timeout=timestamp.time_plus(seconds=0, milliseconds=500))
+    offer_id = generate_random_offer_id()
+    offer = Offer(OfferType.SELL, 100, 1000, offer_id=offer_id, timeout=timestamp.time_plus(seconds=0, milliseconds=500))
     maker_commit_result = maker.commitment_service.maker_commit_async(offer, commitment_amount=5)
     gevent.sleep(0.01)
     assert commitment_service.trader_client.commitment_balance == 15

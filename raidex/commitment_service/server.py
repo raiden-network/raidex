@@ -84,6 +84,8 @@ class SwapCommitment(object):
                 else:
                     return 'unsuccessful'
         if self.is_taken:
+            if self.is_completed:
+                return 'completed'
             return 'taken/committed'
         return 'open'
 
@@ -423,12 +425,15 @@ class SwapExecutionTask(ListenerTask):
             log_messaging.debug('Received swap-excution message: {}'.format(swap))
             # will only evaluate to true, if both maker and taker have reported execution:
             if swap_completed is not None:
+                assert swap.is_completed
                 assert isinstance(swap_completed, messages.SwapCompleted)
+                log_messaging.debug('Now completed: {}'.format(swap))
                 self.message_queue.put((swap_completed, None))
                 refunds = swap.construct_maker_taker_refunds()
                 if refunds:
                     for refund in refunds:
                         self.refund_queue.put(refund)
+
 
         else:
             log.debug('Received non-matching swap-excution message: {}'.format(swap))

@@ -16,7 +16,7 @@ class MessageBroker(object):
     def send(self, topic, message):
         queues = self.listeners[topic]
         if not queues:
-            log.debug('CODE: no listener waiting on topic {}'.format(pex(topic)))
+            log.debug('CODE: no listener waiting on topic {}, msg={}'.format(pex(topic), message))
         for listener in queues:
             topic, message_queue_async, transform = listener
             transformed_message = message

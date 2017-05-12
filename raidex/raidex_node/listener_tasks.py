@@ -2,7 +2,7 @@ import gevent
 from ethereum import slogging
 
 from raidex.message_broker.listeners import OfferTakenListener, OfferListener, SwapCompletedListener
-from raidex.utils import timestamp
+from raidex.utils import timestamp, pex
 
 
 log = slogging.get_logger('node.listener_tasks')
@@ -33,7 +33,7 @@ class OfferTakenTask(ListenerTask):
     def process(self, data):
         offer_id = data
         if self.offer_book.contains(offer_id):
-            log.debug('Offer {} is taken'.format(offer_id))
+            log.debug('Offer {} is taken'.format(pex(offer_id)))
             offer = self.offer_book.get_offer_by_id(offer_id)
             self.trades.add_pending(offer)
             self.offer_book.remove_offer(offer_id)
@@ -53,7 +53,7 @@ class OfferBookTask(ListenerTask):
         def after_offer_timeout_func(offer_id):
             def func():
                 if self.offer_book.contains(offer_id):
-                    log.debug('Offer {} is timed out'.format(offer_id))
+                    log.debug('Offer {} is timed out'.format(pex(offer_id)))
                     self.offer_book.remove_offer(offer_id)
             return func
 
@@ -67,5 +67,5 @@ class SwapCompletedTask(ListenerTask):
 
     def process(self, data):
         swap_completed = data
-        log.debug('Offer {} has been successfully traded'.format(swap_completed.offer_id))
+        log.debug('Offer {} has been successfully traded'.format(pex(swap_completed.offer_id)))
         self.trades.report_completed(swap_completed.offer_id, swap_completed.timestamp)

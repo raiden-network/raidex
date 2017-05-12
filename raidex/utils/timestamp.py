@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 
+# TODO test the timestamp and roundings
+
 
 def _dt_to_ms_timestamp(dt, epoch=datetime(1970, 1, 1)):
     td = dt - epoch
@@ -14,7 +16,7 @@ def to_seconds(ms):
     return ms / 1000.
 
 
-def time_plus(seconds, milliseconds=0, microseconds=0):
+def time_plus(seconds=0, milliseconds=0, microseconds=0):
     td = timedelta(seconds=seconds, milliseconds=milliseconds, microseconds=microseconds)
     return _dt_to_ms_timestamp(datetime.utcnow() + td)
 

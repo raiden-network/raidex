@@ -1,4 +1,5 @@
 from __future__ import print_function
+import random
 
 from bintrees import FastRBTree
 from enum import Enum
@@ -16,6 +17,11 @@ class OfferType(Enum):
     @classmethod
     def opposite(cls, type_):
         return OfferType((type_.value + 1) % 2)
+
+
+def generate_random_offer_id():
+    # generate random offer-id in the 32byte int range
+    return int(random.randint(0, 2 ** 256 - 1))
 
 
 class Offer(object):
