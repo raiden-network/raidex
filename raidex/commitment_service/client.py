@@ -15,6 +15,10 @@ from raidex.tests.utils import float_isclose
 log = slogging.get_logger('node.commitment_service')
 
 
+class OfferIdentifierCollision(Exception):
+    pass
+
+
 class CommitmentService(object):
     """
     Interactions concerning the Commitment for Offers (maker) and ProvenOffers (taker).
@@ -43,13 +47,16 @@ class CommitmentService(object):
 
     @make_async
     def maker_commit_async(self, offer, commitment_amount):
-        # type: (Offer) -> (bool, ProvenOffer)
+        # type: (Offer) -> (ProvenOffer)
         offermsg = self.create_offer_msg(offer)
         # self._sign(offermsg)
 
         commitment = messages.Commitment(offer.offer_id, offermsg.hash, offer.timeout, commitment_amount)
         self._sign(commitment)
 
+        # we shouldn't reuse offer_ids,
+        if offer.offer_id in self.commitments:
+            raise OfferIdentifierCollision("This offer-id is still being processed")
         # map offer_id -> commitment
         self.commitments[offer.offer_id] = commitment
 
@@ -70,7 +77,7 @@ class CommitmentService(object):
 
         if success is False:
             log.debug('Trader failed to transfer commitment for offer: {}'.format(offer))
-            return False
+            return None
 
         # if the offer timed out, we don't want to continue waiting on the proof (e.g. CS unresponsive)
         timeout = timestamp.seconds_to_timeout(offer.timeout)
@@ -78,12 +85,12 @@ class CommitmentService(object):
             commitment_proof = commitment_proof_async_result.get(timeout=timeout)
         except gevent.Timeout:
             # don't set the AsyncResult, since we still should receive a Refund
-            # but return False later on nevertheless
-            commitment_proof = False
+            # but return None later on nevertheless
+            commitment_proof = None
 
-        if commitment_proof is False:
+        if commitment_proof is None:
             log.debug('CS didn\'t respond with a CommitmentProof')
-            return False
+            return None
 
         assert isinstance(commitment_proof, messages.CommitmentProof)
         assert commitment_proof.sender == self.commitment_service_address
@@ -94,9 +101,9 @@ class CommitmentService(object):
 
     @make_async
     def taker_commit_async(self, offer):
-        # type: (Offer) -> (bool, messages.ProvenCommitment)
-        assert offer.hash
+        # type: (Offer) -> (messages.ProvenCommitment)
         assert offer.commitment_amount
+        offermsg = self.create_offer_msg(offer)
 
         commitment = messages.Commitment(offer.offer_id, offermsg.hash, offer.timeout, offer.commitment_amount)
         self._sign(commitment)
@@ -107,7 +114,7 @@ class CommitmentService(object):
         success = self.message_broker.send(self.commitment_service_address, commitment)
         if success is False:
             log.debug('Message broker failed to send: {}'.format(commitment))
-            return False
+            return None
 
         commitment_proof_async_result = AsyncResult()
         # register the AsyncResult:
@@ -119,8 +126,8 @@ class CommitmentService(object):
 
         if success is False:
             log.debug('Trader failed to transfer commitment for offer: {}'.format(offer))
-            commitment_proof_async_result.set(False)
-            return False
+            commitment_proof_async_result.set(None)
+            return None
 
         # if the offer timed out, we don't want to continue waiting on the proof (e.g. CS unresponsive)
         timeout = timestamp.seconds_to_timeout(offer.timeout)
@@ -129,12 +136,12 @@ class CommitmentService(object):
             commitment_proof = commitment_proof_async_result.get(timeout=timeout)
         except gevent.Timeout:
             # don't set the AsyncResult, since we still should receive a Refund
-            # but return False later on nevertheless
-            commitment_proof = False
+            # but return None later on nevertheless
+            commitment_proof = None
 
-        if commitment_proof is False:
+        if commitment_proof is None:
             log.debug('CS didn\'t respond with a CommitmentProof')
-            return False
+            return None
 
         assert isinstance(commitment_proof, messages.CommitmentProof)
         assert commitment_proof.sender == self.commitment_service_address
@@ -154,13 +161,13 @@ class CommitmentService(object):
 
     def create_taken(self, offer_id):
         # leave until the code using this method is changed
-        raise AttributeError("Mock-CS functionality not available inside of CS-client implementation")
+        raise NotImplementedError("Mock-CS functionality not available inside of CS-client implementation")
 
     def create_swap_completed(self, offer_id):
         # leave until the code using this method is changed
-        raise AttributeError("Mock-CS functionality not available inside of CS-client implementation")
+        raise NotImplementedError("Mock-CS functionality not available inside of CS-client implementation")
 
-    def swap_executed(self, offer_id):
+    def report_swap_executed(self, offer_id):
         # type: (int) -> None
         swap_execution = messages.SwapExecution(offer_id, timestamp.time_int())
         self._sign(swap_execution)
@@ -187,7 +194,7 @@ class CommitmentProofTask(gevent.Greenlet):
                 # we should be waiting on the commitment-proof!
                 # assume non-malicious actors:
                 # if we receive a proof we are not waiting on, there is something wrong
-                assert False
+                log.debug('Received unexpected commitment proof {}'.format(commitment_proof))
 
 
 class RefundReceivedTask(gevent.Greenlet):
@@ -211,17 +218,24 @@ class RefundReceivedTask(gevent.Greenlet):
                 # we're not waiting for this refund
                 log.debug("Received unexpected Refund: {}".format(receipt))
                 continue
+            # assert internals
+            assert receipt.identifier == commitment.offer_id
+            if not receipt.sender == self.commitment_service_address:
+                log.debug("Received expected refund-id from unexpected sender")
+                # do nothing and keep the money
+                continue
 
             # assume non-malicious cs, so only asserting correctness for now:
             minus_fee = commitment.amount - commitment.amount * self.fee_rate
-            assert float_isclose(commitment.amount, receipt.amount) or float_isclose(receipt.amount, minus_fee)
-            assert receipt.identifier == commitment.offer_id
-            assert receipt.sender == self.commitment_service_address
+            if not float_isclose(commitment.amount, receipt.amount) or float_isclose(receipt.amount, minus_fee):
+                log.debug("Received refund that didn't match expected amount")
+                # if the refund doesn't comply with the expected amount, do nothing and keep the money
+                continue
 
             # set the AsyncResult for the Commitment-Proof we are expecting
             async_result = self.commitment_proofs.get(commitment.signature)
             if async_result:
-                async_result.set(False)
+                async_result.set(None)
                 log.debug("Refund received: {}".format(receipt))
 
                 # once we receive a refund, everything is settled for us and we can delete the commitment

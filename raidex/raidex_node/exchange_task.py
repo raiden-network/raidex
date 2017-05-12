@@ -2,6 +2,7 @@ import gevent
 from raidex.utils import timestamp
 from ethereum import slogging
 from ethereum.utils import encode_hex
+from raidex import messages
 from raidex.message_broker.listeners import TakerListener
 from raidex.utils.gevent_helpers import switch_context
 
@@ -30,18 +31,26 @@ class MakerExchangeTask(gevent.Greenlet):
         timeout = gevent.Timeout(seconds_to_timeout)
         timeout.start()
         try:
-            proof = self.commitment_service.maker_commit_async(self.offer).get()
-            log.debug('Broadcast proof for {}'.format(self.offer.offer_id))
-            self.message_broker.broadcast(proof)
+            proven_offer = self.commitment_service.maker_commit_async(self.offer).get()
+            if proven_offer is None:
+                log.debug('No proven offer received for {}..'.format(self.offer.offer_id))
+                return False
             log.debug('Wait for taker of {}..'.format(self.offer.offer_id))
-            # TODO verify proof
-            taker_address = TakerListener(self.offer, self.message_broker, encode_hex(self.maker_address)).get_once()
+            # taker_address = TakerListener(self.offer, self.message_broker, self.maker_address).get_once()
+
+            # XXX listener.get_once() starts and then waits for a result,
+            # We want to start the listener, then broadcast the offer, and get the asyncresult!:
+            taker_listener = TakerListener(self.offer, self.message_broker, self.maker_address)
+            taker_listener.start()
+            log.debug('Broadcast proven_offer for {}'.format(self.offer.offer_id))
+            self.message_broker.broadcast(proven_offer)
+            taker_address = taker_listener.get()
             log.debug('Found taker, execute swap of {}'.format(self.offer.offer_id))
             status = self.trader.exchange_async(self.offer.type_, self.offer.base_amount, self.offer.counter_amount,
                                                 taker_address, self.offer.offer_id).get()
             if status:
                 log.debug('Swap of {} done'.format(self.offer.offer_id))
-                self.commitment_service.swap_executed(self.offer.offer_id)
+                self.commitment_service.report_swap_executed(self.offer.offer_id)
                 #  TODO check refund minus fee
             else:
                 log.debug('Swap of {} failed'.format(self.offer.offer_id))
@@ -80,19 +89,20 @@ class TakerExchangeTask(gevent.Greenlet):
         timeout = gevent.Timeout(seconds_to_timeout)
         timeout.start()
         try:
-            proof = self.commitment_service.taker_commit_async(self.offer).get()
+            proven_commitment = self.commitment_service.taker_commit_async(self.offer).get()
+            if proven_commitment is None:
+                # TODO
+                pass
             status_async = self.trader.expect_exchange_async(self.offer.type_, self.offer.base_amount,
                                                              self.offer.counter_amount, self.offer.maker_address,
                                                              self.offer.offer_id)
             switch_context()  # give async function chance to execute
-            # FIXME hack for now, later cs should send this:
-            self.message_broker.broadcast(self.commitment_service.create_taken(self.offer.offer_id))
-            log.debug('Send proof of {} to maker'.format(self.offer.offer_id))
-            self.message_broker.send(encode_hex(self.offer.maker_address), proof)
+            log.debug('Send proven-commitment of {} to maker'.format(self.offer.offer_id))
+            self.message_broker.send(self.offer.maker_address, proven_commitment)
             status = status_async.get()
             if status:
                 log.debug('Swap of {} done'.format(self.offer.offer_id))
-                self.commitment_service.swap_executed(self.offer.offer_id)
+                self.commitment_service.report_swap_executed(self.offer.offer_id)
             else:
                 log.debug('Swap of {} failed'.format(self.offer.offer_id))
                 # TODO check refund

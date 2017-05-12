@@ -112,7 +112,7 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     failed_taker_proven_offer = failed_taker_commit_result.get()
 
     # The second taker fails to receive the proof
-    assert failed_taker_proven_offer is False
+    assert failed_taker_proven_offer is None
     # but the CS should have received the commitment
     cs_swap = commitment_service.swaps[offer.offer_id]
     assert cs_swap.commitment_exists_for(failed_taker.address)
@@ -121,13 +121,9 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     assert failed_taker.trader_client.commitment_balance == 10
 
     # Now the Maker and taker say they executed the swap
-    maker_swap_exec = messages.SwapExecution(offer.offer_id, timestamp.time())
-    maker_swap_exec.sign(maker.priv_key)
-    taker_swap_exec = messages.SwapExecution(offer.offer_id, timestamp.time())
-    taker_swap_exec.sign(taker.priv_key)
 
-    maker.message_broker.send(commitment_service.address, maker_swap_exec)
-    taker.message_broker.send(commitment_service.address, taker_swap_exec)
+    maker.commitment_service.report_swap_executed(offer.offer_id)
+    taker.commitment_service.report_swap_executed(offer.offer_id)
 
     gevent.sleep(0.01)
 
