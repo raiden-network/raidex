@@ -7,6 +7,7 @@ from ethereum.utils import sha3, big_endian_to_int
 from raidex import messages
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.message_broker.listeners import MessageListener
+from raidex.signing import Signer
 from raidex.raidex_node.trader.trader import (
     TraderClient,
     Trader,
@@ -47,10 +48,11 @@ def trader_client2(accounts, trader):
     return TraderClient(accounts[2].address, commitment_balance=10, trader=trader)
 
 
-@pytest.fixture
-def commitment_service(message_broker):
-    privkey, _ = make_privkey_address()
-    return CommitmentService(message_broker, privkey, fee_rate=0.01)
+@pytest.fixture()
+def commitment_service(message_broker, trader):
+    signer = Signer()
+    trader_client = TraderClient(signer.address, trader=trader)
+    return CommitmentService(signer, message_broker, trader_client, fee_rate=0.01)
 
 
 def test_commitment_task(commitment_service, accounts):
@@ -187,8 +189,6 @@ def test_swap_execution_task(commitment_service, message_broker, accounts):
 
 
 def test_transfer_received_task(commitment_service, accounts, trader):
-    # inject the singleton trader fixture manually
-    commitment_service.trader_client = TraderClient(commitment_service.address, trader=trader)
 
     TransferReceivedTask(commitment_service.swaps, commitment_service.message_queue,
                          commitment_service.refund_queue, commitment_service.trader_client).start()
@@ -227,9 +227,7 @@ def test_transfer_received_task(commitment_service, accounts, trader):
     assert receipt.timestamp <= sent_time + 3
 
 
-def test_refund_task(commitment_service, trader, trader_client1):
-    # inject the singleton trader fixture manually
-    commitment_service.trader_client = TraderClient(commitment_service.address, trader=trader)
+def test_refund_task(commitment_service, trader_client1):
     transfer_amount = 5
     fee_rate = 0.1
     refund_task = RefundTask(commitment_service.trader_client, commitment_service.refund_queue, fee_rate)

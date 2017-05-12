@@ -174,7 +174,6 @@ class SwapCommitment(object):
 
         assert isinstance(swap_exec_msg, messages.SwapExecution)
         assert swap_exec_msg.offer_id == self._maker_commitment.offer_id
-
         if not self.timed_out:
             if swap_exec_msg.sender == self._maker_commitment.sender:
                 self._maker_swap_execution = swap_exec_msg
@@ -437,11 +436,10 @@ class SwapExecutionTask(ListenerTask):
 
 class CommitmentService(object):
 
-    def __init__(self, message_broker, private_key, fee_rate=None, trader_client=None):
-        self._private_key = private_key
+    def __init__(self, signer, message_broker, trader_client, fee_rate=None):
+        self._sign = signer.sign
+        self.address = signer.address
         self.swaps = dict()  # offer_hash -> CommitmentTuple
-        if not trader_client:
-            trader_client = TraderClient(self.address)
         self.trader_client = trader_client
         # FIXME fee_rate should be int representation (int(float_rate/uint32.max_int)) for CSAdvertisements
         self.fee_rate = fee_rate
@@ -449,16 +447,9 @@ class CommitmentService(object):
         self.refund_queue = PriorityQueue()  # type: (TransferReceipt, substract_fee <bool>)
         self.message_queue = PriorityQueue()  # type: (messages.Signed, recipient (str) or None)
 
-    @property
-    def address(self):
-        return privtoaddr(self._private_key)
-
     def start(self):
         CommitmentTask(self.swaps, self.message_broker, self.address, self.refund_queue).start()
         SwapExecutionTask(self.swaps, self.message_queue, self.refund_queue, self.message_broker, self.address).start()
         TransferReceivedTask(self.swaps, self.message_queue, self.refund_queue, self.trader_client).start()
         RefundTask(self.trader_client, self.refund_queue, self.fee_rate).start()
         MessageSenderTask(self.message_broker, self.message_queue, self._sign).start()
-
-    def _sign(self, message):
-        message.sign(self._private_key)

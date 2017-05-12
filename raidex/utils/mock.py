@@ -14,8 +14,10 @@ import gevent
 from noise import pnoise1
 from ethereum.utils import denoms, sha3, privtoaddr, big_endian_to_int
 
+from raidex.commitment_service.mock import CommitmentServiceMock
 from raidex.raidex_node.offer_book import Offer, OfferType
 from raidex.utils import make_privkey_address, timestamp
+from raidex.signing import Signer
 
 ETH = denoms.ether
 
@@ -68,10 +70,17 @@ class MockExchangeTask(gevent.Greenlet):
     max_price_movement = 0.02
     message_volume = 200  # mostly determines the highest/lowest spread
 
-    def __init__(self, initial_market_price, commitment_service, message_broker, offer_book):
+    def __init__(self, initial_market_price, token_pair, cs_global, cs_fee_rate, message_broker, offer_book):
         self.accounts = {}  # address -> privkey mapping
         # self.token_pair = token_pair
-        self.commitment_service = commitment_service
+        self.commitment_services = []
+
+        # generate 10 different market-makers' cs_clients
+        for _ in range(0, 10):
+            self.commitment_services.append(
+                CommitmentServiceMock(Signer(), token_pair, message_broker, cs_fee_rate, cs_global)
+            )
+
         self.message_broker = message_broker
         self.offer_book = offer_book
         self.market_price = float(initial_market_price)
@@ -84,8 +93,8 @@ class MockExchangeTask(gevent.Greenlet):
 
     def _run(self):
         while True:
-            privkey = random.choice(self.accounts.values())
-            self.make_offer(self.market_price, privkey)
+            current_commitment_service = random.choice(self.commitment_services)
+            self.make_offer(self.market_price, current_commitment_service)
             # propagate perlin noise generator and set new market price target, always positive
             # TODO Fixme, optimize
             self.market_price = abs(self.market_price + self.max_price_movement * pnoise1(self.time))
@@ -108,27 +117,27 @@ class MockExchangeTask(gevent.Greenlet):
                 try:
                     # FIXME will most likely not succeed because of a lot of index errors
                     offer_to_take = random.choice(offers[0:threshold_index])
-                    self.take_and_swap_offer(offer_to_take)
+                    self.take_and_swap_offer(offer_to_take, current_commitment_service)
                 except IndexError or TypeError:
                     pass
             # new activity every 1-5 seconds
             ttl = random.randint(1, 5)
             gevent.sleep(ttl)
 
-    def make_offer(self, market_price, privkey):
+    def make_offer(self, market_price, commitment_service_client):
         magic_number = random.randint(1, self.message_volume)
         offer = gen_offer(magic_number, market_price=market_price)
-        proof = self.commitment_service.maker_commit_async(offer, privkey).get()
+        proven_offer = commitment_service_client.maker_commit_async(offer).get()
         gevent.sleep(0.001)  # necessary?
-        self.message_broker.broadcast(proof)
+        self.message_broker.broadcast(proven_offer)
 
-    def take_and_swap_offer(self, offer):
+    def take_and_swap_offer(self, offer, commitment_service_client):
         # skip taker-commitment since this is not broadcasted anyways
-        offer_taken = self.commitment_service.create_taken(offer.offer_id)
+        offer_taken = commitment_service_client.create_taken(offer.offer_id)
         self.message_broker.broadcast(offer_taken)
 
         # spawn later randomly, but before timeout
-        swap_completed = self.commitment_service.create_swap_completed(offer.offer_id)
+        swap_completed = commitment_service_client.create_swap_completed(offer.offer_id)
         wait = int(round(offer.timeout - (random.random() * (offer.timeout - 100))))
         gevent.spawn_later(timestamp.to_seconds(wait), self.message_broker.broadcast, swap_completed)
         gevent.sleep(0.001)  # necessary?

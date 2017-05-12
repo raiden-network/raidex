@@ -13,24 +13,22 @@ from listener_tasks import OfferBookTask, OfferTakenTask, SwapCompletedTask
 from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.raidex_node.trades import TradesView
 from raidex.commitment_service.client import CommitmentService
-from raidex.commitment_service.commitment_service import CommitmentService as CommitmentServiceMock
+from raidex.commitment_service.mock import CommitmentServiceMock
 from raidex.raidex_node.trader.trader import TraderClient, Trader
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.utils import timestamp
+from raidex.signing import Signer
 log = slogging.get_logger('node')
 
 
 class RaidexNode(object):
 
-    def __init__(self, base_token_addr, counter_token_addr, priv_key, cs_address, cs_fee_rate, message_broker,
-                 trader):
-        self.token_pair = TokenPair(base_token=base_token_addr, counter_token=counter_token_addr)
-        self.priv_key = priv_key
-        self.address = privtoaddr(self.priv_key)
+    def __init__(self, address, token_pair, commitment_service, message_broker, trader_client):
+        self.token_pair = token_pair
+        self.address = address
         self.message_broker = message_broker
-        self.trader_client = TraderClient(self.address, commitment_balance=10, trader=trader)
-        self.commitment_service = CommitmentService(self.address, self.token_pair, self._sign, self.trader_client,
-                                                    self.message_broker, cs_address, fee_rate=cs_fee_rate)
+        self.commitment_service = commitment_service
+        self.trader_client = trader_client
         self.offer_book = OfferBook()
         self.trades = TradesView()
         self.order_tasks_by_id = {}
@@ -67,40 +65,36 @@ class RaidexNode(object):
     def print_offers(self):
         print(self.offer_book)
 
-    def _sign(self, message):
-        message.sign(self.priv_key)
+    @classmethod
+    def build_default(cls, cs_address='', cs_fee_rate=0.01, privkey=None, base_token_addr=None, counter_token_addr=None,
+                      message_broker=None, trader=None, cs_global=None):
 
+        # construct signer object that holds privkey, address and sign-function
+        signer = Signer(privkey)
 
-def raidex_node_builder(cs_address='', cs_fee_rate=0.01, message_broker=None, trader=None):
-    """
-    Convenience function to easily construct a default raidex-node
-    - eventually initialises missing objects if no arguments are provided.
+        # construct token pair or default token pair:
+        if base_token_addr is None:
+            base_token_addr = privtoaddr(sha3('ether'))
+        if counter_token_addr is None:
+            counter_token_addr = privtoaddr(sha3('usd'))
+        token_pair = TokenPair(base_token=base_token_addr, counter_token=counter_token_addr)
 
-    :param cs_address: the address under which an existing CS is listening for messages and transfers
-    :param cs_fee_rate: the corresponding fee-rate for said CS
-    :param message_broker: the singleton message_broker object
-    :param trader: the singleton trader object
-    :return:
-    """
-    priv_key = sha3('secret'+str(random.randint(0, 1000000000)))
-    base_token_addr = privtoaddr(sha3('ether'))
-    counter_token_addr = privtoaddr(sha3('usd'))
-    if message_broker is None:
-        message_broker = MessageBroker()
-    if trader is None:
-        trader = Trader()
+        # eventually create MessageBroker singleton
+        if message_broker is None:
+            message_broker = MessageBroker()
 
-    if cs_address:
-        node = RaidexNode(base_token_addr, counter_token_addr, priv_key, cs_address, cs_fee_rate,
-                          message_broker, trader)
+        # eventually create Trader singleton and construct the trader-client
+        if trader is None:
+            trader = Trader()
+        trader_client = TraderClient(signer.address, commitment_balance=10, trader=trader)
 
-    # if no commitment_service address is provided, use the CS mock-implementation:
-    else:
-        # only for eventually complying with typechecks etc.
-        cs_address = privtoaddr(sha3('mock'))
-        node = RaidexNode(base_token_addr, counter_token_addr, priv_key, cs_address, cs_fee_rate,
-                          message_broker, trader)
-        # overwrite member from node initialisation with mock-commitment-service
-        node.commitment_service = CommitmentServiceMock(node.token_pair, node.priv_key, node.message_broker)
+        # construct commitment-service-client
+        if cs_address:
+            commitment_service_client = CommitmentService(signer, token_pair, trader_client,
+                                                          message_broker, cs_address, fee_rate=cs_fee_rate)
+        # or construct mock commitment-service-client (non-failing mock without commitment-trades)
+        else:
+            commitment_service_client = CommitmentServiceMock(signer, token_pair, message_broker, cs_fee_rate,
+                                                              cs_global)
 
-    return node
+        return cls(signer.address, token_pair, commitment_service_client, message_broker, trader_client)

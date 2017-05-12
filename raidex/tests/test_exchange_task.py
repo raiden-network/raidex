@@ -1,11 +1,12 @@
 import pytest
 from raidex.utils import timestamp
-from raidex.commitment_service.commitment_service import CommitmentService
+from raidex.commitment_service.mock import CommitmentServiceMock, CommitmentServiceGlobal
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.raidex_node.exchange_task import MakerExchangeTask, TakerExchangeTask
 from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.offer_book import Offer, OfferType
 from raidex.raidex_node.trader.trader import TraderClient
+from raidex.signing import Signer
 
 
 @pytest.fixture()
@@ -20,13 +21,20 @@ def message_broker():
 
 
 @pytest.fixture()
-def commitment_service_maker(assets, accounts, message_broker):
-    return CommitmentService(TokenPair(assets[0], assets[1]), accounts[0].privatekey, message_broker)
+def cs_global():
+    return CommitmentServiceGlobal()
 
 
 @pytest.fixture()
-def commitment_service_taker(assets, accounts, message_broker):
-    return CommitmentService(TokenPair(assets[0], assets[1]), accounts[1].privatekey, message_broker)
+def commitment_service_maker(assets, accounts, message_broker, cs_global):
+    node_signer = Signer(accounts[0].privatekey)
+    return CommitmentServiceMock(node_signer, TokenPair(assets[0], assets[1]), message_broker, cs_global=cs_global)
+
+
+@pytest.fixture()
+def commitment_service_taker(assets, accounts, message_broker, cs_global):
+    node_signer = Signer(accounts[1].privatekey)
+    return CommitmentServiceMock(node_signer, TokenPair(assets[0], assets[1]), message_broker,cs_global=cs_global)
 
 
 @pytest.fixture()

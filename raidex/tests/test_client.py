@@ -9,9 +9,10 @@ from raidex.raidex_node.listener_tasks import OfferBookTask, SwapCompletedTask, 
 from raidex.utils import timestamp
 from raidex.utils import get_market_from_asset_pair
 from raidex.message_broker.message_broker import MessageBroker
-from raidex.commitment_service.commitment_service import CommitmentService
+from raidex.commitment_service.mock import CommitmentServiceMock
 from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.trades import TradesView
+from raidex.signing import Signer
 
 
 @pytest.fixture()
@@ -26,7 +27,7 @@ def message_broker():
 
 @pytest.fixture()
 def commitment_service(token_pair, message_broker):
-    return CommitmentService(token_pair, sha3("test1"), message_broker)
+    return CommitmentServiceMock(Signer(), token_pair, message_broker)
 
 
 def test_market_from_asset_pair():

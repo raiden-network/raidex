@@ -4,13 +4,14 @@ import gevent
 from raidex.tests.utils import float_isclose
 
 from raidex.commitment_service.server import CommitmentService
-from raidex.raidex_node.trader.trader import Trader
+from raidex.raidex_node.trader.trader import Trader, TraderClient
 from raidex import messages
 from raidex.message_broker.message_broker import MessageBroker
-from raidex.utils import timestamp, make_privkey_address
+from raidex.utils import timestamp
 from raidex.raidex_node.raidex_node import RaidexNode
 from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.offer_book import Offer, OfferType
+from raidex.signing import Signer
 
 
 @pytest.fixture()
@@ -32,20 +33,20 @@ def trader():
 
 @pytest.fixture()
 def commitment_service(message_broker, trader):
-    privkey, _ = make_privkey_address()
-    commitment_service = CommitmentService(message_broker, privkey, fee_rate=0.01)
-    # manually set member to singleton trader:
-    commitment_service.trader_client.trader = trader
-    return commitment_service
+    signer = Signer()
+    trader_client = TraderClient(signer.address, trader=trader)
+    return CommitmentService(signer, message_broker, trader_client, fee_rate=0.01)
 
 
 @pytest.fixture()
 def raidex_nodes(token_pair, trader, accounts, message_broker, commitment_service):
     nodes = []
     for account in accounts:
-        nodes.append(RaidexNode(token_pair.base_token, token_pair.counter_token, priv_key=account.privatekey,
-                                cs_address=commitment_service.address, cs_fee_rate=commitment_service.fee_rate,
-                                message_broker=message_broker, trader=trader))
+        node = RaidexNode.build_default(cs_address=commitment_service.address, cs_fee_rate=commitment_service.fee_rate,
+                                        privkey=account.privatekey, base_token_addr=token_pair.base_token,
+                                        counter_token_addr=token_pair.counter_token, message_broker=message_broker,
+                                        trader=trader)
+        nodes.append(node)
     return nodes
 
 

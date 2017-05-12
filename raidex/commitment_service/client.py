@@ -22,15 +22,15 @@ class CommitmentService(object):
     Methods will return the proper confirmation-messages of commitments (ProvenOffer/maker, ProvenCommitment/taker)
     """
 
-    def __init__(self, node_address, token_pair, sign_func, trader_client, message_broker, commitment_service_address,
+    def __init__(self, signer, token_pair, trader_client, message_broker, commitment_service_address,
                  fee_rate):
-        self.node_address = node_address
+        self.node_address = signer.address
         self.token_pair = token_pair
         self.commitment_service_address = commitment_service_address
         self.fee_rate = fee_rate
         self.trader_client = trader_client
         self.message_broker = message_broker
-        self._sign_func = sign_func
+        self._sign = signer.sign
         self.commitment_proofs = dict()  # commitment_sig -> (AsyncResult<messages.CommitmentProof, False)>
         self.commitments = dict()  # offer_id -> commitment
 
@@ -45,10 +45,10 @@ class CommitmentService(object):
     def maker_commit_async(self, offer, commitment_amount):
         # type: (Offer) -> (bool, ProvenOffer)
         offermsg = self.create_offer_msg(offer)
-        self._sign_func(offermsg)
+        # self._sign(offermsg)
 
         commitment = messages.Commitment(offer.offer_id, offermsg.hash, offer.timeout, commitment_amount)
-        self._sign_func(commitment)
+        self._sign(commitment)
 
         # map offer_id -> commitment
         self.commitments[offer.offer_id] = commitment
@@ -89,7 +89,7 @@ class CommitmentService(object):
         assert commitment_proof.sender == self.commitment_service_address
 
         proven_offer = messages.ProvenOffer(offermsg, commitment, commitment_proof)
-        self._sign_func(proven_offer)
+        self._sign(proven_offer)
         return proven_offer
 
     @make_async
@@ -98,8 +98,8 @@ class CommitmentService(object):
         assert offer.hash
         assert offer.commitment_amount
 
-        commitment = messages.Commitment(offer.offer_id, offer.hash, offer.timeout, offer.commitment_amount)
-        self._sign_func(commitment)
+        commitment = messages.Commitment(offer.offer_id, offermsg.hash, offer.timeout, offer.commitment_amount)
+        self._sign(commitment)
 
         # map offer_id -> commitment
         self.commitments[offer.offer_id] = commitment
@@ -140,7 +140,7 @@ class CommitmentService(object):
         assert commitment_proof.sender == self.commitment_service_address
 
         proven_commitment = messages.ProvenCommitment(commitment, commitment_proof)
-        self._sign_func(proven_commitment)
+        self._sign(proven_commitment)
         return proven_commitment
 
     def create_offer_msg(self, offer):
@@ -162,9 +162,9 @@ class CommitmentService(object):
 
     def swap_executed(self, offer_id):
         # type: (int) -> None
-        swap_completed = messages.SwapExecution(offer_id, timestamp.time_int())
-        self._sign_func(swap_completed)
-        self.message_broker.broadcast(swap_completed)
+        swap_execution = messages.SwapExecution(offer_id, timestamp.time_int())
+        self._sign(swap_execution)
+        self.message_broker.send(topic=self.commitment_service_address, message=swap_execution)
 
 
 class CommitmentProofTask(gevent.Greenlet):

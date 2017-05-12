@@ -3,7 +3,8 @@ from gevent.event import Event
 from ethereum import slogging
 
 from raidex_node.api.app import APIServer
-from raidex.raidex_node.raidex_node import raidex_node_builder
+from raidex.commitment_service.mock import CommitmentServiceGlobal
+from raidex.raidex_node.raidex_node import RaidexNode
 from raidex.utils.mock import MockExchangeTask
 
 slogging.configure(':DEBUG')
@@ -20,8 +21,9 @@ def main():
 
     args = parser.parse_args()
 
-    # use the convenience function to build a simple default node with mock-cs and no external trader / broker objects:
-    node = raidex_node_builder()
+    # only mock usage at the moment:
+    commitmentservice_global = CommitmentServiceGlobal()
+    node = RaidexNode.build_default(cs_global=commitmentservice_global)
     node.start()
 
     if args.api:
@@ -29,7 +31,8 @@ def main():
         api.start()
 
     if args.mock:
-        MockExchangeTask(10, node.commitment_service, node.message_broker, node.offer_book).start()
+        MockExchangeTask(10, node.token_pair, commitmentservice_global, node.commitment_service.fee_rate,
+                         node.message_broker, node.offer_book).start()
 
     stop_event.wait()  # runs forever
 
