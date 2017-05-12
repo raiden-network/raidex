@@ -1,11 +1,15 @@
 #!flask/bin/python
+import random
 from flask import Flask, jsonify, request, abort
 from flask_cors import CORS
-from mock import gen_orderbook_dict, gen_orderhistory, save_limit_order, query_limit_order, cancel_order
+from mock import gen_orderbook_dict, gen_orderhistory
 
 
 app = Flask(__name__)
 CORS(app)
+
+# global to store the Orders from the WebUI
+LIMIT_ORDERS = {}
 
 
 @app.route('/api/<string:version>/markets/<string:market>/offers', methods=['GET'])
@@ -35,8 +39,25 @@ def cancel_limit_order(version, market, id):
     return jsonify({'data': cancel_order(id)})
 
 
+def save_limit_order(limit_order):
+    id_ = random.randint(1, 100000000)
+    LIMIT_ORDERS[id_] = {'id': id_, 'price': limit_order['price'], 'amount': limit_order['amount'],
+                         'type': limit_order['type'], 'filledAmount': 0}
+    return id_
+
+
+def query_limit_order():
+    return [limit_order for limit_order in LIMIT_ORDERS.values()]
+
+
+def cancel_order(id_):
+    if id_ in LIMIT_ORDERS:
+        del LIMIT_ORDERS[id_]
+        return "success"
+
+
 def validate_order(json):
-    if {'type', 'amount', 'price'}  <= set(json):
+    if {'type', 'amount', 'price'} <= set(json):
         return True
     else:
         return False
