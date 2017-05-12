@@ -11,7 +11,12 @@ import requests
 from ethereum.utils import encode_hex
 
 from raidex.raidex_node.offer_book import OfferType
-from raidex.raidex_node.trader.trader import Listener, TransferReceivedEvent, TransferReceivedListener
+from raidex.raidex_node.trader.trader import (
+    Listener,
+    TransferReceivedEvent,
+    TransferReceivedListener,
+    BalanceUpdateTask
+)
 from raidex.utils.gevent_helpers import make_async
 
 
@@ -24,16 +29,16 @@ class TraderClient(object):
         self.base_amount = 100
         self.counter_amount = 100
         self.commitment_balance = commitment_amount
+        self._is_running = False
 
-        # HACK update balances with another listener that listens for TransferReceivedEvents
-        def _balance_update_loop(this):
-            balance_received_listener = TransferReceivedListener(this)
-            balance_received_listener.start()
-            while True:
-                transfer_receipt = balance_received_listener.get()
-                this.commitment_balance += transfer_receipt.amount
+    @property
+    def is_running(self):
+        return self._is_running
 
-        gevent.spawn(_balance_update_loop, self)
+    def start(self):
+        if not self.is_running:
+            BalanceUpdateTask(self).start()
+            self._is_running = True
 
     @make_async
     def expect_exchange_async(self, type_, base_amount, counter_amount, target_address, identifier):
