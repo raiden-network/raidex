@@ -190,7 +190,7 @@ class Ack(RLPHashable):
         super(Ack, self).__init__(sender, echo)
 
 
-class SwapOffer(Signed):
+class SwapOffer(RLPHashable):
     """An `SwapOffer` is the base for a `ProvenOffer`. Its `offer_id`, `hash` and `timeout` should be sent
     as a `Commitment` to a commitment service provider.
 
@@ -229,11 +229,7 @@ class SwapOffer(Signed):
             h = self.hash
         except Exception:
             h = ''
-        try:
-            sender = self.sender
-        except SignatureMissingError:
-            sender = ''
-        return '<%s(%s) ask: %s[%s] bid %s[%s] h:%s sender:%s>' % (
+        return '<%s(%s) ask: %s[%s] bid %s[%s] h:%s>' % (
             self.__class__.__name__,
             pex(self.offer_id),
             pex(self.ask_token),
@@ -241,7 +237,6 @@ class SwapOffer(Signed):
             pex(self.bid_token),
             self.bid_amount,
             pex(h),
-            pex(sender)
         )
 
 

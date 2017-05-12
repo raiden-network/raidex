@@ -40,26 +40,3 @@ def accounts():
     privkeys = [sha3("account:{}".format(i)) for i in range(3)]
     accounts = [Account(pk, privtoaddr(pk)) for pk in privkeys]
     return accounts
-
-
-
-@pytest.fixture(params=[10])
-def offer_msgs(request, accounts, assets):
-    """
-    This fixture generates `num_offers` with more or less random values.
-    """
-    random.seed(42)
-    offers = []
-    for i in range(request.param):
-        maker = accounts[i % 2]
-        offer = messages.SwapOffer(assets[i % 2],
-                                   random.randint(1, 100),
-                                   assets[1 - i % 2],
-                                   random.randint(1, 100),
-                                   big_endian_to_int(sha3('offer {}'.format(i))),
-                                   timestamp.time_int() + i * 1000
-                                   )
-        offer.sign(maker.privatekey)
-        offers.append(offer)
-    return offers
-

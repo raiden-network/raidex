@@ -84,7 +84,7 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     maker.message_broker.broadcast(maker_proven_offer)
     gevent.sleep(0.01)
 
-    # the taker needs to have the additional information from the ProvenOffer (commitment-amount and offer_hash)
+    # the taker needs to have the additional commitment-amount information from the ProvenOffer
     # he should have got it from the broadcasted ProvenOffer
     taker_internal_offer = taker.offer_book.get_offer_by_id(offer.offer_id)
 

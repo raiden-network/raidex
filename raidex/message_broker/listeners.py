@@ -89,10 +89,7 @@ class OfferListener(MessageListener):
             raise AssertionError("unknown market pair")
 
         offer = Offer(type_, base_amount, counter_amount, offer_id=offer_msg.offer_id, timeout=offer_msg.timeout,
-                      maker_address=message.sender)
-        # set the information that's important for Committing at the CommitmentService
-        offer.set_offer_hash(commitment_msg.offer_hash)
-        offer.set_commitment_amount(commitment_msg.amount)
+                      maker_address=message.sender, commitment_amount=commitment_msg.amount)
         return offer
 
 

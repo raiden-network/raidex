@@ -32,55 +32,15 @@ def commitment_service():
     return CommitmentServiceMock(signer, None, None, fee_rate=0.1)
 
 
-@pytest.fixture()
-def taker_swap_executions(accounts, offer_msgs):
-    taker_swap_executions = []
-    for offer in offer_msgs:
-        taker = None
-        while taker is None or taker.address == offer.sender:
-            taker = random.choice(accounts)
-        sw_execution = SwapExecution(offer.offer_id, timestamp.time_int())
-        sw_execution.sign(taker.privatekey)
-        taker_swap_executions.append(sw_execution)
-    return taker_swap_executions
-
-
-@pytest.fixture()
-def maker_swap_executions(accounts, offer_msgs):
-    maker_swap_executions_ = []
-    for offer in offer_msgs:
-        maker = None
-        for acc in accounts:
-            if offer.sender == acc.address:
-                maker = acc
-                break
-        if maker is None:
-            continue
-        sw_execution = SwapExecution(offer.offer_id, timestamp.time_int())
-        sw_execution.sign(maker.privatekey)
-        maker_swap_executions_.append(sw_execution)
-    return maker_swap_executions_
-
-
-@pytest.fixture()
-def swap_completeds(commitment_service, offer_msgs):
-    swap_completeds_ = []
-    for offer in offer_msgs:
-        sw_completed = SwapCompleted(offer.offer_id, timestamp.time_int())
-        commitment_service._sign(sw_completed)
-        swap_completeds_.append(sw_completed)
-    return swap_completeds_
-
-
-def test_offer(assets, accounts):
-    o = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
-    acc = accounts[0]
+def test_offer(assets):
+    o = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), timestamp.time() - 10)
     assert isinstance(o, SwapOffer)
     serial = o.serialize(o)
     assert_serialization(o)
     assert_envelope_serialization(o)
     assert SwapOffer.deserialize(serial) == o
     assert o.timed_out()
+    assert not o.timed_out(at=timestamp.time() - 3600 * 1000)  # pretend we come from the past
 
 
 def test_hashable(assets):
@@ -116,9 +76,9 @@ def test_signing(accounts):
     assert raised
 
 
-def test_commitments(offer_msgs, commitment_service, accounts):
-    offer = offer_msgs[0]
-    maker = filter(lambda acc: acc.address == offer.sender, accounts)[0]
+def test_commitments(assets, commitment_service, accounts):
+    offer = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
+    maker = accounts[0]
 
     commitment = Commitment(offer.offer_id, offer.hash, offer.timeout, 42)
     commitment.sign(maker.privatekey)
@@ -136,7 +96,7 @@ def test_commitments(offer_msgs, commitment_service, accounts):
     assert_serialization(proven_offer)
     assert_envelope_serialization(proven_offer)
 
-    assert proven_offer.offer.sender == commitment.sender
+    assert proven_offer.sender == commitment.sender
     assert proven_offer.commitment_proof.commitment_sig == proven_offer.commitment.signature
     assert proven_offer.commitment.timeout == proven_offer.offer.timeout
 
@@ -150,13 +110,6 @@ def assert_serialization(serializable):
         assert getter(deserialized) == getter(serializable)
     if isinstance(serializable, Signed):
         assert deserialized.signature == serializable.signature
-
-
-def test_offers(offer_msgs, accounts):
-    senders = [acc.address for acc in accounts]
-    for offer in offer_msgs:
-        assert offer.sender in senders
-        assert not offer.timed_out(at=timestamp.time_int() - 3600 * 1000)  # pretend we come from the past
 
 
 def test_cs_advertisements(commitment_service):
