@@ -169,7 +169,6 @@ def group_trades(trades, price_group_precision, time_group_interval):
         else:
             grouped_offer.add(trade.offer.amount)
 
-    print(quantized_offers_by_price_time_type)
     unsorted_list = quantized_offers_by_price_time_type.values()
     return sorted(unsorted_list)
 

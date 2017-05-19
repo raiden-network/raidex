@@ -74,8 +74,6 @@ def test_trade_gouping():
     trade4 = Trade(offer2, timestamp=201) # should be in 200 ms bucket, but not grouped with trade3
 
     grouped = group_trades([trade1, trade2, trade3, trade4], price_group_precision, time_group_interval_ms)
-    print(grouped[0].amount)
-    print(grouped[0].timestamp)
     assert len(grouped) == 3
 
     # grouped is sorted by (timestamp, price) (priority: smaller values)
