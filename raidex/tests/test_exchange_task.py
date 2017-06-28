@@ -26,15 +26,15 @@ def cs_global():
 
 
 @pytest.fixture()
-def commitment_service_maker(assets, accounts, message_broker, cs_global):
-    node_signer = Signer(accounts[0].privatekey)
-    return CommitmentServiceMock(node_signer, TokenPair(assets[0], assets[1]), message_broker, cs_global=cs_global)
+def commitment_service_maker(accounts, message_broker, cs_global, token_pair):
+    signer = Signer(accounts[0].privatekey)
+    return CommitmentServiceMock(signer, token_pair, message_broker, cs_global=cs_global)
 
 
 @pytest.fixture()
-def commitment_service_taker(assets, accounts, message_broker, cs_global):
-    node_signer = Signer(accounts[1].privatekey)
-    return CommitmentServiceMock(node_signer, TokenPair(assets[0], assets[1]), message_broker,cs_global=cs_global)
+def commitment_service_taker(accounts, message_broker, cs_global, token_pair):
+    signer = Signer(accounts[1].privatekey)
+    return CommitmentServiceMock(signer, token_pair, message_broker,cs_global=cs_global)
 
 
 @pytest.fixture()

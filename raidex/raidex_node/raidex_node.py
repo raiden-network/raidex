@@ -76,12 +76,10 @@ class RaidexNode(object):
         else:
             signer = Signer(privkey)
 
-        # construct token pair or default token pair:
-        if base_token_addr is None:
-            base_token_addr = privtoaddr(sha3('ether'))
-        if counter_token_addr is None:
-            counter_token_addr = privtoaddr(sha3('usd'))
-        token_pair = TokenPair(base_token=base_token_addr, counter_token=counter_token_addr)
+        if base_token_addr is None and counter_token_addr is None:
+            token_pair = TokenPair.random()
+        else:
+            token_pair = TokenPair(base_token_addr, counter_token_addr)
 
         # eventually create MessageBroker singleton
         if message_broker is None:

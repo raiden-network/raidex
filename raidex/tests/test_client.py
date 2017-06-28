@@ -10,14 +10,9 @@ from raidex.utils import timestamp
 from raidex.utils import get_market_from_asset_pair
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.commitment_service.mock import CommitmentServiceMock
-from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.trades import TradesView
 from raidex.signing import Signer
 
-
-@pytest.fixture()
-def token_pair(assets):
-    return TokenPair(assets[0], assets[1])
 
 
 @pytest.fixture()

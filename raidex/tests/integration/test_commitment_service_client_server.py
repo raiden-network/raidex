@@ -15,11 +15,6 @@ from raidex.signing import Signer
 
 
 @pytest.fixture()
-def token_pair(assets):
-    return TokenPair(assets[0], assets[1])
-
-
-@pytest.fixture()
 def message_broker():
     # global singleton message broker
     return MessageBroker()

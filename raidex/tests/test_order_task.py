@@ -1,7 +1,6 @@
 import pytest
 
 from raidex.raidex_node.order_task import LimitOrderTask
-from raidex.raidex_node.market import TokenPair
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.raidex_node.trader.trader import TraderClient
 from raidex.commitment_service.mock import CommitmentServiceMock, CommitmentServiceGlobal
@@ -27,11 +26,6 @@ def offers(accounts):
 
 
 @pytest.fixture()
-def market(assets):
-    return TokenPair(assets[0], assets[1])
-
-
-@pytest.fixture()
 def message_broker():
     return MessageBroker()
 
@@ -42,15 +36,15 @@ def cs_global():
 
 
 @pytest.fixture()
-def commitment_service(assets, accounts, message_broker, cs_global):
-    node_signer = Signer(accounts[0].privatekey)
-    return CommitmentServiceMock(node_signer, TokenPair(assets[0], assets[1]), message_broker, cs_global=cs_global)
+def commitment_service(accounts, message_broker, cs_global, token_pair):
+    signer = Signer(accounts[0].privatekey)
+    return CommitmentServiceMock(signer, token_pair, message_broker, cs_global=cs_global)
 
 
 @pytest.fixture()
-def commitment_service2(assets, accounts, message_broker, cs_global):
-    node_signer = Signer(accounts[1].privatekey)
-    return CommitmentServiceMock(node_signer, TokenPair(assets[0], assets[1]), message_broker, cs_global=cs_global)
+def commitment_service2(accounts, message_broker, cs_global, token_pair):
+    signer = Signer(accounts[1].privatekey)
+    return CommitmentServiceMock(signer, token_pair, message_broker, cs_global=cs_global)
 
 
 @pytest.fixture()
@@ -119,12 +113,12 @@ def test_of_respawn(empty_offer_book, trades, accounts, commitment_service, mess
     assert order_task.number_open_trades == 4
 
 
-def test_of_token_swap(accounts, market, commitment_service, commitment_service2, message_broker, trader, trader2):
+def test_of_token_swap(accounts, token_pair, commitment_service, commitment_service2, message_broker, trader, trader2):
     offer_book1 = OfferBook()
     offer_book2 = OfferBook()
     trades1 = TradesView()
     trades2 = TradesView()
-    OfferBookTask(offer_book1, market, message_broker).start()
+    OfferBookTask(offer_book1, token_pair, message_broker).start()
     OfferTakenTask(offer_book1, trades1, message_broker).start()
     SwapCompletedTask(trades1, message_broker).start()
     order_task1 = LimitOrderTask(offer_book1, trades1, OfferType.BUY, 10, 10, accounts[0].address, commitment_service,
@@ -132,7 +126,7 @@ def test_of_token_swap(accounts, market, commitment_service, commitment_service2
     order_task2 = LimitOrderTask(offer_book2, trades2, OfferType.SELL, 10, 10, accounts[1].address, commitment_service2,
                                  message_broker, trader2, 2, 10)
 
-    OfferBookTask(offer_book2, market, message_broker).start()
+    OfferBookTask(offer_book2, token_pair, message_broker).start()
     OfferTakenTask(offer_book2, trades2, message_broker).start()
     SwapCompletedTask(trades2, message_broker).start()
 

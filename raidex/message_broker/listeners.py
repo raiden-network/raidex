@@ -1,5 +1,6 @@
 from raidex.message_broker.message_broker import MessageBroker
 from raidex import messages
+from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.offer_book import OfferType, Offer
 from raidex.raidex_node.trades import SwapCompleted
 
@@ -79,14 +80,18 @@ class OfferListener(MessageListener):
         offer_msg = message.offer
         commitment_msg = message.commitment
         commitment_proof_msg = message.commitment_proof
-        if self.market == (offer_msg.ask_token, offer_msg.bid_token):
-            type_ = OfferType.BUY
+
+        ask_token = offer_msg.ask_token
+        bid_token = offer_msg.bid_token
+        type_ = self.market.get_offer_type(ask_token, bid_token)
+
+        if type_ is OfferType.BUY:
             base_amount, counter_amount = offer_msg.ask_amount, offer_msg.bid_amount
-        elif self.market == (offer_msg.bid_token, offer_msg.ask_token):
-            type_ = OfferType.SELL
+        elif type_ is OfferType.SELL:
             base_amount, counter_amount = offer_msg.bid_amount, offer_msg.ask_amount
         else:
             raise AssertionError("unknown market pair")
+
 
         offer = Offer(type_, base_amount, counter_amount, offer_id=offer_msg.offer_id, timeout=offer_msg.timeout,
                       maker_address=message.sender, commitment_amount=commitment_msg.amount)
