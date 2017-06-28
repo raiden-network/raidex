@@ -1,8 +1,6 @@
 import gevent
 from raidex.utils import timestamp
 from ethereum import slogging
-from ethereum.utils import encode_hex
-from raidex import messages
 from raidex.message_broker.listeners import TakerListener
 from raidex.utils.gevent_helpers import switch_context
 
@@ -36,10 +34,6 @@ class MakerExchangeTask(gevent.Greenlet):
                 log.debug('No proven offer received for {}..'.format(self.offer.offer_id))
                 return False
             log.debug('Wait for taker of {}..'.format(self.offer.offer_id))
-            # taker_address = TakerListener(self.offer, self.message_broker, self.maker_address).get_once()
-
-            # XXX listener.get_once() starts and then waits for a result,
-            # We want to start the listener, then broadcast the offer, and get the asyncresult!:
             taker_listener = TakerListener(self.offer, self.message_broker, self.maker_address)
             taker_listener.start()
             log.debug('Broadcast proven_offer for {}'.format(self.offer.offer_id))
@@ -91,8 +85,8 @@ class TakerExchangeTask(gevent.Greenlet):
         try:
             proven_commitment = self.commitment_service.taker_commit_async(self.offer).get()
             if proven_commitment is None:
-                # TODO
-                pass
+                log.debug('No proven commitment received for {}..'.format(self.offer.offer_id))
+                return False
             status_async = self.trader.expect_exchange_async(self.offer.type_, self.offer.base_amount,
                                                              self.offer.counter_amount, self.offer.maker_address,
                                                              self.offer.offer_id)
