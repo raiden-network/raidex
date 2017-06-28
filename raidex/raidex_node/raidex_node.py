@@ -91,7 +91,7 @@ class RaidexNode(object):
         if raiden_api_endpoint is None:
             trader = Trader()
         else:
-            NotImplementedError("Traider based on Raiden can only be mocked at the moment.")
+            NotImplementedError("Trader based on Raiden can only be mocked at the moment.")
 
         trader_client = TraderClient(signer.address, commitment_balance=10, trader=trader)  #pylint disable=used-before-assignment
 
