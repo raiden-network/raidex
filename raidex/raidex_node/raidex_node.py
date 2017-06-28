@@ -4,7 +4,7 @@ import random
 from gevent import monkey; monkey.patch_all()
 
 from ethereum import slogging
-from ethereum.utils import sha3, privtoaddr
+from raidex.utils.mock import MockExchangeTask
 
 from raidex.raidex_node.exchange_task import MakerExchangeTask, TakerExchangeTask
 from raidex.raidex_node.market import TokenPair
@@ -13,7 +13,7 @@ from listener_tasks import OfferBookTask, OfferTakenTask, SwapCompletedTask
 from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.raidex_node.trades import TradesView
 from raidex.commitment_service.client import CommitmentService
-from raidex.commitment_service.mock import CommitmentServiceMock
+from raidex.commitment_service.mock import CommitmentServiceMock, CommitmentServiceGlobal
 from raidex.raidex_node.trader.trader import TraderClient, Trader
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.utils import timestamp
@@ -68,8 +68,8 @@ class RaidexNode(object):
         print(self.offer_book)
 
     @classmethod
-    def build_default(cls, cs_address='', cs_fee_rate=0.01, privkey=None, base_token_addr=None, counter_token_addr=None,
-                      message_broker=None, trader=None, cs_global=None):
+    def build_default_from_config(cls, privkey=None, cs_address=None, cs_fee_rate=0.01, base_token_addr=None, counter_token_addr=None,
+                                  message_broker_endpoint=None, raiden_api_endpoint=None, mock_trading_activity=False):
 
         if privkey is None:
             signer = Signer.random()
@@ -81,22 +81,53 @@ class RaidexNode(object):
         else:
             token_pair = TokenPair(base_token_addr, counter_token_addr)
 
-        # eventually create MessageBroker singleton
-        if message_broker is None:
+        if message_broker_endpoint is None:
+            # create mock broker when no endpoint is provided
             message_broker = MessageBroker()
+        else:
+            NotImplementedError("Message Broker can only be mocked at the moment.")
 
         # eventually create Trader singleton and construct the trader-client
-        if trader is None:
+        if raiden_api_endpoint is None:
             trader = Trader()
-        trader_client = TraderClient(signer.address, commitment_balance=10, trader=trader)
+        else:
+            NotImplementedError("Traider based on Raiden can only be mocked at the moment.")
 
-        # construct commitment-service-client
-        if cs_address:
+        trader_client = TraderClient(signer.address, commitment_balance=10, trader=trader)  #pylint disable=used-before-assignment
+
+
+        commitment_service_global = None
+        # construct mock commitment-service-client (non-failing mock without commitment-trades)
+        if cs_address is None:
+            commitment_service_global = CommitmentServiceGlobal()
+            commitment_service_client = CommitmentServiceMock(signer, token_pair, message_broker, cs_fee_rate,
+                                                              commitment_service_global)
+        # or construct commitment-service-client
+        else:
             commitment_service_client = CommitmentService(signer, token_pair, trader_client,
                                                           message_broker, cs_address, fee_rate=cs_fee_rate)
-        # or construct mock commitment-service-client (non-failing mock without commitment-trades)
-        else:
-            commitment_service_client = CommitmentServiceMock(signer, token_pair, message_broker, cs_fee_rate,
-                                                              cs_global)
 
-        return cls(signer.address, token_pair, commitment_service_client, message_broker, trader_client)
+        raidex_node = cls(signer.address, token_pair, commitment_service_client, message_broker, trader_client)
+
+
+        if mock_trading_activity is True:
+            initial_mock_market_price = 10
+            nof_market_makers = 10
+
+            commitment_service_mock_list = []
+
+            # for consistency, set the mock-fee-rates the same as the node's fee rate
+            mock_fee_rate = cs_fee_rate
+
+            # build the market makers CommitmentServiceMock client instances
+            for _ in range(0, nof_market_makers):
+                commitment_service_mock_list.append(
+                    CommitmentServiceMock(Signer.random(), token_pair, message_broker, mock_fee_rate,
+                                          commitment_service_global)
+            )
+
+            # start the trading activity
+            MockExchangeTask(initial_mock_market_price, commitment_service_mock_list,
+                            message_broker, raidex_node.offer_book).start()
+
+        return raidex_node

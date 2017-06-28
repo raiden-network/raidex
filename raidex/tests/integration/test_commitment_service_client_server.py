@@ -4,12 +4,12 @@ import gevent
 from raidex.tests.utils import float_isclose
 
 from raidex.commitment_service.server import CommitmentService
+from raidex.commitment_service.client import CommitmentService as CommitmentServiceClient
 from raidex.raidex_node.trader.trader import Trader, TraderClient
 from raidex import messages
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.utils import timestamp
 from raidex.raidex_node.raidex_node import RaidexNode
-from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.offer_book import Offer, OfferType, generate_random_offer_id
 from raidex.signing import Signer
 
@@ -36,11 +36,15 @@ def commitment_service(message_broker, trader):
 @pytest.fixture()
 def raidex_nodes(token_pair, trader, accounts, message_broker, commitment_service):
     nodes = []
+
     for account in accounts:
-        node = RaidexNode.build_default(cs_address=commitment_service.address, cs_fee_rate=commitment_service.fee_rate,
-                                        privkey=account.privatekey, base_token_addr=token_pair.base_token,
-                                        counter_token_addr=token_pair.counter_token, message_broker=message_broker,
-                                        trader=trader)
+        signer = Signer(account.privatekey)
+        trader_client = TraderClient(signer.address, commitment_balance=10, trader=trader)
+        commitment_service_client = CommitmentServiceClient(signer, token_pair, trader_client,
+                                                            message_broker, commitment_service.address,
+                                                            fee_rate=commitment_service.fee_rate)
+
+        node = RaidexNode(signer.address, token_pair, commitment_service_client, message_broker, trader_client)
         nodes.append(node)
     return nodes
 

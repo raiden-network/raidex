@@ -15,10 +15,8 @@ from noise import pnoise1
 from ethereum.utils import denoms, sha3, privtoaddr, encode_hex, big_endian_to_int
 
 from raidex import messages
-from raidex.commitment_service.mock import CommitmentServiceMock
 from raidex.raidex_node.offer_book import Offer, OfferType
 from raidex.utils import make_privkey_address, timestamp
-from raidex.signing import Signer
 
 ETH = denoms.ether
 
@@ -141,13 +139,21 @@ class MockExchangeTask(gevent.Greenlet):
     max_price_movement = 0.02
     message_volume = 200  # mostly determines the highest/lowest spread
 
-    def __init__(self, initial_market_price, token_pair, cs_global, cs_fee_rate, message_broker, offer_book):
-        self.commitment_services = []
+    def __init__(self, initial_market_price, commitment_service_mock_list, message_broker, offer_book):
+        """
+                NOTE: this class ugly and will soon be replaced by proper trading bots, that each use a raidex-node instance
+
+        Will mock some exchange activity.
+        For convenience, multiple CommitmentServiceMock instances will be used as the market-makers.
+        This class has the logic of interacting with an actual Commitment Service included as a mock,
+        and will by itself report successful commitments and swap executeds to the message broker.
+        So the market makers will not use a trader to interact with the commitment service,
+        but be their own commitment-service
+        """
+
+        self.commitment_services = commitment_service_mock_list
         # generate 10 different market-makers' cs_clients
-        for _ in range(0, 10):
-            self.commitment_services.append(
-                CommitmentServiceMock(Signer(), token_pair, message_broker, cs_fee_rate, cs_global)
-            )
+
         self.message_broker = message_broker
         self.offer_book = offer_book
         self.market_price = float(initial_market_price)
@@ -195,6 +201,11 @@ class MockExchangeTask(gevent.Greenlet):
 
     def take_and_swap_offer(self, offer, commitment_service_client):
         # skip taker-commitment since this is not broadcasted anyways
+
+        # NOTE this is not compatible as is with user initiated offers,
+        # since it doesn't contact the maker with a Proven Commitment and
+        # doesn't broadcast a swap executed etc..
+
         offer_taken = commitment_service_client.create_taken(offer.offer_id)
         self.message_broker.broadcast(offer_taken)
 
