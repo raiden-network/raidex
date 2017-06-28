@@ -4,7 +4,7 @@ import gevent
 from raidex.tests.utils import float_isclose
 
 from raidex.commitment_service.server import CommitmentService
-from raidex.commitment_service.client import CommitmentService as CommitmentServiceClient
+from raidex.commitment_service.client import CommitmentServiceClient
 from raidex.raidex_node.trader.trader import Trader, TraderClient
 from raidex import messages
 from raidex.message_broker.message_broker import MessageBroker

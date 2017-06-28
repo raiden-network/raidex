@@ -12,7 +12,7 @@ from raidex.raidex_node.offer_book import OfferBook, Offer
 from listener_tasks import OfferBookTask, OfferTakenTask, SwapCompletedTask
 from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.raidex_node.trades import TradesView
-from raidex.commitment_service.client import CommitmentService
+from raidex.commitment_service.client import CommitmentServiceClient
 from raidex.commitment_service.mock import CommitmentServiceClientMock, CommitmentServiceGlobal
 from raidex.raidex_node.trader.trader import TraderClient, Trader
 from raidex.message_broker.message_broker import MessageBroker
@@ -104,8 +104,8 @@ class RaidexNode(object):
                                                                     commitment_service_global)
         # or construct commitment-service-client
         else:
-            commitment_service_client = CommitmentService(signer, token_pair, trader_client,
-                                                          message_broker, cs_address, fee_rate=cs_fee_rate)
+            commitment_service_client = CommitmentServiceClient(signer, token_pair, trader_client,
+                                                                message_broker, cs_address, fee_rate=cs_fee_rate)
 
         raidex_node = cls(signer.address, token_pair, commitment_service_client, message_broker, trader_client)
 

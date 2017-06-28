@@ -17,7 +17,7 @@ class OfferIdentifierCollision(Exception):
     pass
 
 
-class CommitmentService(object):
+class CommitmentServiceClient(object):
     """
     Interactions concerning the Commitment for Offers (maker) and ProvenOffers (taker).
     Handles the Commitment-Transfers in the Trader and the communication with the CS (Message-Broker)
