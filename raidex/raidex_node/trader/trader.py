@@ -88,7 +88,6 @@ class Trader(object):
     @make_async
     def transfer(self, self_address, target_address, amount, identifier):
         transfer_received_event = TransferReceivedEvent(sender=self_address, amount=amount, identifier=identifier)
-        # log_tglobal.debug('Incoming transfer: target_address={}, identifier={}>'.format(pex(target_address), identifier))
         # for this mock-implementation:
         # a transfer can only go through when a listener is found
         try:
@@ -101,25 +100,32 @@ class Trader(object):
         for listener in listeners:
             address, event_queue_async, transform = listener
             event = transfer_received_event
-            # FIXME: look at bernds commit, can be None
+            transformed_event = event
             if transform is not None:
-                event = transform(event)
-            if event is not None:
-                # log_tglobal.debug('Put event in Queue: <address={}, transform={}>'.format(pex(address), transform))
-                event_queue_async.put(event)
+                transformed_event = transform(transformed_event)
+            if transformed_event is not None:
+                event_queue_async.put(transformed_event)
         return True
 
     def listen_for_events(self, address, transform=None):
-        # log_tglobal.debug('Listener registered: <address={}, transform={}>'.format(pex(address), transform))
         event_queue_async = Queue()
-        #TODO address not needed in Listener
         listener = Listener(address, event_queue_async, transform)
         self.listeners[address].append(listener)
         return listener
 
     def stop_listen(self, listener):
-        # checkme
-        del self.listeners[listener.address]
+        listener_not_found = False
+        if listener.address in self.listeners:
+            listeners = self.listeners[listener.address]
+            try:
+                listeners.remove(listener)
+            except ValueError:
+                listener_not_found = True
+        else:
+            listener_not_found = True
+
+        if listener_not_found is True:
+            raise ValueError('Listener not found')
 
 
 class TraderClient(object):
