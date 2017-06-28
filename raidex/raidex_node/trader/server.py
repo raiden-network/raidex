@@ -65,24 +65,15 @@ def events_for(address):
     def generate():
         while True:
             event = listener.get()
-            yield json.dumps({'data': decode(event), 'type': get_typename_of(event)}) + '\n'
+            yield json.dumps({'data': event.as_dict(), 'type': event.type}) + '\n'
 
     def on_close():  # stop listener on closed connection
-        # FIXME this gets called so that the Trader object doesn't save events for the address anymore, desired here?
         listener.stop()
 
     r = Response(generate(), content_type='application/x-json-stream')
     r.call_on_close(on_close)
     return r
 
-
-def decode(event_object):
-    if isinstance(event_object, TransferReceivedEvent):
-        return dict(amount=event_object.amount, sender=event_object.sender, identifier=event_object.identifier)
-
-
-def get_typename_of(event_object):
-    return event_object.__class__.__name__
 
 
 def make_error_obj(status_code, message):

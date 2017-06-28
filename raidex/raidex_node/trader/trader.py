@@ -25,6 +25,13 @@ class TransferReceivedEvent(object):
         self.amount = amount
         self.identifier = identifier
 
+    @property
+    def type(self):
+        return self.__class__.__name__
+
+    def as_dict(self):
+        return dict(amount=self.amount, sender=self.sender, identifier=self.identifier)
+
     def __repr__(self):
         return "{}<sender={}, amount={}, identifier={}>".format(
             self.__class__.__name__,
