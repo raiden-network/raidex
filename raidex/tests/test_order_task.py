@@ -3,7 +3,7 @@ import pytest
 from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.raidex_node.trader.trader import TraderClient
-from raidex.commitment_service.mock import CommitmentServiceMock, CommitmentServiceGlobal
+from raidex.commitment_service.mock import CommitmentServiceMock, NonFailingCommitmentServiceGlobal
 from raidex.raidex_node.offer_book import OfferBook, OfferType, Offer
 from raidex.raidex_node.trades import TradesView
 from raidex.raidex_node.listener_tasks import OfferBookTask, OfferTakenTask, SwapCompletedTask
@@ -32,7 +32,7 @@ def message_broker():
 
 @pytest.fixture()
 def cs_global():
-    return CommitmentServiceGlobal()
+    return NonFailingCommitmentServiceGlobal()
 
 
 @pytest.fixture()

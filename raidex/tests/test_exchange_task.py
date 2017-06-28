@@ -1,9 +1,8 @@
 import pytest
 from raidex.utils import timestamp
-from raidex.commitment_service.mock import CommitmentServiceMock, CommitmentServiceGlobal
+from raidex.commitment_service.mock import CommitmentServiceMock, NonFailingCommitmentServiceGlobal
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.raidex_node.exchange_task import MakerExchangeTask, TakerExchangeTask
-from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.offer_book import Offer, OfferType
 from raidex.raidex_node.trader.trader import TraderClient
 from raidex.signing import Signer
@@ -22,7 +21,7 @@ def message_broker():
 
 @pytest.fixture()
 def cs_global():
-    return CommitmentServiceGlobal()
+    return NonFailingCommitmentServiceGlobal()
 
 
 @pytest.fixture()

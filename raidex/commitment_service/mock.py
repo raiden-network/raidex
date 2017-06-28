@@ -44,9 +44,14 @@ class Swap(object):
             return True
 
 
+# FIXME: evaluate if it makes sense to have a mock that implements some of the CS-internals
+# Until then: use the NonFailingCommitmentServiceGlobal to be shure..
 class CommitmentServiceGlobal(object):
     """
-    Serves as the brain of the CS-Server, that keeps track of all the reported swaps
+    Serves as the brain of the CS-Server, that keeps track of all the reported swaps.
+    There is some Taker/Maker matchmaking logic included, so that one offer can be taken
+    only once, and the swap completed can only be broadcasted when it was reported as
+    swap executed by both parties.
     """
     def __init__(self, signer=None):
         if signer is None:
@@ -64,6 +69,13 @@ class CommitmentServiceGlobal(object):
         self.swaps[offer_id] = Swap(cs_instance)
         return True
 
+    def try_take_offer(self, cs_instance, offer_id):
+        swap = self.swaps.get(offer_id)
+        if swap is None:
+            return False
+        success = swap.try_take(cs_instance)
+        return success
+
     def report_swap_executed(self, cs_instance, offer_id):
         swap = self.swaps.get(offer_id)
         if swap is None:
@@ -71,12 +83,45 @@ class CommitmentServiceGlobal(object):
         success = swap.report_executed(cs_instance)
         return success
 
-    def try_take_offer(self, cs_instance, offer_id):
+    def swap_is_completed(self, offer_id):
         swap = self.swaps.get(offer_id)
         if swap is None:
             return False
-        success = swap.try_take(cs_instance)
-        return success
+        if swap.is_completed:
+            return True
+        else:
+            return False
+
+
+
+class NonFailingCommitmentServiceGlobal(object):
+    """
+    Replacement of CommitmentServiceGlobal
+    This has no inherent logic and always returns True for all methods.
+    This makes sense to use, when no Taker/Maker matchmaking logic should be present
+    and the CommitmentService Clients are only being used to construct and broadcast the
+    correct messages, signed by the CS.
+    """
+    def __init__(self, signer=None):
+        if signer is None:
+            signer = Signer.random()
+        self.signer = signer
+
+    @property
+    def address(self):
+        return self.signer.address
+
+    def make_offer(self, cs_instance, offer_id):
+        return True
+
+    def try_take_offer(self, cs_instance, offer_id):
+        return True
+
+    def report_swap_executed(self, cs_instance, offer_id):
+        return True
+
+    def swap_is_completed(self, offer_id):
+        return True
 
 
 class CommitmentServiceMock(object):
@@ -86,7 +131,7 @@ class CommitmentServiceMock(object):
     At the moment just creates the messages that you would get for a proper commitment.
     Every raidex node has its own with the same key
     """
-    _cs_global = CommitmentServiceGlobal()
+    _cs_global = NonFailingCommitmentServiceGlobal()
 
     def __init__(self, node_signer, token_pair, message_broker, fee_rate=0.1, cs_global=None):
         if cs_global is not None:
@@ -159,8 +204,8 @@ class CommitmentServiceMock(object):
 
     def report_swap_executed(self, offer_id):
         # type: (int) -> None
-        swap_completed = self._cs_global.report_swap_executed(self, offer_id)
-        if swap_completed is True:
+        success = self._cs_global.report_swap_executed(self, offer_id)
+        if success is True and self._cs_global.swap_is_completed(offer_id):
             swap_completed = self.create_swap_completed(offer_id)
             self.message_broker.broadcast(swap_completed)
 
