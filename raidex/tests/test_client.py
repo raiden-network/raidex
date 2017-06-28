@@ -27,7 +27,7 @@ def message_broker():
 
 @pytest.fixture()
 def commitment_service(token_pair, message_broker):
-    return CommitmentServiceMock(Signer(), token_pair, message_broker)
+    return CommitmentServiceMock(Signer.random(), token_pair, message_broker)
 
 
 def test_market_from_asset_pair():

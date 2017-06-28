@@ -27,9 +27,7 @@ UINT32_MAX_INT = 2 ** 32
 
 @pytest.fixture()
 def commitment_service():
-    signer = Signer()
-    # will only get used for signing messages...
-    return CommitmentServiceMock(signer, None, None, fee_rate=0.1)
+    return CommitmentServiceMock(Signer.random(), None, None, fee_rate=0.1)
 
 
 def test_offer(assets):
@@ -53,7 +51,6 @@ def test_signing(accounts):
                             amount=10)
     c_unsigned = Commitment(offer_id=10, offer_hash=sha3('offer id'), timeout=timestamp.time_plus(milliseconds=100),
                             amount=10)
-    # not signed yet, so must be equal
     assert c == c_unsigned
     c.sign(accounts[0].privatekey)
     assert c.sender == accounts[0].address

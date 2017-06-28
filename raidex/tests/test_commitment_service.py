@@ -50,7 +50,7 @@ def trader_client2(accounts, trader):
 
 @pytest.fixture()
 def commitment_service(message_broker, trader):
-    signer = Signer()
+    signer = Signer.random()
     trader_client = TraderClient(signer.address, trader=trader)
     return CommitmentService(signer, message_broker, trader_client, fee_rate=0.01)
 

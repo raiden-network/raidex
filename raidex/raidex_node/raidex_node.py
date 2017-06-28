@@ -71,8 +71,10 @@ class RaidexNode(object):
     def build_default(cls, cs_address='', cs_fee_rate=0.01, privkey=None, base_token_addr=None, counter_token_addr=None,
                       message_broker=None, trader=None, cs_global=None):
 
-        # construct signer object that holds privkey, address and sign-function
-        signer = Signer(privkey)
+        if privkey is None:
+            signer = Signer.random()
+        else:
+            signer = Signer(privkey)
 
         # construct token pair or default token pair:
         if base_token_addr is None:

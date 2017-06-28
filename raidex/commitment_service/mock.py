@@ -50,7 +50,7 @@ class CommitmentServiceGlobal(object):
     """
     def __init__(self, signer=None):
         if signer is None:
-            signer = Signer()
+            signer = Signer.random()
         self.signer = signer
         self.swaps = {}
 

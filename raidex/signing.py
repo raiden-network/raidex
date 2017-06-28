@@ -9,11 +9,14 @@ def generate_random_privkey():
 
 class Signer(object):
 
-    def __init__(self, private_key=None):
-        if private_key is None:
-            private_key = generate_random_privkey()
+    def __init__(self, private_key):
         self._private_key = private_key
         self._address = privtoaddr(private_key)
+
+    @classmethod
+    def random(cls):
+        private_key = generate_random_privkey()
+        return cls(private_key)
 
     @property
     def address(self):

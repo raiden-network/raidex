@@ -10,6 +10,7 @@ from ethereum import slogging
 
 from raidex import messages
 from raidex.utils import timestamp, DEFAULT_RAIDEX_PORT
+from raidex.signing import generate_random_privkey
 
 
 @pytest.fixture(autouse=True)
@@ -36,7 +37,6 @@ def assets():
 
 @pytest.fixture()
 def accounts():
-    Account = namedtuple('Account', 'privatekey address')
-    privkeys = [sha3("account:{}".format(i)) for i in range(3)]
-    accounts = [Account(pk, privtoaddr(pk)) for pk in privkeys]
-    return accounts
+    Account = namedtuple("Account", "privatekey address")
+    private_keys = [generate_random_privkey() for _ in range(3)]
+    return [Account(privkey, privtoaddr(privkey)) for privkey in private_keys]
