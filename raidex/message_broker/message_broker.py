@@ -15,8 +15,10 @@ class MessageBroker(object):
 
     def send(self, topic, message):
         queues = self.listeners[topic]
+        # DEBUGGING check - provide log output to easily check if an expected listener is not listening
+        # this is not always harmful but can help debugging
         if not queues:
-            log.debug('CODE: no listener waiting on topic {}, msg={}'.format(pex(topic), message))
+            log.debug('DEBUG-CODE: no listener waiting on topic {}, msg={}'.format(pex(topic), message))
         for listener in queues:
             topic, message_queue_async, transform = listener
             transformed_message = message
