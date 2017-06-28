@@ -1,16 +1,14 @@
-from collections import defaultdict, namedtuple
-from ethereum import slogging
-
 import gevent
+from ethereum import slogging
 from gevent.event import AsyncResult
 
 from raidex import messages
-from raidex.message_broker.listeners import CommitmentProofListener, OfferTakenListener
-from raidex.raidex_node.trader.trader import TransferReceivedListener
+from raidex.commitment_service.tasks import CommitmentProofTask, RefundReceivedTask
+from raidex.message_broker.listeners import CommitmentProofListener
 from raidex.raidex_node.offer_book import OfferType, Offer
-from raidex.utils.gevent_helpers import make_async
+from raidex.raidex_node.trader.trader import TransferReceivedListener
 from raidex.utils import timestamp
-from raidex.tests.utils import float_isclose
+from raidex.utils.gevent_helpers import make_async
 
 log = slogging.get_logger('node.commitment_service')
 
@@ -172,71 +170,3 @@ class CommitmentService(object):
         swap_execution = messages.SwapExecution(offer_id, timestamp.time_int())
         self._sign(swap_execution)
         self.message_broker.send(topic=self.commitment_service_address, message=swap_execution)
-
-
-class CommitmentProofTask(gevent.Greenlet):
-    def __init__(self, commitment_proofs_dict, commitment_proof_listener):
-        self.commitment_proofs = commitment_proofs_dict
-        self.commitment_proof_listener = commitment_proof_listener
-        gevent.Greenlet.__init__(self)
-
-    def _run(self):
-        self.commitment_proof_listener.start()
-        while True:
-            commitment_proof = self.commitment_proof_listener.get()
-            log.debug('Received commitment proof {}'.format(commitment_proof))
-            assert isinstance(commitment_proof, messages.CommitmentProof)
-
-            async_result = self.commitment_proofs.get(commitment_proof.commitment_sig)
-            if async_result:
-                async_result.set(commitment_proof)
-            else:
-                # we should be waiting on the commitment-proof!
-                # assume non-malicious actors:
-                # if we receive a proof we are not waiting on, there is something wrong
-                log.debug('Received unexpected commitment proof {}'.format(commitment_proof))
-
-
-class RefundReceivedTask(gevent.Greenlet):
-
-    def __init__(self, cs_address, fee_rate, commitments_dict, commitment_proofs_dict,
-                 transfer_received_listener):
-        self.commitments = commitments_dict
-        self.commitment_proofs = commitment_proofs_dict
-        self.transfer_received_listener = transfer_received_listener
-        self.commitment_service_address = cs_address
-        self.fee_rate = fee_rate
-        gevent.Greenlet.__init__(self)
-
-    def _run(self):
-        self.transfer_received_listener.start()
-        while True:
-            receipt = self.transfer_received_listener.get()
-            try:
-                commitment = self.commitments[receipt.identifier]
-            except KeyError:
-                # we're not waiting for this refund
-                log.debug("Received unexpected Refund: {}".format(receipt))
-                continue
-            # assert internals
-            assert receipt.identifier == commitment.offer_id
-            if not receipt.sender == self.commitment_service_address:
-                log.debug("Received expected refund-id from unexpected sender")
-                # do nothing and keep the money
-                continue
-
-            # assume non-malicious cs, so only asserting correctness for now:
-            minus_fee = commitment.amount - commitment.amount * self.fee_rate
-            if not float_isclose(commitment.amount, receipt.amount) or float_isclose(receipt.amount, minus_fee):
-                log.debug("Received refund that didn't match expected amount")
-                # if the refund doesn't comply with the expected amount, do nothing and keep the money
-                continue
-
-            # set the AsyncResult for the Commitment-Proof we are expecting
-            async_result = self.commitment_proofs.get(commitment.signature)
-            if async_result:
-                async_result.set(None)
-                log.debug("Refund received: {}".format(receipt))
-
-                # once we receive a refund, everything is settled for us and we can delete the commitment
-                del self.commitments[receipt.identifier]
