@@ -13,7 +13,7 @@ from listener_tasks import OfferBookTask, OfferTakenTask, SwapCompletedTask
 from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.raidex_node.trades import TradesView
 from raidex.commitment_service.client import CommitmentService
-from raidex.commitment_service.mock import CommitmentServiceMock, CommitmentServiceGlobal
+from raidex.commitment_service.mock import CommitmentServiceClientMock, CommitmentServiceGlobal
 from raidex.raidex_node.trader.trader import TraderClient, Trader
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.utils import timestamp
@@ -97,11 +97,11 @@ class RaidexNode(object):
 
 
         commitment_service_global = None
-        # construct mock commitment-service-client (non-failing mock without commitment-trades)
+        # construct mock commitment-service-client
         if cs_address is None:
             commitment_service_global = CommitmentServiceGlobal()
-            commitment_service_client = CommitmentServiceMock(signer, token_pair, message_broker, cs_fee_rate,
-                                                              commitment_service_global)
+            commitment_service_client = CommitmentServiceClientMock(signer, token_pair, message_broker, cs_fee_rate,
+                                                                    commitment_service_global)
         # or construct commitment-service-client
         else:
             commitment_service_client = CommitmentService(signer, token_pair, trader_client,
@@ -119,11 +119,11 @@ class RaidexNode(object):
             # for consistency, set the mock-fee-rates the same as the node's fee rate
             mock_fee_rate = cs_fee_rate
 
-            # build the market makers CommitmentServiceMock client instances
+            # build the market makers CommitmentServiceClientMock client instances
             for _ in range(0, nof_market_makers):
                 commitment_service_mock_list.append(
-                    CommitmentServiceMock(Signer.random(), token_pair, message_broker, mock_fee_rate,
-                                          commitment_service_global)
+                    CommitmentServiceClientMock(Signer.random(), token_pair, message_broker, mock_fee_rate,
+                                                commitment_service_global)
             )
 
             # start the trading activity

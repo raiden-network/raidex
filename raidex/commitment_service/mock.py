@@ -124,7 +124,7 @@ class NonFailingCommitmentServiceGlobal(object):
         return True
 
 
-class CommitmentServiceMock(object):
+class CommitmentServiceClientMock(object):
     """Mock for the CommitmentService
     Has the same interface as the CommitmentService client, but also includes the mocked CS-Node behaviour
 

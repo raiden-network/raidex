@@ -144,7 +144,7 @@ class MockExchangeTask(gevent.Greenlet):
                 NOTE: this class ugly and will soon be replaced by proper trading bots, that each use a raidex-node instance
 
         Will mock some exchange activity.
-        For convenience, multiple CommitmentServiceMock instances will be used as the market-makers.
+        For convenience, multiple CommitmentServiceClientMock instances will be used as the market-makers.
         This class has the logic of interacting with an actual Commitment Service included as a mock,
         and will by itself report successful commitments and swap executeds to the message broker.
         So the market makers will not use a trader to interact with the commitment service,

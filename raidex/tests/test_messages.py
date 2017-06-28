@@ -17,7 +17,7 @@ from raidex.messages import (
     CommitmentServiceAdvertisement
 )
 from raidex.utils import timestamp, ETHER_TOKEN_ADDRESS, make_privkey_address
-from raidex.commitment_service.mock import CommitmentServiceMock
+from raidex.commitment_service.mock import CommitmentServiceClientMock
 from raidex.signing import Signer
 
 # TODO refactor this tests, especially the fixtures
@@ -27,7 +27,7 @@ UINT32_MAX_INT = 2 ** 32
 
 @pytest.fixture()
 def commitment_service():
-    return CommitmentServiceMock(Signer.random(), None, None, fee_rate=0.1)
+    return CommitmentServiceClientMock(Signer.random(), None, None, fee_rate=0.1)
 
 
 def test_offer(assets):
