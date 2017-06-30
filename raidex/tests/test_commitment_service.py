@@ -140,9 +140,9 @@ def test_swap_execution_task(commitment_service, message_broker, accounts):
 
     # manually set the transfer_receipts:
     swap._maker_transfer_receipt = TransferReceipt(maker.address, amount=5, identifier=offer_id,
-                                                   timestamp=timestamp.time())
+                                                   timestamp_=timestamp.time())
     swap._taker_transfer_receipt = TransferReceipt(taker.address, amount=5, identifier=offer_id,
-                                                   timestamp=timestamp.time())
+                                                   timestamp_=timestamp.time())
 
     # inject the swap in the CS's dict
     commitment_service.swaps[offer_id] = swap
@@ -237,11 +237,11 @@ def test_refund_task(commitment_service, trader_client1):
 
     refund_task = RefundTask(commitment_service.trader_client, commitment_service.refund_queue, fee_rate)
 
-    receipt1 = TransferReceipt(sender=trader_client1.address, identifier=sha3('beer'), amount=transfer_amount,
-                               timestamp=timestamp.time())
+    receipt1 = TransferReceipt(sender=trader_client1.address, amount=transfer_amount, identifier=sha3('beer'),
+                               timestamp_=timestamp.time())
 
-    receipt2 = TransferReceipt(sender=trader_client1.address, identifier=sha3('gin'), amount=transfer_amount,
-                               timestamp=timestamp.time())
+    receipt2 = TransferReceipt(sender=trader_client1.address, amount=transfer_amount, identifier=sha3('gin'),
+                               timestamp_=timestamp.time())
 
     # claim fee, higher priority
     refund1 = Refund(receipt1, priority=5, claim_fee=True)

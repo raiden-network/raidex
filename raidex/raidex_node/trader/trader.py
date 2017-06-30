@@ -43,11 +43,11 @@ class TransferReceivedEvent(object):
 
 class TransferReceipt(object):
 
-    def __init__(self, sender, amount, identifier, timestamp):
+    def __init__(self, sender, amount, identifier, timestamp_):
         self.sender = sender
         self.amount = amount
         self.identifier = identifier
-        self.timestamp = timestamp
+        self.timestamp = timestamp_
 
     def __repr__(self):
         return "{}<sender={}, amount={}, identifier={}, timestamp={}>".format(
