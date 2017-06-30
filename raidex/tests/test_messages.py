@@ -47,9 +47,10 @@ def test_hashable(assets):
 
 
 def test_signing(accounts):
-    c = Commitment(offer_id=10, offer_hash=sha3('offer id'), timeout=timestamp.time_plus(milliseconds=100),
+    timeout = timestamp.time_plus(milliseconds=100)
+    c = Commitment(offer_id=10, offer_hash=sha3('offer id'), timeout=timeout,
                             amount=10)
-    c_unsigned = Commitment(offer_id=10, offer_hash=sha3('offer id'), timeout=timestamp.time_plus(milliseconds=100),
+    c_unsigned = Commitment(offer_id=10, offer_hash=sha3('offer id'), timeout=timeout,
                             amount=10)
     assert c == c_unsigned
     c.sign(accounts[0].privatekey)
