@@ -9,7 +9,7 @@ from raidex.message_broker.message_broker import MessageBroker
 from raidex.message_broker.listeners import MessageListener
 from raidex.signing import Signer
 from raidex.raidex_node.trader.trader import (
-    TraderClient,
+    TraderClientMock,
     Trader,
     TransferReceipt
 )
@@ -24,7 +24,7 @@ from raidex.commitment_service.server import (
     MessageSenderTask,
     TransferReceivedListener
 )
-from raidex.utils import make_privkey_address, timestamp
+from raidex.utils import timestamp
 
 
 @pytest.fixture
@@ -40,18 +40,18 @@ def trader():
 
 @pytest.fixture()
 def trader_client1(accounts, trader):
-    return TraderClient(accounts[1].address, commitment_balance=10, trader=trader)
+    return TraderClientMock(accounts[1].address, commitment_balance=10, trader=trader)
 
 
 @pytest.fixture()
 def trader_client2(accounts, trader):
-    return TraderClient(accounts[2].address, commitment_balance=10, trader=trader)
+    return TraderClientMock(accounts[2].address, commitment_balance=10, trader=trader)
 
 
 @pytest.fixture()
 def commitment_service(message_broker, trader):
     signer = Signer.random()
-    trader_client = TraderClient(signer.address, trader=trader)
+    trader_client = TraderClientMock(signer.address, trader=trader)
     return CommitmentService(signer, message_broker, trader_client, fee_rate=0.01)
 
 
@@ -207,7 +207,7 @@ def test_transfer_received_task(commitment_service, accounts, trader):
     # put in swap manually:
     commitment_service.swaps[offer_id] = swap
 
-    sender_trader = TraderClient(maker.address, trader=trader)
+    sender_trader = TraderClientMock(maker.address, trader=trader)
 
     # check singleton identity
     assert sender_trader.trader is commitment_service.trader_client.trader

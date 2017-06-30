@@ -128,22 +128,7 @@ class Trader(object):
             raise ValueError('Listener not found')
 
 
-class TraderClient(object):
-    """In memory mock for a trader client, which handles the actual asset swap
-
-    IMPORTANT:
-    Do NOT access the `trader` member as a static member from inside this class:
-
-        def some_function_inside_test_client(self):
-            TraderClient.trader
-
-    the `trader`-member can be set from the constructor to enable flexibility for testing and proper teardown!
-
-        def some_function_inside_test_client(self):
-            self.trader
-    """
-
-    # Singleton Mock-Trader, can be overwritten by providing the trader kwarg to the constructor
+class TraderClientMock(object):
     trader = Trader()
 
     def __init__(self, address, commitment_balance=10, trader=None):

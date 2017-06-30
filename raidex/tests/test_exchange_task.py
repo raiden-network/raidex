@@ -4,7 +4,7 @@ from raidex.commitment_service.mock import CommitmentServiceClientMock, NonFaili
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.raidex_node.exchange_task import MakerExchangeTask, TakerExchangeTask
 from raidex.raidex_node.offer_book import Offer, OfferType
-from raidex.raidex_node.trader.trader import TraderClient
+from raidex.raidex_node.trader.trader import TraderClientMock
 from raidex.signing import Signer
 
 
@@ -38,12 +38,12 @@ def commitment_service_taker(accounts, message_broker, cs_global, token_pair):
 
 @pytest.fixture()
 def trader_maker(accounts):
-    return TraderClient(accounts[0].address)
+    return TraderClientMock(accounts[0].address)
 
 
 @pytest.fixture()
 def trader_taker(accounts):
-    return TraderClient(accounts[1].address)
+    return TraderClientMock(accounts[1].address)
 
 
 def test_exchange_task(offers, accounts, commitment_service_taker, commitment_service_maker, message_broker,

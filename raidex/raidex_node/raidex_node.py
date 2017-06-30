@@ -14,7 +14,7 @@ from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.raidex_node.trades import TradesView
 from raidex.commitment_service.client import CommitmentServiceClient
 from raidex.commitment_service.mock import CommitmentServiceClientMock, CommitmentServiceGlobal
-from raidex.raidex_node.trader.trader import TraderClient, Trader
+from raidex.raidex_node.trader.trader import TraderClientMock, Trader
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.utils import timestamp
 from raidex.signing import Signer
@@ -93,7 +93,7 @@ class RaidexNode(object):
         else:
             NotImplementedError("Trader based on Raiden can only be mocked at the moment.")
 
-        trader_client = TraderClient(signer.address, commitment_balance=10, trader=trader)  #pylint disable=used-before-assignment
+        trader_client = TraderClientMock(signer.address, commitment_balance=10, trader=trader)  #pylint disable=used-before-assignment
 
 
         commitment_service_global = None

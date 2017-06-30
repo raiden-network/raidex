@@ -5,7 +5,7 @@ from raidex.tests.utils import float_isclose
 
 from raidex.commitment_service.server import CommitmentService
 from raidex.commitment_service.client import CommitmentServiceClient
-from raidex.raidex_node.trader.trader import Trader, TraderClient
+from raidex.raidex_node.trader.trader import Trader, TraderClientMock
 from raidex import messages
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.utils import timestamp
@@ -16,20 +16,18 @@ from raidex.signing import Signer
 
 @pytest.fixture()
 def message_broker():
-    # global singleton message broker
     return MessageBroker()
 
 
 @pytest.fixture()
 def trader():
-    # global singleton trader, will get reinitialised after every test in order to teardown old listeners etc
     return Trader()
 
 
 @pytest.fixture()
 def commitment_service(message_broker, trader):
     signer = Signer.random()
-    trader_client = TraderClient(signer.address, trader=trader)
+    trader_client = TraderClientMock(signer.address, trader=trader)
     return CommitmentService(signer, message_broker, trader_client, fee_rate=0.01)
 
 
@@ -39,7 +37,7 @@ def raidex_nodes(token_pair, trader, accounts, message_broker, commitment_servic
 
     for account in accounts:
         signer = Signer(account.privatekey)
-        trader_client = TraderClient(signer.address, commitment_balance=10, trader=trader)
+        trader_client = TraderClientMock(signer.address, commitment_balance=10, trader=trader)
         commitment_service_client = CommitmentServiceClient(signer, token_pair, trader_client,
                                                             message_broker, commitment_service.address,
                                                             fee_rate=commitment_service.fee_rate)

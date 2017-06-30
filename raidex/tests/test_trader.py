@@ -3,7 +3,7 @@ import pytest
 
 from ethereum.utils import sha3
 from raidex.raidex_node.offer_book import OfferType
-from raidex.raidex_node.trader.trader import Trader, TraderClient, TransferReceivedListener
+from raidex.raidex_node.trader.trader import Trader, TraderClientMock, TransferReceivedListener
 
 
 @pytest.fixture()
@@ -14,12 +14,12 @@ def trader():
 
 @pytest.fixture()
 def trader_client1(accounts, trader):
-    return TraderClient(accounts[1].address, commitment_balance=10, trader=trader)
+    return TraderClientMock(accounts[1].address, commitment_balance=10, trader=trader)
 
 
 @pytest.fixture()
 def trader_client2(accounts, trader):
-    return TraderClient(accounts[2].address, commitment_balance=10, trader=trader)
+    return TraderClientMock(accounts[2].address, commitment_balance=10, trader=trader)
 
 
 def test_atomic_exchange(trader_client1, trader_client2):

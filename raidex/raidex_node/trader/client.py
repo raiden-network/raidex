@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import json
-import gevent
 from gevent import monkey; monkey.patch_socket()
 from gevent import Greenlet
 from gevent.queue import Queue
@@ -14,7 +13,6 @@ from raidex.raidex_node.offer_book import OfferType
 from raidex.raidex_node.trader.trader import (
     Listener,
     TransferReceivedEvent,
-    TransferReceivedListener,
     BalanceUpdateTask
 )
 from raidex.utils.gevent_helpers import make_async
