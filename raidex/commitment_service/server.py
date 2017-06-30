@@ -2,11 +2,7 @@ import time
 
 import gevent
 from gevent.queue import PriorityQueue
-from ethereum.utils import privtoaddr
 from ethereum import slogging
-from raiden.encoding.signing import GLOBAL_CTX
-from raiden.encoding.signing import sign as _sign
-from secp256k1 import PrivateKey, ALL_FLAGS
 
 from raidex.utils import timestamp, pex
 from raidex import messages
@@ -19,15 +15,6 @@ log_swaps = slogging.get_logger('commitment_service.asset_swaps')
 log_messaging = slogging.get_logger('commitment_service.messaging')
 log_refunds = slogging.get_logger('commitment_service.refunds')
 log_trader = slogging.get_logger('commitment_service.trader')
-
-
-# string? or PrivateKey -> PrivateKey
-def sign(messagedata, private_key):
-    if not isinstance(private_key, PrivateKey):
-        privkey_instance = PrivateKey(privkey=private_key, flags=ALL_FLAGS, ctx=GLOBAL_CTX)
-    else:
-        privkey_instance = private_key
-    return _sign(messagedata, privkey_instance)
 
 
 class RaidexException(Exception):

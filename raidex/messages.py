@@ -5,9 +5,9 @@ import rlp
 from rlp.sedes import binary
 from ethereum.utils import (address, int256, hash32, sha3, big_endian_to_int, int32)
 from raiden.utils import pex
-from raiden.encoding.signing import recover_publickey, GLOBAL_CTX
+from raiden.encoding.signing import recover_publickey
 from raiden.encoding.signing import sign as _sign
-from secp256k1 import PrivateKey, ALL_FLAGS
+from coincurve import PrivateKey
 
 from raidex.utils import timestamp
 
@@ -16,7 +16,7 @@ sig65 = binary.fixed_length(65, allow_empty=True)
 
 def sign(messagedata, private_key):
     if not isinstance(private_key, PrivateKey):
-        privkey_instance = PrivateKey(privkey=private_key, flags=ALL_FLAGS, ctx=GLOBAL_CTX)
+        privkey_instance = PrivateKey(secret=private_key)
     else:
         privkey_instance = private_key
     return _sign(messagedata, privkey_instance)
