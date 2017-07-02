@@ -1,8 +1,6 @@
-import time
-
 import gevent
 from gevent.queue import PriorityQueue
-from ethereum.utils import privtoaddr
+from ethereum.utils import encode_hex
 from ethereum import slogging
 from raiden.encoding.signing import GLOBAL_CTX
 from raiden.encoding.signing import sign as _sign
@@ -160,13 +158,13 @@ class SwapCommitment(object):
         if self.is_taken:
             return False
 
-        if transfer_receipt.sender == self._maker_commitment.sender:
-            self._maker_transfer_receipt = transfer_receipt
-            return messages.CommitmentProof(self._maker_commitment.signature)
-        elif transfer_receipt.sender in self._taker_commitment_pool:
+        if transfer_receipt.sender in self._taker_commitment_pool:
             self._taker_transfer_receipt = transfer_receipt
             self._taker_commitment = self._taker_commitment_pool[transfer_receipt.sender]
             return messages.CommitmentProof(self._taker_commitment.signature)
+        if transfer_receipt.sender == self._maker_commitment.sender:
+            self._maker_transfer_receipt = transfer_receipt
+            return messages.CommitmentProof(self._maker_commitment.signature)
 
         assert False
 
@@ -177,7 +175,7 @@ class SwapCommitment(object):
         assert isinstance(swap_exec_msg, messages.SwapExecution)
         assert swap_exec_msg.offer_id == self._maker_commitment.offer_id
         if not self.timed_out:
-            if swap_exec_msg.sender == self._maker_commitment.sender:
+            if swap_exec_msg.sender == self._maker_commitment.sender and not self._maker_swap_execution:
                 self._maker_swap_execution = swap_exec_msg
             elif swap_exec_msg.sender == self._taker_commitment.sender:
                 self._taker_swap_execution = swap_exec_msg
@@ -231,6 +229,13 @@ class Refund(object):
             return -1
         return 0
 
+    def __repr__(self):
+        return "{}<receipt={}, claim_fee={}>".format(
+            self.__class__.__name__,
+            pex(self.receipt),
+            self.claim_fee,
+        )
+
 
 class ListenerTask(gevent.Greenlet):
 
@@ -261,7 +266,7 @@ class CommitmentTask(ListenerTask):
     def __init__(self, swaps, message_broker, self_address, refund_queue):
         self.swaps = swaps
         self.refund_queue = refund_queue
-        super(CommitmentTask, self).__init__(CommitmentListener(message_broker, topic=self_address))
+        super(CommitmentTask, self).__init__(CommitmentListener(message_broker, topic=encode_hex(self_address)))
 
     def process(self, data):
         commitment_msg = data
@@ -279,6 +284,8 @@ class CommitmentTask(ListenerTask):
 
             def after_offer_timeout_func(swaps, timedout_swap, refund_queue):
                 def func():
+                    if timedout_swap.is_completed:
+                        return
                     assert timedout_swap.timed_out
                     log_swaps.debug('Swap timed out: {}'.format(timedout_swap))
                     # check if still in swaps, if not, has been handled before
@@ -362,7 +369,7 @@ class MessageSenderTask(gevent.Greenlet):
                 if success is True:
                     log_messaging.debug('Broadcast successful: {}'.format(msg))
             else:
-                success = self.message_broker.send(topic=recipient, message=msg)
+                success = self.message_broker.send(topic=encode_hex(recipient), message=msg)
                 if success:
                     log_messaging.debug('Sending successful: {} // recipient={}'.format(msg, pex(recipient)))
 
@@ -415,7 +422,7 @@ class SwapExecutionTask(ListenerTask):
         self.swaps = swaps
         self.message_queue = message_queue
         self.refund_queue = refund_queue
-        super(SwapExecutionTask, self).__init__(SwapExecutionListener(message_broker, topic=self_address))
+        super(SwapExecutionTask, self).__init__(SwapExecutionListener(message_broker, topic=encode_hex(self_address)))
 
     def process(self, data):
         swap_execution_msg = data

@@ -18,6 +18,11 @@ class Signer(object):
         private_key = generate_random_privkey()
         return cls(private_key)
 
+    @classmethod
+    def from_seed(cls, seed):
+        private_key = sha3(seed)
+        return cls(private_key)
+
     @property
     def address(self):
         return self._address

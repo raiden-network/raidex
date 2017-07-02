@@ -1,5 +1,6 @@
 import gevent
 from ethereum import slogging
+from ethereum.utils import encode_hex
 from gevent.event import AsyncResult
 
 from raidex import messages
@@ -41,13 +42,15 @@ class CommitmentServiceClient(object):
                            self.commitment_proofs, TransferReceivedListener(self.trader_client)).start()
 
         CommitmentProofTask(self.commitment_proofs, CommitmentProofListener(self.message_broker,
-                                                                            topic=self.node_address)).start()
+                                                                            topic=encode_hex(self.node_address))).start()
 
     @make_async
-    def maker_commit_async(self, offer, commitment_amount):
+    def maker_commit_async(self, offer):
         # type: (Offer) -> (ProvenOffer)
         offermsg = self.create_offer_msg(offer)
         # self._sign(offermsg)
+
+        commitment_amount = offer.commitment_amount
 
         commitment = messages.Commitment(offer.offer_id, offermsg.hash, offer.timeout, commitment_amount)
         self._sign(commitment)
@@ -58,7 +61,7 @@ class CommitmentServiceClient(object):
         # map offer_id -> commitment
         self.commitments[offer.offer_id] = commitment
 
-        success = self.message_broker.send(self.commitment_service_address, commitment)
+        success = self.message_broker.send(encode_hex(self.commitment_service_address), commitment)
         # TODO better handling of unsuccessful sents (e.g. resend-queue)
         if success is False:
             log.debug('Message broker failed to send: {}'.format(commitment))
@@ -109,7 +112,7 @@ class CommitmentServiceClient(object):
         # map offer_id -> commitment
         self.commitments[offer.offer_id] = commitment
 
-        success = self.message_broker.send(self.commitment_service_address, commitment)
+        success = self.message_broker.send(encode_hex(self.commitment_service_address), commitment)
         if success is False:
             log.debug('Message broker failed to send: {}'.format(commitment))
             return None
@@ -169,4 +172,4 @@ class CommitmentServiceClient(object):
         # type: (int) -> None
         swap_execution = messages.SwapExecution(offer_id, timestamp.time_int())
         self._sign(swap_execution)
-        self.message_broker.send(topic=self.commitment_service_address, message=swap_execution)
+        self.message_broker.send(topic=encode_hex(self.commitment_service_address), message=swap_execution)

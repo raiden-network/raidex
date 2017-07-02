@@ -3,7 +3,7 @@ from copy import deepcopy
 import pytest
 import gevent
 
-from ethereum.utils import sha3, big_endian_to_int
+from ethereum.utils import sha3, big_endian_to_int, encode_hex
 from raidex import messages
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.message_broker.listeners import MessageListener
@@ -75,7 +75,7 @@ def test_commitment_task(commitment_service, accounts):
     # let the maker sign and send commitment
     commitment_msg_maker = deepcopy(commitment_msg)
     commitment_msg_maker.sign(maker.privatekey)
-    commitment_service.message_broker.send(commitment_service.address, commitment_msg_maker)
+    commitment_service.message_broker.send(encode_hex(commitment_service.address), commitment_msg_maker)
 
     gevent.sleep(0.01)
     swap = commitment_service.swaps[offer_id]
@@ -90,7 +90,7 @@ def test_commitment_task(commitment_service, accounts):
     # first taker sends commitment
     commitment_msg_taker1 = deepcopy(commitment_msg)
     commitment_msg_taker1.sign(taker1.privatekey)
-    commitment_service.message_broker.send(commitment_service.address, commitment_msg_taker1)
+    commitment_service.message_broker.send(encode_hex(commitment_service.address), commitment_msg_taker1)
     gevent.sleep(0.01)
 
     assert len(commitment_service.swaps.keys()) == 1
@@ -99,7 +99,7 @@ def test_commitment_task(commitment_service, accounts):
     # second taker sends commitment
     commitment_msg_taker2 = deepcopy(commitment_msg)
     commitment_msg_taker2.sign(taker2.privatekey),
-    commitment_service.message_broker.send(commitment_service.address, commitment_msg_taker2)
+    commitment_service.message_broker.send(encode_hex(commitment_service.address), commitment_msg_taker2)
 
     gevent.sleep(0.01)
 
@@ -152,14 +152,14 @@ def test_swap_execution_task(commitment_service, message_broker, accounts):
     swap_exec_msg_taker = messages.SwapExecution(offer_id, timestamp.time())
     swap_exec_msg_taker.sign(taker.privatekey)
 
-    commitment_service.message_broker.send(commitment_service.address, swap_exec_msg_maker)
+    commitment_service.message_broker.send(encode_hex(commitment_service.address), swap_exec_msg_maker)
     gevent.sleep(0.01)
 
     assert not swap.is_completed
     assert not swap.timed_out
     assert swap._maker_swap_execution == swap_exec_msg_maker
 
-    commitment_service.message_broker.send(commitment_service.address, swap_exec_msg_taker)
+    commitment_service.message_broker.send(encode_hex(commitment_service.address), swap_exec_msg_taker)
     sent_time = timestamp.time()
     gevent.sleep(0.01)
 
@@ -272,7 +272,7 @@ def test_refund_task(commitment_service, trader_client1):
 def test_message_sender_task(commitment_service, message_broker, accounts):
     message_sender_task = MessageSenderTask(message_broker, commitment_service.message_queue, commitment_service._sign)
     recipient = accounts[0].address
-    message_listener = MessageListener(message_broker, topic=recipient)
+    message_listener = MessageListener(message_broker, topic=encode_hex(recipient))
     message_listener.start()
 
     # send whatever message to recipient:
