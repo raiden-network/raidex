@@ -220,8 +220,8 @@ class TraderClient(object):
 class EventListener(object):
     """Represents a listener currently listening for new event"""
 
-    def __init__(self, trader):
-        self.trader = trader
+    def __init__(self, trader_client):
+        self.trader_client = trader_client
         self.listener = None
 
     def _transform(self, event):
@@ -254,12 +254,12 @@ class EventListener(object):
 
     def start(self):
         """Starts listening for new events"""
-        self.listener = self.trader.listen_for_events(self._transform)
+        self.listener = self.trader_client.listen_for_events(self._transform)
 
     def stop(self):
         """Stops listening for new events"""
         if self.listener is not None:
-            self.trader.stop_listen(self.listener)
+            self.trader_client.stop_listen(self.listener)
 
 
 class TransferReceivedListener(EventListener):

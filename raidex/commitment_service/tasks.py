@@ -1,7 +1,10 @@
+from ethereum import slogging
+
 from raidex import messages
-from raidex.commitment_service.client import log
 from raidex.raidex_node.listener_tasks import ListenerTask
 from raidex.tests.utils import float_isclose
+
+log = slogging.get_logger('node.commitment_service.tasks')
 
 
 class CommitmentProofTask(ListenerTask):

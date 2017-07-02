@@ -465,6 +465,7 @@ msg_types_map = dict(
         market_offer=ProvenOffer,
         commitment=Commitment,
         commitment_proof=CommitmentProof,
+        proven_commitment=ProvenCommitment,
         commitment_service=CommitmentServiceAdvertisement,
         swap_executed=SwapExecution,
         swap_completed=SwapCompleted,

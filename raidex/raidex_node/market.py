@@ -1,4 +1,6 @@
 from raiden.utils import isaddress, make_address
+from ethereum.utils import privtoaddr, sha3
+
 from raidex.raidex_node.offer_book import OfferType
 from raidex.utils import pex
 
@@ -16,6 +18,10 @@ class TokenPair(object):
         base_token = make_address()
         counter_token = make_address()
         return cls(base_token, counter_token)
+
+    @classmethod
+    def from_seed(cls, seed):
+        return cls(privtoaddr(sha3(seed)), privtoaddr(sha3(seed+seed)))
 
     def opposite(self):
         return TokenPair(base_token=self.counter_token, counter_token=self.base_token)

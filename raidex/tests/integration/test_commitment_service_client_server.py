@@ -65,10 +65,10 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     assert maker.message_broker == taker.message_broker == commitment_service.message_broker
     offer_id = generate_random_offer_id()
     offer = Offer(OfferType.SELL, 100, 1000, offer_id=offer_id, timeout=timestamp.time_plus(seconds=0, milliseconds=500))
-    maker_commit_result = maker.commitment_service.maker_commit_async(offer, commitment_amount=5)
+    maker_commit_result = maker.commitment_service.maker_commit_async(offer)
     gevent.sleep(0.01)
-    assert commitment_service.trader_client.commitment_balance == 15
-    assert maker.trader_client.commitment_balance == 5
+    assert commitment_service.trader_client.commitment_balance == 11
+    assert maker.trader_client.commitment_balance == 9
 
     maker_proven_offer = maker_commit_result.get()
     assert isinstance(maker_proven_offer, messages.ProvenOffer)
@@ -91,8 +91,8 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
 
     taker_commit_result = taker.commitment_service.taker_commit_async(taker_internal_offer)
     gevent.sleep(0.01)
-    assert commitment_service.trader_client.commitment_balance == 20
-    assert taker.trader_client.commitment_balance == 5
+    assert commitment_service.trader_client.commitment_balance == 12
+    assert taker.trader_client.commitment_balance == 9
 
     taker_proven_commitment = taker_commit_result.get()
     assert isinstance(taker_proven_commitment, messages.ProvenCommitment)
@@ -142,10 +142,10 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     assert failed_taker.offer_book.get_offer_by_id(offer.offer_id) is None
 
     # Check the earnings and refunds
-    assert float_isclose(maker.trader_client.commitment_balance, 10 - (5 * commitment_service.fee_rate))
-    assert float_isclose(taker.trader_client.commitment_balance, 10 - (5 * commitment_service.fee_rate))
+    assert float_isclose(maker.trader_client.commitment_balance, 10 - (1 * commitment_service.fee_rate))
+    assert float_isclose(taker.trader_client.commitment_balance, 10 - (1 * commitment_service.fee_rate))
     assert failed_taker.trader_client.commitment_balance == 10
-    assert float_isclose(commitment_service.trader_client.commitment_balance, 10 + 2 * (5 * commitment_service.fee_rate))
+    assert float_isclose(commitment_service.trader_client.commitment_balance, 10 + 2 * (1 * commitment_service.fee_rate))
 
     # overall balance shouldn't have changed
     assert maker.trader_client.commitment_balance + taker.trader_client.commitment_balance \

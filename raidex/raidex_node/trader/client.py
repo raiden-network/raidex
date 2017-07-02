@@ -1,14 +1,13 @@
 from __future__ import print_function
 
 import json
-import gevent
 from gevent import monkey; monkey.patch_socket()
 from gevent import Greenlet
 from gevent.queue import Queue
 
 
 import requests
-from ethereum.utils import encode_hex
+from ethereum.utils import encode_hex, decode_hex
 
 from raidex.raidex_node.offer_book import OfferType
 from raidex.raidex_node.trader.trader import (
@@ -23,13 +22,15 @@ from raidex.utils.gevent_helpers import make_async
 class TraderClient(object):
     """Handles the actual token swap. A client/server mock for now. Later will use a raiden node"""
 
-    def __init__(self, address, port, commitment_amount=10):
+    def __init__(self, address, host='localhost', port=5001, commitment_amount=10):
         self.address = address
         self.port = port
         self.base_amount = 100
         self.counter_amount = 100
         self.commitment_balance = commitment_amount
         self._is_running = False
+        self.apiUrl = 'http://{}:{}/api'.format(host, port)
+
 
     @property
     def is_running(self):
@@ -59,7 +60,7 @@ class TraderClient(object):
                 'selfAddress': encode_hex(self.address), 'targetAddress': encode_hex(target_address),
                 'identifier': identifier}
 
-        result = requests.post('http://localhost:{0}/api/expect'.format(self.port), json=body)
+        result = requests.post('{}/expect'.format(self.apiUrl), json=body)
         success = result.json()['data']
         if success:
             self._execute_exchange(OfferType.opposite(type_), base_amount, counter_amount)
@@ -85,7 +86,7 @@ class TraderClient(object):
                 'selfAddress': encode_hex(self.address), 'targetAddress': encode_hex(target_address),
                 'identifier': identifier}
 
-        result = requests.post('http://localhost:{0}/api/exchange'.format(self.port), json=body)
+        result = requests.post('{}/exchange'.format(self.apiUrl), json=body)
         success = result.json()['data']
         if success:
             self._execute_exchange(type_, base_amount, counter_amount)
@@ -118,7 +119,7 @@ class TraderClient(object):
         body = {'amount': amount, 'selfAddress': encode_hex(self.address), 'targetAddress': encode_hex(target_address),
                 'identifier': identifier}
 
-        result = requests.post('http://localhost:{0}/api/transfer'.format(self.port), json=body)
+        result = requests.post('{}/transfer'.format(self.apiUrl), json=body)
         success = result.json()['data']
         if success is True:
             self.commitment_balance -= amount
@@ -141,13 +142,13 @@ class TraderClient(object):
         listener = Listener(self.address, event_queue_async, transform)
 
         def run():
-            r = requests.get('http://localhost:{0}/api/events/{1}'.format(self.port, self.address), stream=True)
+            r = requests.get('{}/events/{}'.format(self.apiUrl, encode_hex(self.address)), stream=True)
             for line in r.iter_lines():
                 # filter out keep-alive new lines
                 if line:
                     decoded_line = line.decode('utf-8')
-                    raw_data = json.loads(decoded_line)
-                    event = encode(raw_data['data'], raw_data['type'])
+                    raw_data = json.loads(decoded_line)['data']
+                    event = encode(raw_data['event'], raw_data['type'])
                     if transform is not None:
                         event = transform(event)
                     if event is not None:
@@ -165,5 +166,5 @@ class TraderClient(object):
 
 def encode(event, type_):
     if type_ == 'TransferReceivedEvent':
-        return TransferReceivedEvent(event['sender'], event['amount'], event['identifier'])
+        return TransferReceivedEvent(decode_hex(event['sender']), event['amount'], event['identifier'])
     raise Exception('encoding error: unknown-event-type')

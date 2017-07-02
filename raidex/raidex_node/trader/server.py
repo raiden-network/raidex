@@ -52,28 +52,26 @@ def transfer():
     amount = request.json.get('amount')
     identifier = request.json.get('identifier')
     log.debug('transfer: ', amount=amount, self_address=self_address, target_address=target_address, identifier=identifier)
-    success = trader.transfer(self_address, target_address, amount, identifier)
+    success = trader.transfer(self_address, target_address, amount, identifier).get()
     return jsonify({'data': success})
 
 
-@app.route('/api/events/<string:address', methods=['GET'])
+@app.route('/api/events/<string:address>', methods=['GET'])
 def events_for(address):
 
-    listener = EventListener(trader, address)
-    listener.start()
+    listener = trader.listen_for_events(address)
 
     def generate():
         while True:
-            event = listener.get()
-            yield json.dumps({'data': event.as_dict(), 'type': event.type}) + '\n'
+            event = listener.event_queue_async.get()
+            yield json.dumps({'data': {'event': event.as_dict(), 'type': event.type}}) + '\n'
 
     def on_close():  # stop listener on closed connection
-        listener.stop()
+        trader.stop_listen(listener)
 
     r = Response(generate(), content_type='application/x-json-stream')
     r.call_on_close(on_close)
     return r
-
 
 
 def make_error_obj(status_code, message):
