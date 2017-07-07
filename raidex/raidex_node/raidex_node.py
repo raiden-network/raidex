@@ -14,6 +14,7 @@ from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.raidex_node.trader.client import TraderClient
 from raidex.raidex_node.trades import TradesView
 from raidex.message_broker.client import MessageBroker
+from raidex.raidex_node.offer_grouping import group_offers, group_trades
 from raidex.commitment_service.commitment_service import CommitmentService
 import raidex.utils.milliseconds as milliseconds
 
@@ -32,15 +33,15 @@ class RaidexNode(object):
         self.commitment_service = CommitmentService(self.token_pair, self.priv_key, self.message_broker)
         self.trader = TraderClient(self.address)
         self.offer_book = OfferBook()
-        self.trades = TradesView()
+        self._trades = TradesView()
         self.order_tasks_by_id = {}
         self.next_order_id = 0
 
     def start(self):
         log.info('Starting raidex node')
         OfferBookTask(self.offer_book, self.token_pair, self.message_broker).start()
-        OfferTakenTask(self.offer_book, self.trades, self.message_broker).start()
-        SwapCompletedTask(self.trades, self.message_broker).start()
+        OfferTakenTask(self.offer_book, self._trades, self.message_broker).start()
+        SwapCompletedTask(self._trades, self.message_broker).start()
 
     def make_offer(self, type_, amount, counter_amount):
         # TODO generate better offer id
@@ -53,7 +54,7 @@ class RaidexNode(object):
 
     def limit_order(self, type_, amount, price):
         log.info('Placing limit order')
-        order_task = LimitOrderTask(self.offer_book, self.trades, type_, amount, price, self.address,
+        order_task = LimitOrderTask(self.offer_book, self._trades, type_, amount, price, self.address,
                                     self.commitment_service,
                                     self.message_broker, self.trader).start()
         order_id = self.next_order_id
@@ -63,3 +64,23 @@ class RaidexNode(object):
 
     def print_offers(self):
         print(self.offer_book)
+
+    def buys(self):
+        return self.offer_book.buys.values()
+
+    def sells(self):
+        return self.offer_book.sells.values()
+
+    def grouped_buys(self):
+        return group_offers(self.buys())
+
+    def grouped_sells(self):
+        return group_offers(self.sells())
+
+    def trades(self):
+        return self._trades.values()
+
+    def grouped_trades(self):
+        return group_trades(self.trades())
+
+
