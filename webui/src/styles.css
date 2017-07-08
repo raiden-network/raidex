@@ -5,7 +5,7 @@
 @import url('../node_modules/material-icons/css/material-icons.min.css');
 @import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500,700');
 @import url('../node_modules/font-awesome/css/font-awesome.min.css');
-@import '~@angular/material/core/theming/prebuilt/deeppurple-amber.css';
+@import '~@angular/material/prebuilt-themes/deeppurple-amber.css';
 
 /* colors */
 .primary-text { color: #41BAAE; }
