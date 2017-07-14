@@ -1,8 +1,7 @@
 <div class="container-fluid">
   <div class="row">
     <div class="row">
-      <p-dataTable [value]="buys" scrollable="true" scrollHeight="300px" [rows]="14"
-                   virtualScroll="virtualScroll" styleClass="borderless">
+      <p-dataTable [value]="buys" scrollable="true" scrollHeight="300px" [rows]="14" styleClass="borderless">
         <p-header>Bids</p-header>
         <p-column field="amount" header="Amount"
                   [style]="{'font-size': '11px', 'text-align': 'right'}"></p-column>
@@ -11,8 +10,7 @@
       </p-dataTable>
     </div>
     <div class="row">
-      <p-dataTable [value]="sells" scrollable="true" scrollHeight="300px" [rows]="14"
-                   virtualScroll="virtualScroll" styleClass="borderless custom-scrollbar">
+      <p-dataTable [value]="sells" scrollable="true" scrollHeight="300px" [rows]="14" styleClass="borderless custom-scrollbar">
         <p-header>Asks</p-header>
         <p-column field="amount" header="Amount"
                   [style]="{'font-size': '11px', 'text-align': 'right'}"></p-column>
