@@ -36,7 +36,7 @@ import { OffersTableComponent } from './components/offers-table.component';
         DataTableModule,
         SharedModule,
         GrowlModule,
-        MaterialModule.forRoot()
+        MaterialModule
     ],
     providers: [ RaidexService ],
     bootstrap: [ AppComponent ]
