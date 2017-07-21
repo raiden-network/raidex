@@ -7,6 +7,7 @@ import * as d3Array from 'd3-array';
 @Component({
     selector: 'rex-zing-depthchart',
     template: `
+        <div class="chart-title">Market Depth</div>
         <rex-zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></rex-zingchart>
     `
 })
@@ -45,6 +46,7 @@ export class ZingDepthChartComponent implements OnInit {
             id: 'depth-chart',
             data: {
                 'type': 'area',
+                'backgroundColor': 'transparent',
                 'plot': {
                     'line-width': 2,
                     'marker': {
@@ -55,11 +57,11 @@ export class ZingDepthChartComponent implements OnInit {
                         'text': '<table border="0" rules=none>' +
                         '<col width="150">' +
                         '<tr align="left">' +
-                        '<td>Cumulative Volume</td>' +
+                        '<td>Cumulative Volume (ETH)</td>' +
                         '<td>%vt</td>' +
                         '</tr>' +
                         '<tr align="right">' +
-                        '<td>Price</td>' +
+                        '<td>Price (USD)</td>' +
                         '<td>%kt</td>' +
                         '</tr>' +
                         '</table>',
@@ -72,36 +74,43 @@ export class ZingDepthChartComponent implements OnInit {
                         'callout': true
                     }
                 },
-                'title': {
-                    'text': 'Market Depth',
-                    'font-size': 14,
-                    'offset-x': -200,
-                    'offset-y': -10
-                },
                 'scaleY': {
-                    'label': {'text': 'Cumulative Volume'}
+                    // 'label': {'text': 'Cumulative Volume'}
+                    'short': true,
+                    'item': {
+                        'font-color': '#f7f7f7',
+                        'font-size': '11px',
+                        'font-family': 'Roboto',
+                    }
                 },
                 'plotarea': {
                     'adjust-layout': true /* For automatic margin adjustment. */
                 },
                 'scale-x': {
                     'auto-fit': true,
-                    'label': {
-                        'text': 'Price'
+                    // 'label': {
+                    //     'text': 'Price'
+                    // },
+                    'item': {
+                        'font-color': '#f7f7f7',
+                        'font-size': '11px',
+                        'font-family': 'Roboto',
                     }
                 },
                 'series': [
                     {
                         'values': this.bidArray,
-                        'text': 'Red'
+                        'line-color': '#4fef4a',
+                        'background-color': '#4fef4a'
                     },
                     {
                         'values': this.askArray,
-                        'text': 'Blue'
+                        'line-color': '#ef5439',
+                        'background-color': '#ef5439'
                     }
                 ],
             },
-            height: 300,
+            height: '300px',
             width: '100%'
         }];
     }

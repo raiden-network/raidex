@@ -8,8 +8,8 @@ import { Offer } from '../model/offer';
     templateUrl: 'offers-table.component.html',
 })
 export class OffersTableComponent implements OnInit {
-    public buys: Offer[];
-    public sells: Offer[];
+    public buys: Offer[] = [];
+    public sells: Offer[] = [];
     private raidexSubscription: Subscription;
 
     constructor(private raidexService: RaidexService) {}

@@ -1,12 +1,31 @@
 /* You can add global styles to this file, and also import other style files */
-@import url('../node_modules/primeng/resources/themes/redmond/theme.css');
+@import url('../node_modules/primeng/resources/themes/cruze/theme.css');
 @import url('../node_modules/primeng/resources/primeng.min.css');
 /* @import url('https://fonts.googleapis.com/icon?family=Material+Icons');*/
 @import url('../node_modules/material-icons/css/material-icons.min.css');
 @import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500,700');
 @import url('../node_modules/font-awesome/css/font-awesome.min.css');
-@import '~@angular/material/core/theming/prebuilt/deeppurple-amber.css';
+@import '~@angular/material/prebuilt-themes/deeppurple-amber.css';
 
+/* colors */
+.primary-text { color: #41BAAE; }
+.white-text { color: white; }
+.green-text { color: #4fef4a; }
+.red-text { color: #ef5439; }
+.dark-background { background-color: rgba(37, 37, 37, 1); }
+.grey-background { background-color: #575757; }
+
+/* navigation */
+.navbar { background-color: #333333; }
+.navbar-brand {
+    font-family: arial;
+    font-size: xx-Large;
+}
+
+.btn {
+    border: 0px !important;
+    margin: 0px !important;
+}
 
 .top5 { margin-top:5px; }
 .top7 { margin-top:7px; }
@@ -22,11 +41,32 @@
 .bottom17 { margin-bottom:17px; }
 .bottom30 { margin-bottom:30px; }
 
+/* PrimeNG Datatable */
+.ui-datatable {
+    font-family: 'Roboto', sans-serif;
+}
+
 .ui-datatable.borderless thead th,
 .ui-datatable.borderless tbody,
 .ui-datatable.borderless tbody tr,
 .ui-datatable.borderless tbody td {
     border-style: none;
+}
+
+.ui-datatable-scrollable-body::-webkit-scrollbar-track {
+  	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+  	background-color: #575757;
+}
+
+.ui-datatable-scrollable-body::-webkit-scrollbar {
+  	width: 8px;
+  	background-color: #3d3d3d;
+}
+
+.ui-datatable-scrollable-body::-webkit-scrollbar-thumb {
+  	border-radius: 10px;
+  	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,.3);
+  	background-color: #3d3d3d;
 }
 
 select option{
@@ -37,16 +77,27 @@ select option{
   position: relative;
   z-index: 1;
 }
-#date-picker-container {
-    right: 0px;
-    top: -10px;
-    position: absolute;
-    z-index: 10;
-}
 
 div.alert-success {
     height: 75px;
     width: 175px;
     position: absolute;
     right: 0px;
+}
+
+.chart-title {
+    height: 35px;
+    background-color: #333333;
+    color: #f7f7f7;
+    font-family: 'Roboto', sans-serif;
+    font-weight: bold;
+    font-size: 14px;
+    text-align: center;
+    padding: .5em .75em;
+}
+
+.chart-filter {
+    height: 23px;
+    background-color: #3d3d3d;
+    text-align: right;
 }

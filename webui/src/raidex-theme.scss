@@ -1,0 +1,10 @@
+@import '~@angular/material/theming';
+@include mat-core();
+
+$raidex-primary: mat-palette($mat-teal);
+$raidex-accent:  mat-palette($mat-pink, 500, 900, A100);
+$raidex-warn:    mat-palette($mat-deep-orange);
+
+$raidex-theme: mat-light-theme($raidex-primary, $raidex-accent, $raidex-warn);
+
+@include angular-material-theme($raidex-theme);

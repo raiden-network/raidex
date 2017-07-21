@@ -7,16 +7,18 @@ import * as d3Array from 'd3-array';
 @Component({
     selector: 'rex-zing-stockchart',
     template: `
-        <rex-zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></rex-zingchart>
-        <div id="date-picker-container">
-            <button class="btn btn-success btn-xs"
-            (click)="reinitialiseStockChart(10)">10 mins</button>
-            <button class="btn btn-success btn-xs"
-            (click)="reinitialiseStockChart(15)">15 mins</button>
-            <button class="btn btn-success btn-xs"
-            (click)="reinitialiseStockChart(30)">30 mins</button>
+        <div class="chart-title">
+          Stock and Volume
         </div>
-
+        <div class="chart-filter">
+          <button class="btn btn-success btn-xs"
+          (click)="reinitialiseStockChart(10)">10 mins</button>
+          <button class="btn btn-success btn-xs"
+          (click)="reinitialiseStockChart(15)">15 mins</button>
+          <button class="btn btn-success btn-xs"
+          (click)="reinitialiseStockChart(30)">30 mins</button>
+        </div>
+        <rex-zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></rex-zingchart>
         `,
 })
 export class ZingStockChartComponent implements OnInit {
@@ -64,24 +66,32 @@ export class ZingStockChartComponent implements OnInit {
             id: 'stockchart',
             data: {
                 'type': 'mixed',
-                'title': {
-                    'text': 'Stock and Volume Chart',
-                    'font-size': 14,
-                    'offset-x': -200,
-                    'offset-y': -10
-                },
+                'backgroundColor': 'transparent',
+                // 'title': {
+                //     'text': 'Stock and Volume Chart',
+                //     'font-size': 14,
+                //     'color': '#f7f7f7',
+                //     'background-color': '#333333',
+                //     'offset-x': -200,
+                //     'offset-y': -20
+                // },
 
                 'plotarea': {
                     'adjust-layout': true /* For automatic margin adjustment. */
                 },
                 'scale-y': { // for Stock Chart
-                    'offset-start': '25%', // to adjust scale offsets.
+                    'offset-start': '35%', // to adjust scale offsets.
                     // "values": "29:33:2",
                     // "step": "10second",
                     'format': '$%v',
-                    'label': {
-                        'text': 'Prices'
-                    },
+                    // 'label': {
+                    //     'text': 'Prices'
+                    // },
+                    'item': {
+                        'font-color': '#f7f7f7',
+                        'font-size': '11px',
+                        'font-family': 'Roboto',
+                    }
 
                 },
                 'scale-y-2': { // for Volume Chart
@@ -89,22 +99,28 @@ export class ZingStockChartComponent implements OnInit {
                     'blended': true, // to bind the scale to "scale-y".
                     'offset-end': '75%', // to adjust scale offsets.
                     // "values": "0:3:3",
-                    'format': '%vETH',
-                    'label': {
-                        'text': 'Volume'
+                    'short': true,
+                    // 'format': '%vETH',
+                    // 'label': {
+                    //     'text': 'Volume'
+                    // }
+                    'item': {
+                        'font-color': '#f7f7f7',
+                        'font-size': '11px',
+                        'font-family': 'Roboto',
                     }
                 },
                 plot: {
                     'aspect': 'candlestick',
                     'trend-up': { // Stock Gain
-                        'background-color': 'green',
-                        'line-color': 'green',
-                        'border-color': 'green'
+                        'background-color': '#4fef4a',
+                        'line-color': '#4fef4a',
+                        'border-color': '#4fef4a'
                     },
                     'trend-down': { // Stock Loss
-                        'background-color': 'red',
-                        'line-color': 'red',
-                        'border-color': 'red'
+                        'background-color': '#ef5439',
+                        'line-color': '#ef5439',
+                        'border-color': '#ef5439'
                     },
                     'trend-equal': { // No gain or loss
                         'background-color': 'blue',
@@ -116,6 +132,11 @@ export class ZingStockChartComponent implements OnInit {
                     'transform': {
                         'type': 'date',
                         'all': '%g:%i'
+                    },
+                    'item': {
+                        'font-color': '#f7f7f7',
+                        'font-size': '11px',
+                        'font-family': 'Roboto',
                     }
                 },
                 'scroll-x': {},
@@ -133,7 +154,7 @@ export class ZingStockChartComponent implements OnInit {
                     }
                 ]
             },
-            height: 275,
+            height: 300,
             width: '100%'
         }];
     }
