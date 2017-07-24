@@ -41,13 +41,14 @@ class TransferReceivedEvent(object):
         )
 
 
+# TODO factor out, we don't really need the received timestamp,
 class TransferReceipt(object):
 
-    def __init__(self, sender, amount, identifier, timestamp_):
+    def __init__(self, sender, amount, identifier, received_timestamp):
         self.sender = sender
         self.amount = amount
         self.identifier = identifier
-        self.timestamp = timestamp_
+        self.timestamp = received_timestamp
 
     def __repr__(self):
         return "{}<sender={}, amount={}, identifier={}, timestamp={}>".format(
@@ -85,7 +86,6 @@ class Trader(object):
             result_async.set(False)
         return result_async
 
-    @make_async
     def transfer(self, self_address, target_address, amount, identifier):
         transfer_received_event = TransferReceivedEvent(sender=self_address, amount=amount, identifier=identifier)
         # for this mock-implementation:
@@ -95,8 +95,12 @@ class Trader(object):
         except KeyError:
             log_tglobal.debug('No listener found for incoming transfer: target_address={}>'.format(pex(target_address)))
             return False
-        # even if we don't raise a key error here, the 'transfer' will only properly go through,
-        # when a TransferReceivedListener (for CS-specific task) and the balance_update_loop is listening for the events
+        # NOTE: even if we don't raise a key error here, the 'transfer' will only properly go through,
+        # when some TransferReceivedListener and a TraderClients BalanceUpdateTask is listening for the events
+        # for that address
+        #
+        # In a non-Mocked scenario (with raiden) we expect to get a success notifcation, so we know if the transfer
+        # went through or not
         for listener in listeners:
             address, event_queue_async, transform = listener
             event = transfer_received_event
@@ -106,6 +110,10 @@ class Trader(object):
             if transformed_event is not None:
                 event_queue_async.put(transformed_event)
         return True
+
+    @make_async
+    def transfer_async(self, self_address, target_address, amount, identifier):
+        return self.transfer(self_address, target_address, amount, identifier)
 
     def listen_for_events(self, address, transform=None):
         event_queue_async = Queue()
@@ -181,17 +189,22 @@ class TraderClientMock(object):
             self.base_amount += base_amount
             self.counter_amount -= counter_amount
 
-    @make_async
     def transfer(self, target_address, amount, identifier):
+        # type: (str, (int, long), (int, long)) -> bool
+
         if not self.commitment_balance >= amount:
             # insufficient funds
             return False
-        transfer_result_async = self.trader.transfer(self.address, target_address, amount, identifier)
-        successful = transfer_result_async.get()
-        if successful:
+        successful = self.trader.transfer(self.address, target_address, amount, identifier)
+        if successful is True:
             self.commitment_balance -= amount
-            log.debug('{} transferred {} to {} for identifier {}'.format(self, amount, pex(target_address), identifier))
+            log.debug('{} transferred {} to {} for pex(id): {}'.format(self, amount, pex(target_address), pex(identifier)))
         return successful
+
+    @make_async
+    def transfer_async(self, target_address, amount, identifier):
+        # type: (str, int, int) -> AsyncResult
+        return self.transfer(target_address, amount, identifier)
 
     def listen_for_events(self, transform=None):
         # comply with interface, just forward to singleton trader
@@ -249,7 +262,14 @@ class EventListener(object):
 
 class TransferReceivedListener(EventListener):
 
+    def __init__(self, trader_client, sender=None):
+        self.sender = sender
+        super(TransferReceivedListener, self).__init__(trader_client)
+
     def _transform(self, event):
+        if self.sender is not None:
+            if event.sender != self.sender:
+                return None
         if isinstance(event, TransferReceivedEvent):
             # transform event into receipt, with additional timestamp
             receipt = TransferReceipt(event.sender, event.amount, event.identifier, timestamp.time())

@@ -71,7 +71,7 @@ def test_transfer(trader_client1, trader_client2):
     received_listener.start()
 
     assert trader_client2.commitment_balance == 10
-    result1 = trader_client1.transfer(trader_client2.address, amount, identifier)
+    result1 = trader_client1.transfer_async(trader_client2.address, amount, identifier)
     gevent.sleep(0.1)
 
     assert result1
