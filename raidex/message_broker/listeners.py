@@ -115,10 +115,18 @@ class SwapExecutionListener(MessageListener):
         return message
 
 
-class CommitmentListener(MessageListener):
+class TakerCommitmentListener(MessageListener):
 
     def _transform(self, message):
-        if not isinstance(message, messages.Commitment):
+        if not isinstance(message, messages.TakerCommitment):
+            return None
+        return message
+
+
+class MakerCommitmentListener(MessageListener):
+
+    def _transform(self, message):
+        if not isinstance(message, messages.MakerCommitment):
             return None
         return message
 

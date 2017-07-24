@@ -240,7 +240,7 @@ class SwapOffer(RLPHashable):
         )
 
 
-class Commitment(Signed):
+class MakerCommitment(Signed):
     """A `Commitment` announces the commitment service, that a maker or taker wants to engage in the
     offer with the `offer_id`. `offer_hash`, `timeout` should match the later published `Offer`; the
     `amount` is the amount of tokens that will be sent via `raiden` in a following transfer.
@@ -269,7 +269,39 @@ class Commitment(Signed):
     ] + Signed.fields
 
     def __init__(self, offer_id, offer_hash, timeout, amount, signature=''):
-        super(Commitment, self).__init__(offer_id, offer_hash, timeout, amount, signature)
+        super(MakerCommitment, self).__init__(offer_id, offer_hash, timeout, amount, signature)
+
+
+class TakerCommitment(Signed):
+    """A `Commitment` announces the commitment service, that a maker or taker wants to engage in the
+    offer with the `offer_id`. `offer_hash`, `timeout` should match the later published `Offer`; the
+    `amount` is the amount of tokens that will be sent via `raiden` in a following transfer.
+
+    Process note: the raiden transfer to fulfill the commitment should use the `offer_id` as an identifier.
+
+    Data:
+        offer_id = offer_id
+        offer_hash = sha3(offer)
+        timeout = int256 <unix timestamp (ms) for the end of the offers validity>
+        amount = int256 <value of tokens in the commitment-service's commitment currency>
+
+    Broadcast:
+        {
+            "msg": "commitment",
+            "version": 1,
+            "data": rlp([offer_id, offer_hash, timeout, amount])
+        }
+    """
+
+    fields = [
+        ('offer_id', int256), # FIXME we should reference Swaps with the offer_hash!
+        ('offer_hash', hash32),
+        ('timeout', int256),
+        ('amount', int256),
+    ] + Signed.fields
+
+    def __init__(self, offer_id, offer_hash, timeout, amount, signature=''):
+        super(TakerCommitment, self).__init__(offer_id, offer_hash, timeout, amount, signature)
 
 
 class OfferTaken(Signed):
@@ -341,7 +373,7 @@ class ProvenOffer(Signed):
     """
     fields = [
         ('offer', SwapOffer),
-        ('commitment', Commitment),
+        ('commitment', MakerCommitment),
         ('commitment_proof', CommitmentProof),
     ] + Signed.fields
 
@@ -366,7 +398,7 @@ class ProvenCommitment(Signed):
         }
     """
     fields = [
-        ('commitment', Commitment),
+        ('commitment', TakerCommitment),
         ('commitment_proof', CommitmentProof),
     ] + Signed.fields
 
@@ -459,11 +491,11 @@ class SwapCompleted(SwapExecution):
         super(SwapCompleted, self).__init__(offer_id, timestamp, signature)
 
 msg_types_map = dict(
-        ping=Ping,
-        pong=Pong,
         offer=SwapOffer,
-        market_offer=ProvenOffer,
-        commitment=Commitment,
+        proven_offer=ProvenOffer,
+        proven_commitment=ProvenCommitment,
+        taker_commitment=TakerCommitment,
+        maker_commitment=MakerCommitment,
         commitment_proof=CommitmentProof,
         commitment_service=CommitmentServiceAdvertisement,
         swap_executed=SwapExecution,
