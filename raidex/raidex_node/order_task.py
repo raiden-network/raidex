@@ -142,6 +142,7 @@ class LimitOrderTask(gevent.Greenlet):
                       timestamp.time_plus(self.offer_lifetime))  # TODO generate better offer id
         task = MakerExchangeTask(offer, self.address, self.commitment_service, self.message_broker, self.trader)
         task.start()
+        # TODO: catch OfferIdentifierCollision and recreate offer, if offerid already being processed
         self.running_exchange_tasks.append(task)
         return task
 

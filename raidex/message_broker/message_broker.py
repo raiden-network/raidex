@@ -19,6 +19,10 @@ class MessageBroker(object):
         # this is not always harmful but can help debugging
         if not queues:
             log.debug('DEBUG-CODE: no listener waiting on topic {}, msg={}'.format(pex(topic), message))
+            # XXX: in the mock implementation we know if someone is listening or not,
+            # even if it's a broadcasting scheme but in real life we don't know that
+            # TODO: use direct communication without message-broker later on
+            return False
         for listener in queues:
             topic, message_queue_async, transform = listener
             transformed_message = message

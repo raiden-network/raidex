@@ -12,3 +12,5 @@ enum34
 # TODO move to develop requirements later on
 noise
 flask_cors
+transitions
+pytest-mock

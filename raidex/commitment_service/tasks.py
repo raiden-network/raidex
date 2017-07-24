@@ -1,64 +1,165 @@
+import gevent
+
+from ethereum import slogging
 from raidex import messages
-from raidex.commitment_service.client import log
+from raidex.utils import pex
+
+from raidex.commitment_service.swap import SwapFactory
 from raidex.raidex_node.listener_tasks import ListenerTask
-from raidex.tests.utils import float_isclose
+from raidex.raidex_node.trader.trader import TransferReceipt
+from raidex.raidex_node.trader.trader import TransferReceivedListener
+from raidex.message_broker.listeners import TakerCommitmentListener, MakerCommitmentListener, SwapExecutionListener
+
+log = slogging.get_logger('commitment_service')
+log_swaps = slogging.get_logger('commitment_service.asset_swaps')
+log_messaging = slogging.get_logger('commitment_service.messaging')
+log_refunds = slogging.get_logger('commitment_service.refunds')
+log_trader = slogging.get_logger('commitment_service.trader')
 
 
-class CommitmentProofTask(ListenerTask):
-    def __init__(self, commitment_proofs_dict, commitment_proof_listener):
-        self.commitment_proofs = commitment_proofs_dict
-        super(CommitmentProofTask, self).__init__(commitment_proof_listener)
+class QueueListenerTask(gevent.Greenlet):
+    def __init__(self, queue):
+        self.queue = queue
+        gevent.Greenlet.__init__(self)
+
+    def _run(self):
+        while True:
+            data = self.queue.get()
+            self.process(data)
 
     def process(self, data):
-        commitment_proof = data
-        log.debug('Received commitment proof {}'.format(commitment_proof))
-        assert isinstance(commitment_proof, messages.CommitmentProof)
-
-        async_result = self.commitment_proofs.get(commitment_proof.commitment_sig)
-        if async_result:
-            async_result.set(commitment_proof)
-        else:
-            # we should be waiting on the commitment-proof!
-            # assume non-malicious actors:
-            # if we receive a proof we are not waiting on, there is something wrong
-            log.debug('Received unexpected commitment proof {}'.format(commitment_proof))
+        raise NotImplementedError
 
 
-class RefundReceivedTask(ListenerTask):
-
-    def __init__(self, cs_address, fee_rate, commitments_dict, commitment_proofs_dict,
-                 transfer_received_listener):
-        self.commitments = commitments_dict
-        self.commitment_proofs = commitment_proofs_dict
-        self.transfer_received_listener = transfer_received_listener
-        self.commitment_service_address = cs_address
+class RefundTask(QueueListenerTask):
+    def __init__(self, trader_client, refund_queue, fee_rate=None):
+        self.refund_queue = refund_queue
+        self.trader_client = trader_client
         self.fee_rate = fee_rate
-        super(RefundReceivedTask, self).__init__(transfer_received_listener)
+        super(RefundTask, self).__init__(refund_queue)
 
     def process(self, data):
-        receipt = data
-        try:
-            commitment = self.commitments[receipt.identifier]
-        except KeyError:
-            # we're not waiting for this refund
-            log.debug("Received unexpected Refund: {}".format(receipt))
-            return
-        # assert internals
-        assert receipt.identifier == commitment.offer_id
-        if not receipt.sender == self.commitment_service_address:
-            log.debug("Received expected refund-id from unexpected sender")
-            # do nothing and keep the money
-            return
+        refund = data
+        amount = refund.receipt.amount
+        print(amount, self.fee_rate, refund.claim_fee)
+        if self.fee_rate is not None and refund.claim_fee is True:
+            amount -= amount * self.fee_rate
+        transfer_async_result = self.trader_client.transfer_async(refund.receipt.sender, amount,
+                                                                  refund.receipt.identifier)
 
-        commitment_minus_fee = commitment.amount - commitment.amount * self.fee_rate
-        if not float_isclose(commitment.amount, receipt.amount) or float_isclose(receipt.amount, commitment_minus_fee):
-            log.debug("Received refund that didn't match expected amount")
-            # if the refund doesn't comply with the expected amount, do nothing and keep the money
-            return
+        def get_and_requeue(async_result, refund_, queue):
+            # FIXME this could block a greenlet forever, leaving the refund in nirvana
+            success = async_result.get()
+            if success is True:
+                log_trader.debug('Refund successful {}'.format(refund_))
+            else:
+                queue.put(refund_)
+                log_trader.debug('Refunding failed for {}, retrying'.format(refund_))
 
-        async_result = self.commitment_proofs.get(commitment.signature)
-        if async_result:
-            async_result.set(None)
-            log.debug("Refund received: {}".format(receipt))
+        # spawn so that we can process the next refunds in the queue
+        gevent.spawn(get_and_requeue, transfer_async_result, refund, self.refund_queue)
 
-            del self.commitments[receipt.identifier]
+
+class MessageSenderTask(QueueListenerTask):
+
+    def __init__(self, message_broker, message_queue, sign_func):
+        self.message_broker = message_broker
+        self._sign_func = sign_func
+        super(MessageSenderTask, self).__init__(message_queue)
+
+    def process(self, data):
+        msg, recipient = data
+        self._sign_func(msg)
+        # FIXME make async
+        # recipient == None is indicating a broadcast
+        if recipient is None:
+            success = self.message_broker.broadcast(msg)
+            if success is True:
+                log_messaging.debug('Broadcast successful: {}'.format(msg))
+        else:
+            success = self.message_broker.send(topic=recipient, message=msg)
+            if success:
+                log_messaging.debug('Sending successful: {} // recipient={}'.format(msg, pex(recipient)))
+
+
+class TransferReceivedTask(ListenerTask):
+
+    def __init__(self, swaps, trader_client):
+        self.swaps = swaps
+        super(TransferReceivedTask, self).__init__(TransferReceivedListener(trader_client))
+
+    def process(self, data):
+        transfer_receipt = data
+        if not hasattr(transfer_receipt, 'identifier'):
+            raise ValueError()
+        if not isinstance(transfer_receipt, TransferReceipt):
+            raise ValueError()
+
+        offer_id = transfer_receipt.identifier
+        swap = self.swaps.get(offer_id)
+
+        if swap is not None:
+            swap.hand_transfer_receipt(transfer_receipt)
+        else:
+            #TODO
+            # refund
+            pass
+
+
+class TakerCommitmentTask(ListenerTask):
+
+    def __init__(self, swaps, message_broker, self_address):
+        self.swaps = swaps
+        super(TakerCommitmentTask, self).__init__(TakerCommitmentListener(message_broker, topic=self_address))
+
+    def process(self, data):
+        taker_commitment_msg = data
+        if not hasattr(taker_commitment_msg, 'offer_id'):
+            raise ValueError()
+        if not isinstance(taker_commitment_msg, messages.TakerCommitment):
+            raise ValueError()
+        offer_id = taker_commitment_msg.offer_id
+        swap = self.swaps.get(offer_id)
+
+        if swap is not None:
+            swap.hand_taker_commitment_msg(taker_commitment_msg)
+
+
+class MakerCommitmentTask(ListenerTask):
+
+    def __init__(self, swaps, refund_queue, message_queue, message_broker, self_address):
+        self.factory = SwapFactory(swaps, refund_queue, message_queue)
+        super(MakerCommitmentTask, self).__init__(MakerCommitmentListener(message_broker, topic=self_address))
+
+    def process(self, data):
+        maker_commitment_msg = data
+        if not hasattr(maker_commitment_msg, 'offer_id'):
+            raise ValueError()
+        if not isinstance(maker_commitment_msg, messages.MakerCommitment):
+            raise ValueError()
+
+        offer_id = maker_commitment_msg.offer_id
+
+        swap = self.factory.make_swap(offer_id)
+
+        if swap is not None:
+            swap.hand_maker_commitment_msg(maker_commitment_msg)
+
+
+class SwapExecutionTask(ListenerTask):
+
+    def __init__(self, swaps, message_broker, self_address):
+        self.swaps = swaps
+        super(SwapExecutionTask, self).__init__(SwapExecutionListener(message_broker, topic=self_address))
+
+    def process(self, data):
+        swap_execution_msg = data
+        if not hasattr(swap_execution_msg, 'offer_id'):
+            raise ValueError()
+        if not isinstance(swap_execution_msg, messages.SwapExecution):
+            raise ValueError()
+
+        offer_id = swap_execution_msg.offer_id
+        swap = self.swaps.get(offer_id)
+        if swap is not None:
+            swap.hand_swap_execution_msg(swap_execution_msg)

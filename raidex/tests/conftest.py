@@ -38,7 +38,7 @@ def assets():
 @pytest.fixture()
 def accounts():
     Account = namedtuple("Account", "privatekey address")
-    private_keys = [generate_random_privkey() for _ in range(3)]
+    private_keys = [generate_random_privkey() for _ in range(4)]
     return [Account(privkey, privtoaddr(privkey)) for privkey in private_keys]
 
 
