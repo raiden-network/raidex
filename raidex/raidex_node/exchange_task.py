@@ -40,7 +40,7 @@ class MakerExchangeTask(gevent.Greenlet):
             self.message_broker.broadcast(proven_offer)
             taker_address = taker_listener.get()
             log.debug('Found taker, execute swap of {}'.format(pex(self.offer.offer_id)))
-            status = self.trader.exchange_async(self.offer.type_, self.offer.base_amount, self.offer.counter_amount,
+            status = self.trader.exchange_async(self.offer.type, self.offer.base_amount, self.offer.counter_amount,
                                                 taker_address, self.offer.offer_id).get()
             if status:
                 log.debug('Swap of {} done'.format(pex(self.offer.offer_id)))
@@ -87,7 +87,7 @@ class TakerExchangeTask(gevent.Greenlet):
             if proven_commitment is None:
                 log.debug('No proven commitment received for {}'.format(pex(self.offer.offer_id)))
                 return False
-            status_async = self.trader.expect_exchange_async(self.offer.type_, self.offer.base_amount,
+            status_async = self.trader.expect_exchange_async(self.offer.type, self.offer.base_amount,
                                                              self.offer.counter_amount, self.offer.maker_address,
                                                              self.offer.offer_id)
             switch_context()  # give async function chance to execute

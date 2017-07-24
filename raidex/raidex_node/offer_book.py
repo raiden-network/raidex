@@ -29,7 +29,7 @@ class Offer(object):
 
     Represents an Offer from the Broadcast.
     the broadcasted offer_message stores absolute information (bid_token, ask_token, bid_amount, ask_amount)
-    the Offer stores it's information relative to it's market (type_,  price)
+    the Offer stores it's information relative to it's market (type,  price)
 
 
     Internally we work with relative values because:
@@ -53,7 +53,7 @@ class Offer(object):
         assert base_amount > 0
         assert counter_amount > 0
         self.offer_id = offer_id
-        self.type_ = type_
+        self.type = type_
         self.base_amount = base_amount
         self.counter_amount = counter_amount
         self.timeout = timeout
@@ -72,7 +72,7 @@ class Offer(object):
 
     def __repr__(self):
         return "Offer<pex(id)={} amount={} price={} type={}>".format(
-                pex(self.offer_id), self.amount, self.price, self.type_)
+                pex(self.offer_id), self.amount, self.price, self.type)
 
 
 class OfferView(object):
@@ -130,10 +130,10 @@ class OfferBook(object):
         self.tasks = dict()
 
     def insert_offer(self, offer):
-        assert isinstance(offer.type_, OfferType)
-        if offer.type_ is OfferType.BUY:
+        assert isinstance(offer.type, OfferType)
+        if offer.type is OfferType.BUY:
             self.buys.add_offer(offer)
-        elif offer.type_ is OfferType.SELL:
+        elif offer.type is OfferType.SELL:
             self.sells.add_offer(offer)
         else:
             raise Exception('unsupported offer-type')
