@@ -12,8 +12,8 @@ from raidex.raidex_node.offer_book import OfferBook, Offer
 from listener_tasks import OfferBookTask, OfferTakenTask, SwapCompletedTask
 from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.raidex_node.trades import TradesView
-from raidex.commitment_service.client import CommitmentServiceClient
-from raidex.commitment_service.mock import CommitmentServiceClientMock, CommitmentServiceGlobal
+from raidex.raidex_node.commitment_service.client import CommitmentServiceClient
+from raidex.raidex_node.commitment_service.mock import CommitmentServiceClientMock, CommitmentServiceGlobal
 from raidex.raidex_node.trader.trader import TraderClientMock, Trader
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.utils import timestamp

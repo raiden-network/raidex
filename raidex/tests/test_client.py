@@ -9,7 +9,7 @@ from raidex.raidex_node.listener_tasks import OfferBookTask, SwapCompletedTask, 
 from raidex.utils import timestamp
 from raidex.utils import get_market_from_asset_pair
 from raidex.message_broker.message_broker import MessageBroker
-from raidex.commitment_service.mock import CommitmentServiceClientMock
+from raidex.raidex_node.commitment_service.mock import CommitmentServiceClientMock
 from raidex.raidex_node.trades import TradesView
 from raidex.signing import Signer
 

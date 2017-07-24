@@ -44,18 +44,13 @@ class Swap(object):
             return True
 
 
-# FIXME: evaluate if it makes sense to have a mock that implements some of the CS-internals
-# Until then: use the NonFailingCommitmentServiceGlobal to be shure..
 class CommitmentServiceGlobal(object):
     """
-    Serves as the brain of the CS-Server, that keeps track of all the reported swaps.
-    There is some Taker/Maker matchmaking logic included, so that one offer can be taken
-    only once, and the swap completed can only be broadcasted when it was reported as
-    swap executed by both parties.
+    Serves as the brain of the CS-Server, that keeps track of all the reported swaps
     """
     def __init__(self, signer=None):
         if signer is None:
-            signer = Signer.random()
+            signer = Signer()
         self.signer = signer
         self.swaps = {}
 
@@ -63,24 +58,24 @@ class CommitmentServiceGlobal(object):
     def address(self):
         return self.signer.address
 
-    def make_offer(self, cs_instance, offer_id):
+    def make_offer(self, commitment_service_client, offer_id):
         if offer_id in self.swaps:
             return False
-        self.swaps[offer_id] = Swap(cs_instance)
+        self.swaps[offer_id] = Swap(commitment_service_client)
         return True
 
-    def try_take_offer(self, cs_instance, offer_id):
+    def try_take_offer(self, commitment_service_client, offer_id):
         swap = self.swaps.get(offer_id)
         if swap is None:
             return False
-        success = swap.try_take(cs_instance)
+        success = swap.try_take(commitment_service_client)
         return success
 
-    def report_swap_executed(self, cs_instance, offer_id):
+    def report_swap_executed(self, commitment_service_client, offer_id):
         swap = self.swaps.get(offer_id)
         if swap is None:
             return False
-        success = swap.report_executed(cs_instance)
+        success = swap.report_executed(commitment_service_client)
         return success
 
     def swap_is_completed(self, offer_id):
@@ -111,13 +106,13 @@ class NonFailingCommitmentServiceGlobal(object):
     def address(self):
         return self.signer.address
 
-    def make_offer(self, cs_instance, offer_id):
+    def make_offer(self, commitment_service_client, offer_id):
         return True
 
-    def try_take_offer(self, cs_instance, offer_id):
+    def try_take_offer(self, commitment_service_client, offer_id):
         return True
 
-    def report_swap_executed(self, cs_instance, offer_id):
+    def report_swap_executed(self, commitment_service_client, offer_id):
         return True
 
     def swap_is_completed(self, offer_id):
@@ -131,13 +126,13 @@ class CommitmentServiceClientMock(object):
     At the moment just creates the messages that you would get for a proper commitment.
     Every raidex node has its own with the same key
     """
-    _cs_global = NonFailingCommitmentServiceGlobal()
+    _commitment_service_global = NonFailingCommitmentServiceGlobal()
 
-    def __init__(self, node_signer, token_pair, message_broker, fee_rate=0.1, cs_global=None):
-        if cs_global is not None:
-            self._cs_global = cs_global
-        self._cs_sign = self._cs_global.signer.sign
-        self.commitment_service_address = self._cs_global.address
+    def __init__(self, node_signer, token_pair, message_broker, fee_rate=0.1, commitment_service_global=None):
+        if commitment_service_global is not None:
+            self._commitment_service_global = commitment_service_global
+        self._global_sign = self._commitment_service_global.signer.sign
+        self.commitment_service_address = self._commitment_service_global.address
         self.node_address = node_signer.address
         self.token_pair = token_pair
         self._sign = node_signer.sign
@@ -147,55 +142,54 @@ class CommitmentServiceClientMock(object):
     def maker_commit_async(self, offer):
         # type: (Offer) -> AsyncResult
         result = AsyncResult()
-        success = self._cs_global.make_offer(self, offer.offer_id)
+        success = self._commitment_service_global.make_offer(self, offer.offer_id)
         if success is False:
             result.set(None)
             return result
-        offermsg = self.create_offer_msg(offer)
-        # self._sign(offermsg)
-        commitment = messages.Commitment(offer.offer_id, offermsg.hash, offer.timeout, 42)
-        self._sign(commitment)
+        offer_msg = self.create_offer_msg(offer)
+        commitment_msg = messages.MakerCommitment(offer.offer_id, offer_msg.hash, offer.timeout, 42)
+        self._sign(commitment_msg)
 
-        commitment_proof = messages.CommitmentProof(commitment.signature)
-        self._cs_sign(commitment_proof)
-        proven_offer = messages.ProvenOffer(offermsg, commitment, commitment_proof)
-        self._sign(proven_offer)
-        result.set(proven_offer)
+        commitment_proof_msg = messages.CommitmentProof(commitment_msg.signature)
+        self._global_sign(commitment_proof_msg)
+        proven_offer_msg = messages.ProvenOffer(offer_msg, commitment_msg, commitment_proof_msg)
+        self._sign(proven_offer_msg)
+        result.set(proven_offer_msg)
         return result
 
     def taker_commit_async(self, offer):
         # type: (Offer) -> AsyncResult
         result = AsyncResult()
-        success = self._cs_global.try_take_offer(self, offer.offer_id)
+        success = self._commitment_service_global.try_take_offer(self, offer.offer_id)
         if success is False:
             result.set(None)
             return result
-        offermsg = self.create_offer_msg(offer)
-        commitment = messages.Commitment(offer.offer_id, offermsg.hash, offer.timeout, 42)
-        self._sign(commitment)
-        commitment_proof = messages.CommitmentProof(commitment.signature)
-        self._cs_sign(commitment_proof)
-        proven_commitment = messages.ProvenCommitment(commitment, commitment_proof)
-        self._sign(proven_commitment)
-        result.set(proven_commitment)
+        offer_msg = self.create_offer_msg(offer)
+        commitment_msg = messages.TakerCommitment(offer.offer_id, offer_msg.hash, offer.timeout, 42)
+        self._sign(commitment_msg)
+        commitment_proof_msg = messages.CommitmentProof(commitment_msg.signature)
+        self._global_sign(commitment_proof_msg)
+        proven_commitment_msg = messages.ProvenCommitment(commitment_msg, commitment_proof_msg)
+        self._sign(proven_commitment_msg)
+        result.set(proven_commitment_msg)
         self.message_broker.broadcast(self.create_taken(offer.offer_id))
         return result
 
     def create_taken(self, offer_id):
         # type: (int) -> OfferTaken
-        msg = messages.OfferTaken(offer_id)
-        self._cs_sign(msg)
-        return msg
+        offer_taken_msg = messages.OfferTaken(offer_id)
+        self._global_sign(offer_taken_msg)
+        return offer_taken_msg
 
     def create_swap_completed(self, offer_id):
         # type: (int) -> SwapCompleted
-        msg = messages.SwapCompleted(offer_id, timestamp.time())
-        self._cs_sign(msg)
-        return msg
+        swap_completed_msg = messages.SwapCompleted(offer_id, timestamp.time())
+        self._global_sign(swap_completed_msg)
+        return swap_completed_msg
 
     def create_offer_msg(self, offer):
         # type: (Offer) -> OfferMsg
-        if offer.type_ == OfferType.SELL:
+        if offer.type == OfferType.SELL:
             return messages.SwapOffer(self.token_pair.counter_token, offer.counter_amount, self.token_pair.base_token,
                                       offer.base_amount, offer.offer_id, offer.timeout)
         else:
@@ -204,10 +198,10 @@ class CommitmentServiceClientMock(object):
 
     def report_swap_executed(self, offer_id):
         # type: (int) -> None
-        success = self._cs_global.report_swap_executed(self, offer_id)
-        if success is True and self._cs_global.swap_is_completed(offer_id):
-            swap_completed = self.create_swap_completed(offer_id)
-            self.message_broker.broadcast(swap_completed)
+        success = self._commitment_service_global.report_swap_executed(self, offer_id)
+        if success is True and self._commitment_service_global.swap_is_completed(offer_id):
+            swap_completed_msg = self.create_swap_completed(offer_id)
+            self.message_broker.broadcast(swap_completed_msg)
 
     def start(self):
         # in order to provide the same interface as the client.CommitmentService

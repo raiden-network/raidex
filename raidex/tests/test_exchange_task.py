@@ -1,6 +1,6 @@
 import pytest
 from raidex.utils import timestamp
-from raidex.commitment_service.mock import CommitmentServiceClientMock, NonFailingCommitmentServiceGlobal
+from raidex.raidex_node.commitment_service.mock import CommitmentServiceClientMock, NonFailingCommitmentServiceGlobal
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.raidex_node.exchange_task import MakerExchangeTask, TakerExchangeTask
 from raidex.raidex_node.offer_book import Offer, OfferType
@@ -27,13 +27,13 @@ def cs_global():
 @pytest.fixture()
 def commitment_service_maker(accounts, message_broker, cs_global, token_pair):
     signer = Signer(accounts[0].privatekey)
-    return CommitmentServiceClientMock(signer, token_pair, message_broker, cs_global=cs_global)
+    return CommitmentServiceClientMock(signer, token_pair, message_broker, commitment_service_global=cs_global)
 
 
 @pytest.fixture()
 def commitment_service_taker(accounts, message_broker, cs_global, token_pair):
     signer = Signer(accounts[1].privatekey)
-    return CommitmentServiceClientMock(signer, token_pair, message_broker, cs_global=cs_global)
+    return CommitmentServiceClientMock(signer, token_pair, message_broker, commitment_service_global=cs_global)
 
 
 @pytest.fixture()

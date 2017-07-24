@@ -3,7 +3,7 @@ import pytest
 from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.raidex_node.trader.trader import TraderClientMock
-from raidex.commitment_service.mock import CommitmentServiceClientMock, NonFailingCommitmentServiceGlobal
+from raidex.raidex_node.commitment_service.mock import CommitmentServiceClientMock, NonFailingCommitmentServiceGlobal
 from raidex.raidex_node.offer_book import OfferBook, OfferType, Offer
 from raidex.raidex_node.trades import TradesView
 from raidex.raidex_node.listener_tasks import OfferBookTask, OfferTakenTask, SwapCompletedTask
@@ -38,13 +38,13 @@ def cs_global():
 @pytest.fixture()
 def commitment_service(accounts, message_broker, cs_global, token_pair):
     signer = Signer(accounts[0].privatekey)
-    return CommitmentServiceClientMock(signer, token_pair, message_broker, cs_global=cs_global)
+    return CommitmentServiceClientMock(signer, token_pair, message_broker, commitment_service_global=cs_global)
 
 
 @pytest.fixture()
 def commitment_service2(accounts, message_broker, cs_global, token_pair):
     signer = Signer(accounts[1].privatekey)
-    return CommitmentServiceClientMock(signer, token_pair, message_broker, cs_global=cs_global)
+    return CommitmentServiceClientMock(signer, token_pair, message_broker, commitment_service_global=cs_global)
 
 
 @pytest.fixture()
