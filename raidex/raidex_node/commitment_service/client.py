@@ -105,10 +105,10 @@ class CommitmentServiceClient(object):
             return messages.SwapOffer(self.token_pair.base_token, offer.base_amount, self.token_pair.counter_token,
                                       offer.counter_amount, offer.offer_id, offer.timeout)
 
-    def maker_commit(self, offer, commitment_amount):
+    def maker_commit(self, offer):
         # type: (Offer) -> (messages.ProvenOffer, None)
 
-        assert offer.commitment_amount is None
+        commitment_amount = offer.commitment_amount
         offer_msg = self.create_offer_msg(offer)
         commitment_msg = self._create_maker_commitment_msg(offer, offer_msg.hash, commitment_amount)
         self.commitments[offer.offer_id] = commitment_msg
@@ -147,8 +147,8 @@ class CommitmentServiceClient(object):
         return proven_offer_msg
 
     @make_async
-    def maker_commit_async(self, offer, commitment_amount):
-        return self.maker_commit(offer, commitment_amount)
+    def maker_commit_async(self, offer):
+        return self.maker_commit(offer)
 
     def taker_commit(self, offer):
         # type: (Offer) -> (messages.ProvenCommitment, None)

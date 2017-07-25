@@ -53,7 +53,8 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     [node.start() for node in raidex_nodes]
     maker_node = raidex_nodes[0]
     taker_node = raidex_nodes[1]
-    failed_taker = raidex_nodes[2]
+
+    commitment_amount = 5
 
     # this are the initial commitment balances
     initial_maker_balance = maker_node.trader_client.commitment_balance
@@ -61,12 +62,13 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     initial_commitment_service_balance = commitment_service.trader_client.commitment_balance
 
     offer_id = generate_random_offer_id()
-    offer = Offer(OfferType.SELL, 100, 1000, offer_id=offer_id, timeout=timestamp.time_plus(seconds=0, milliseconds=500))
-    maker_commit_result = maker_node.commitment_service.maker_commit_async(offer, commitment_amount=5)
+    offer = Offer(OfferType.SELL, 100, 1000, offer_id=offer_id, commitment_amount=commitment_amount,
+                  timeout=timestamp.time_plus(seconds=0, milliseconds=500))
+    maker_commit_result = maker_node.commitment_service.maker_commit_async(offer)
     gevent.sleep(0.01)
 
-    assert commitment_service.trader_client.commitment_balance == initial_commitment_service_balance + 5
-    assert maker_node.trader_client.commitment_balance == initial_maker_balance - 5
+    assert commitment_service.trader_client.commitment_balance == initial_commitment_service_balance + commitment_amount
+    assert maker_node.trader_client.commitment_balance == initial_maker_balance - commitment_amount
 
     commitment_service_balance = commitment_service.trader_client.commitment_balance
 
@@ -89,8 +91,8 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     taker_commit_result = taker_node.commitment_service.taker_commit_async(taker_internal_offer)
     gevent.sleep(0.01)
 
-    assert commitment_service.trader_client.commitment_balance == commitment_service_balance + 5
-    assert taker_node.trader_client.commitment_balance == initial_taker_balance - 5
+    assert commitment_service.trader_client.commitment_balance == commitment_service_balance + commitment_amount
+    assert taker_node.trader_client.commitment_balance == initial_taker_balance - commitment_amount
 
     taker_proven_commitment = taker_commit_result.get()
     assert isinstance(taker_proven_commitment, messages.ProvenCommitment)
@@ -107,10 +109,11 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
 
     # Check the earnings and refunds
     assert float_isclose(maker_node.trader_client.commitment_balance,
-                         initial_maker_balance - (5 * commitment_service.fee_rate))
+                         initial_maker_balance - (commitment_amount * commitment_service.fee_rate))
     assert float_isclose(taker_node.trader_client.commitment_balance,
-                         initial_taker_balance - (5 * commitment_service.fee_rate))
-    assert float_isclose(commitment_service.trader_client.commitment_balance, 10 + 2 * (5 * commitment_service.fee_rate))
+                         initial_taker_balance - (commitment_amount * commitment_service.fee_rate))
+    assert float_isclose(commitment_service.trader_client.commitment_balance, 2 * commitment_amount
+                         + 2 * (commitment_amount * commitment_service.fee_rate))
 
     # overall balance shouldn't have changed
     assert maker_node.trader_client.commitment_balance + taker_node.trader_client.commitment_balance \

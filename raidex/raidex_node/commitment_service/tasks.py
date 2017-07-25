@@ -5,7 +5,7 @@ from raidex.raidex_node.listener_tasks import ListenerTask
 from raidex.tests.utils import float_isclose
 
 
-log = slogging.get_logger('node.commitment_service')
+log = slogging.get_logger('node.commitment_service.tasks')
 
 
 class CommitmentProofTask(ListenerTask):

@@ -10,13 +10,15 @@ from raidex.message_broker.message_broker import Listener
 import raidex.messages as messages
 
 
-class MessageBroker(object):
+class MessageBrokerClient(object):
     """Handles the communication with other nodes"""
 
-    def __init__(self):
-        pass
+    def __init__(self, host='localhost', port=5000):
+        self.port = port
+        self.host = host
+        self.apiUrl = 'http://{}:{}/api'.format(host, port)
 
-    def send(self, topic, message):
+    def _send(self, topic, message):
         """Sends a message to all listeners of the topic
 
         Args:
@@ -25,7 +27,7 @@ class MessageBroker(object):
 
         """
         body = {'message': encode(message)}
-        result = requests.post('http://localhost:5000/api/topics/{0}'.format(topic), json=body)
+        result = requests.post('{0}/topics/{1}'.format(self.apiUrl, topic), json=body)
         return result.json()['data']
 
     def listen_on(self, topic, transform=None):
@@ -46,7 +48,7 @@ class MessageBroker(object):
         listener = Listener(topic, message_queue_async, transform)
 
         def run():
-            r = requests.get('http://localhost:5000/api/topics/{0}'.format(topic), stream=True)
+            r = requests.get('{0}/topics/{1}'.format(self.apiUrl, topic), stream=True)
             for line in r.iter_lines():
                 # filter out keep-alive new lines
                 if line:

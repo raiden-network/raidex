@@ -95,7 +95,7 @@ class LimitOrderTask(gevent.Greenlet):
         else:
             raise ValueError('Unknown OfferType')
 
-        log.debug('Available offers: {}'.format(offers))
+        log.debug('Available offers: {}'.format(len(offers)))
 
         for offer in offers:
             if self.type_ is OfferType.SELL:

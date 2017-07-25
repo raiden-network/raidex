@@ -1,3 +1,5 @@
+from raidex.utils import pex
+
 class Refund(object):
 
     def __init__(self, receipt, priority, claim_fee):
@@ -17,3 +19,10 @@ class Refund(object):
             # higher priority: self < other
             return -1
         return 0
+
+    def __repr__(self):
+        return "{}<receipt={}, claim_fee={}>".format(
+            self.__class__.__name__,
+            pex(self.receipt),
+            self.claim_fee,
+        )

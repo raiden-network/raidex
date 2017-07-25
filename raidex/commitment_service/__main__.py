@@ -1,9 +1,12 @@
 import argparse
+
 from gevent.event import Event
 from ethereum import slogging
 
-from raidex_node.api.app import APIServer
-from raidex.raidex_node.raidex_node import RaidexNode
+from raidex.commitment_service.node import CommitmentService
+from raidex.message_broker.client import MessageBrokerClient
+from raidex.raidex_node.trader.client import TraderClient
+from raidex.signing import Signer
 
 slogging.configure(':DEBUG')
 
@@ -12,10 +15,6 @@ def main():
     stop_event = Event()
 
     parser = argparse.ArgumentParser()
-
-    parser.add_argument('--mock', action='store_true', help='Spawns mock offers to simulate trading activity"')
-    parser.add_argument("--api", action='store_true', help='Run the REST-API')
-    parser.add_argument("--api-port", type=int, help='Specify the port for the api, default is 5002', default=5002)
     parser.add_argument("--broker-host", type=str, help='Specify the host for the message broker, default is localhost',
                         default='localhost')
     parser.add_argument("--broker-port", type=int, help='Specify the port for the message broker, default is 5000',
@@ -27,16 +26,12 @@ def main():
 
     args = parser.parse_args()
 
-    node = RaidexNode.build_default_from_config(message_broker_host=args.broker_host,
-                                                message_broker_port=args.broker_port, trader_host=args.trader_host,
-                                                trader_port=args.trader_port, mock_trading_activity=args.mock)
-    node.start()
+    signer = Signer.from_seed('test')
+    commitment_service = CommitmentService(signer, MessageBrokerClient(host=args.broker_host, port=args.broker_port),
+                                           TraderClient(signer.address, host=args.trader_host, port=args.trader_port))
+    commitment_service.start()
 
-    if args.api is True:
-        api = APIServer('', args.api_port, node)
-        api.start()
-
-    stop_event.wait()  # runs forever
+    stop_event.wait()
 
 
 if __name__ == '__main__':

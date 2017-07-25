@@ -1,6 +1,7 @@
 import gevent
 from raidex.utils import timestamp, pex
 from ethereum import slogging
+from ethereum.utils import encode_hex
 from raidex.message_broker.listeners import TakerListener
 from raidex.utils.gevent_helpers import switch_context
 
@@ -34,7 +35,7 @@ class MakerExchangeTask(gevent.Greenlet):
                 log.debug('No proven offer received for {}'.format(pex(self.offer.offer_id)))
                 return False
             log.debug('Wait for taker of {}'.format(pex(self.offer.offer_id)))
-            taker_listener = TakerListener(self.offer, self.message_broker, self.maker_address)
+            taker_listener = TakerListener(self.offer, self.message_broker, encode_hex(self.maker_address))
             taker_listener.start()
             log.debug('Broadcast proven_offer for {}'.format(pex(self.offer.offer_id)))
             self.message_broker.broadcast(proven_offer)
@@ -92,7 +93,7 @@ class TakerExchangeTask(gevent.Greenlet):
                                                              self.offer.offer_id)
             switch_context()  # give async function chance to execute
             log.debug('Send proven-commitment of {} to maker'.format(pex(self.offer.offer_id)))
-            self.message_broker.send(self.offer.maker_address, proven_commitment)
+            self.message_broker.send(encode_hex(self.offer.maker_address), proven_commitment)
             status = status_async.get()
             if status:
                 log.debug('Swap of {} done'.format(pex(self.offer.offer_id)))

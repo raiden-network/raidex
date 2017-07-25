@@ -11,7 +11,6 @@ from message_broker import MessageBroker
 from listeners import MessageListener
 
 
-
 app = Flask(__name__)
 message_broker = MessageBroker()
 
