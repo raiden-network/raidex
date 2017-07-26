@@ -3,7 +3,6 @@ import random
 
 from ethereum.utils import privtoaddr, sha3, big_endian_to_int
 from rlp.utils import decode_hex as rlp_decode_hex, encode_hex as rlp_encode_hex
-from raiden.utils import pex as rpex
 from raidex.exceptions import UntradableAssetPair
 
 ETHER_TOKEN_ADDRESS = privtoaddr(sha3('ether'))
@@ -26,7 +25,8 @@ def encode_hex(data):
 
 
 def pex(data):
-    return rpex(data)
+    return str(data).encode('hex')[:8]
+
 
 def get_market_from_asset_pair(asset_pair):
     """
