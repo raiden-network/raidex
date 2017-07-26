@@ -101,6 +101,9 @@ class TraderClient(object):
             raise ValueError('Unknown OfferType')
 
     @make_async
+    def transfer_async(self, target_address, amount, identifier):
+        return self.transfer(target_address, amount, identifier)
+
     def transfer(self, target_address, amount, identifier):
         """Makes a transfer, used for the commitments
 
@@ -118,6 +121,7 @@ class TraderClient(object):
                 'identifier': identifier}
 
         result = requests.post('{}/transfer'.format(self.apiUrl), json=body)
+        # FIXME data field not available on some errors..
         success = result.json()['data']
         if success is True:
             self.commitment_balance -= amount

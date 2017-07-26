@@ -52,7 +52,7 @@ def transfer():
     amount = request.json.get('amount')
     identifier = request.json.get('identifier')
     log.debug('transfer: ', amount=amount, self_address=self_address, target_address=target_address, identifier=identifier)
-    success = trader.transfer(self_address, target_address, amount, identifier).get()
+    success = trader.transfer(self_address, target_address, amount, identifier)
     return jsonify({'data': success})
 
 
