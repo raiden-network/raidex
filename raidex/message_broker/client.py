@@ -6,6 +6,8 @@ from gevent import Greenlet
 from gevent import monkey; monkey.patch_socket()
 from gevent.queue import Queue
 
+from ethereum.utils import encode_hex
+
 from raidex.message_broker.message_broker import Listener
 import raidex.messages as messages
 
@@ -17,6 +19,13 @@ class MessageBrokerClient(object):
         self.port = port
         self.host = host
         self.apiUrl = 'http://{}:{}/api'.format(host, port)
+
+    def send(self, topic, message):
+        # HACK, allow 'broadcast' as non-binary input, everything else should be
+        # binary data/ decoded addresses
+        if topic == 'broadcast':
+            return self.broadcast(message)
+        return self._send(encode_hex(topic), message)
 
     def _send(self, topic, message):
         """Sends a message to all listeners of the topic
@@ -31,6 +40,13 @@ class MessageBrokerClient(object):
         return result.json()['data']
 
     def listen_on(self, topic, transform=None):
+        # HACK, allow 'broadcast' as non-binary input, everything else should be
+        # binary data/ decoded addresses
+        if topic == 'broadcast':
+            return self.listen_on_broadcast(transform)
+        return self._listen_on(encode_hex(topic), transform)
+
+    def _listen_on(self, topic, transform=None):
         """Starts listening for new messages on this topic
 
         Args:
@@ -69,7 +85,7 @@ class MessageBrokerClient(object):
                 message (Union[str, messages.Signed]): the message to send
 
         """
-        self.send('broadcast', message)
+        self._send('broadcast', message)
 
     def listen_on_broadcast(self, transform=None):
         """Starts listening for new messages on broadcast
@@ -83,7 +99,7 @@ class MessageBrokerClient(object):
                 Listener: an object gathering all settings of this listener
 
                 """
-        return self.listen_on('broadcast', transform)
+        return self._listen_on('broadcast', transform)
 
     def stop_listen(self, listener):
         raise NotImplementedError

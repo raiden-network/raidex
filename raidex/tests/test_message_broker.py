@@ -8,6 +8,7 @@ def message_broker():
     return MessageBroker()
 
 
+# FIXME arbitrary str input doesn't reflect current intended usage of message_broker.listen_on()/ .send()
 def test_send(message_broker):
     listener = message_broker.listen_on('test1')
     message_broker.send('test1', 'testmessage')
@@ -15,6 +16,7 @@ def test_send(message_broker):
     assert message == 'testmessage', 'Did not receive the right message'
 
 
+# FIXME arbitrary str input doesn't reflect current intended usage of message_broker.listen_on()/ .send()
 def test_listen(message_broker):
 
     listener = message_broker.listen_on('test2')
@@ -34,6 +36,7 @@ def test_broadcast(message_broker):
     assert number_of_messages == 10, 'Did not broadcast to all listeners'
 
 
+# FIXME arbitrary str input doesn't reflect current intended usage of message_broker.listen_on()/ .send()
 def test_stop_listen(message_broker):
 
     listener = message_broker.listen_on('test1')
