@@ -2,7 +2,7 @@ import argparse
 from gevent.event import Event
 from ethereum import slogging
 
-from raidex_node.api.app import APIServer
+from raidex.raidex_node.api.app import APIServer
 from raidex.raidex_node.raidex_node import RaidexNode
 
 slogging.configure(':DEBUG')
