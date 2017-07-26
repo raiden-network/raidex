@@ -30,9 +30,10 @@ class CommitmentProofTask(ListenerTask):
 
 class RefundReceivedTask(ListenerTask):
 
-    def __init__(self, cs_address, fee_rate, commitments_dict, commitment_proofs_dict,
+    def __init__(self, cs_address, fee_rate, maker_commitments_dict, taker_commitments_dict, commitment_proofs_dict,
                  transfer_received_listener):
-        self.commitments = commitments_dict
+        self.maker_commitments = maker_commitments_dict
+        self.taker_commitments = taker_commitments_dict
         self.commitment_proofs = commitment_proofs_dict
         self.transfer_received_listener = transfer_received_listener
         self.commitment_service_address = cs_address
@@ -41,12 +42,15 @@ class RefundReceivedTask(ListenerTask):
 
     def process(self, data):
         receipt = data
-        try:
-            commitment = self.commitments[receipt.identifier]
-        except KeyError:
+        taker_commitment = self.taker_commitments.get(receipt.identifier)
+        maker_commtiment = self.maker_commitments.get(receipt.identifier)
+        found = [commitment for commitment in taker_commitment, maker_commtiment if commitment is not None]
+        if len(found) == 0:
             # we're not waiting for this refund
             log.debug("Received unexpected Refund: {}".format(receipt))
             return
+        commitment = found.pop()
+
         # assert internals
         assert receipt.identifier == commitment.offer_id
         if not receipt.sender == self.commitment_service_address:
@@ -60,6 +64,7 @@ class RefundReceivedTask(ListenerTask):
             # if the refund doesn't comply with the expected amount, do nothing and keep the money
             return
 
+        # FIXME signature should be different for MakerCommit/ TakerCommit
         async_result = self.commitment_proofs.get(commitment.signature)
         if async_result:
             async_result.set(None)

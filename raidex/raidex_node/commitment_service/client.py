@@ -38,12 +38,14 @@ class CommitmentServiceClient(object):
         self.message_broker = message_broker
         self._sign = signer.sign
         self.commitment_proofs = dict()  # commitment_sig -> (AsyncResult<messages.CommitmentProof, False)>
-        self.commitments = dict()  # offer_id -> commitment
+        self.taker_commitments = dict()  # offer_id -> commitment
+        self.maker_commitments = dict()  # offer_id -> commitment
 
     def start(self):
         RefundReceivedTask(self.commitment_service_address,
                            self.fee_rate,
-                           self.commitments,
+                           self.maker_commitments,
+                           self.taker_commitments,
                            self.commitment_proofs,
                            TransferReceivedListener(self.trader_client, sender=self.commitment_service_address)).start()
 
@@ -51,14 +53,14 @@ class CommitmentServiceClient(object):
                                                                             topic=self.node_address)).start()
 
     def _create_taker_commitment_msg(self, offer, offer_hash, commitment_amount):
-        if offer.offer_id in self.commitments:
+        if offer.offer_id in self.taker_commitments:
             raise OfferIdentifierCollision("This offer-id is still being processed")
         commitment_msg = messages.TakerCommitment(offer.offer_id, offer_hash, offer.timeout, commitment_amount)
         self._sign(commitment_msg)
         return commitment_msg
 
     def _create_maker_commitment_msg(self, offer, offer_hash, commitment_amount):
-        if offer.offer_id in self.commitments:
+        if offer.offer_id in self.maker_commitments:
             raise OfferIdentifierCollision("This offer-id is still being processed")
         commitment_msg = messages.MakerCommitment(offer.offer_id, offer_hash, offer.timeout, commitment_amount)
         self._sign(commitment_msg)
@@ -85,10 +87,12 @@ class CommitmentServiceClient(object):
     def _send_commitment_msg(self, commitment_msg):
         # type: (messages.TakerCommitment, messages.MakerCommitment) -> AsyncResult
 
-        self._send_message_to_commitment_service(commitment_msg)
-        commitment_proof_async_result = AsyncResult()
         if commitment_msg.signature in self.commitment_proofs:
             raise OfferIdentifierCollision()
+        self._send_message_to_commitment_service(commitment_msg)
+        commitment_proof_async_result = AsyncResult()
+        self.commitment_proofs[commitment_msg.signature] = commitment_proof_async_result
+
         return commitment_proof_async_result
 
     def _send_transfer(self, offer_id, commitment_amount):
@@ -111,7 +115,7 @@ class CommitmentServiceClient(object):
         commitment_amount = offer.commitment_amount
         offer_msg = self.create_offer_msg(offer)
         commitment_msg = self._create_maker_commitment_msg(offer, offer_msg.hash, commitment_amount)
-        self.commitments[offer.offer_id] = commitment_msg
+        self.maker_commitments[offer.offer_id] = commitment_msg
 
         try:
             commitment_proof_async_result = self._send_commitment_msg(commitment_msg)
@@ -120,7 +124,6 @@ class CommitmentServiceClient(object):
             log.debug('Message broker failed to send: {}'.format(commitment_msg))
             return None
 
-        self.commitment_proofs[commitment_msg.signature] = commitment_proof_async_result
 
         success = self._send_transfer(offer.offer_id, commitment_amount)
         if success is not True:
@@ -156,7 +159,7 @@ class CommitmentServiceClient(object):
         assert offer.commitment_amount is not None
         offer_msg = self.create_offer_msg(offer)
         commitment_msg = self._create_taker_commitment_msg(offer, offer_msg.hash, offer.commitment_amount)
-        self.commitments[offer.offer_id] = commitment_msg
+        self.taker_commitments[offer.offer_id] = commitment_msg
 
         try:
             commitment_proof_async_result = self._send_commitment_msg(commitment_msg)
