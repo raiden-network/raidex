@@ -54,7 +54,8 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'raidex = raidex.__main__:main'
+            'raidex = raidex.__main__:main',
+            'raidex-cservice = raidex.commitment_service.__main__:main'
         ]
     },
     include_package_data=True,
