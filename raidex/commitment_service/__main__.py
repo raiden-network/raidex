@@ -28,7 +28,8 @@ def main():
 
     signer = Signer.from_seed('test')
     commitment_service = CommitmentService(signer, MessageBrokerClient(host=args.broker_host, port=args.broker_port),
-                                           TraderClient(signer.address, host=args.trader_host, port=args.trader_port))
+                                           TraderClient(signer.address, host=args.trader_host, port=args.trader_port),
+                                           fee_rate=0.01)
     commitment_service.start()
 
     stop_event.wait()

@@ -1,90 +1,60 @@
-<div class="container-fluid">
-  <md-tab-group>
-    <md-tab label="Buy">
-      <h6>Submit Buy Orders</h6>
-      <form>
-        <table class="example-full-width" cellspacing="0">
-          <tr>
-            <td>
-              <md-input-container>
-                <input mdInput type="number" id="amount" name="amount"
-                       [(ngModel)]="buyOrder.amount" placeholder="Amount">
-              </md-input-container>
-            </td>
-            <td>
-                <div class="alert alert-success" id="buy_order_alert" *ngIf="tempBuyId">
-                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                      <span aria-hidden="true"><i class="material-icons">clear</i></span>
-                  </button>
-                  ID For your order
-                  <b>{{tempBuyId}}</b>
-                </div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <md-input-container>
-                <input mdInput type="number" id="price" name="price"
-                       [(ngModel)]="buyOrder.price" placeholder="Price">
-              </md-input-container>
-            </td>
-          </tr>
-        </table>
-        <button type="submit" class="btn btn-success" (click)="submitOrder('BUY')">Submit</button>
-      </form>
-    </md-tab>
-    <md-tab label="Sell">
-      <h6>Submit Sell Orders</h6>
-      <form>
-        <table class="example-full-width" cellspacing="0">
-          <tr>
-            <td>
-              <md-input-container>
-                <input mdInput type="number" id="amount" name="amount"
-                       [(ngModel)]="sellOrder.amount" placeholder="Amount">
-              </md-input-container>
-            </td>
-            <td>
-                <div class="alert alert-success" id="sell_order_alert" *ngIf="tempSellId">
-                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                      <span aria-hidden="true"><i class="material-icons">clear</i></span>
-                  </button>
-                  ID For your order
-                  <b>{{tempSellId}}</b>
-                </div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <md-input-container>
-                <input mdInput type="number" id="price" name="price"
-                       [(ngModel)]="sellOrder.price" placeholder="Price">
-              </md-input-container>
-            </td>
-          </tr>
-        </table>
-        <button type="submit" class="btn btn-success" (click)="submitOrder('SELL')">Submit</button>
-      </form>
-    </md-tab>
-    <md-tab label="Your Orders">
+<div class="container-fluid user">
+  <p-growl [value]="msgs"></p-growl>
+  <div class="row">
+    <button class="btn col-md-6" [ngClass]="(selectedType==='BUY')?'btn-success':'btn-white'"
+            (click)="selectType('BUY')">BUY</button>
+    <button class="btn col-md-6" [ngClass]="(selectedType==='SELL')?'btn-danger':'btn-white'"
+            (click)="selectType('SELL')">SELL</button>
+  </div>
+  <div class="row">
+    <form class="interaction-form">
+      <div *ngIf="(selectedType === 'BUY')">
+        <md-input-container class="full-width">
+          <span class="suffix" md-suffix>ETH</span>
+          <input mdInput type="number" id="amount" name="amount"
+          [(ngModel)]="buyOrder.amount" placeholder="Amount">
+        </md-input-container>
+        <md-input-container class="full-width">
+          <span class="suffix" md-suffix>USD</span>
+          <input mdInput type="number" id="price" name="price"
+          [(ngModel)]="buyOrder.price" placeholder="Price">
+        </md-input-container>
+        <button type="submit" class="btn btn-success col-md-12" (click)="submitOrder('BUY')">
+          PLACE BUY ORDER
+        </button>
+      </div>
+      <div *ngIf="(selectedType === 'SELL')">
+        <md-input-container class="full-width">
+          <span class="suffix" md-suffix>ETH</span>
+          <input mdInput type="number" id="amount" name="amount"
+                 [(ngModel)]="sellOrder.amount" placeholder="Amount">
+        </md-input-container>
+        <md-input-container class="full-width">
+          <span class="suffix" md-suffix>USD</span>
+          <input mdInput type="number" id="price" name="price"
+                 [(ngModel)]="sellOrder.price" placeholder="Price">
+        </md-input-container>
+        <button type="submit" class="btn btn-danger col-md-12" (click)="submitOrder('SELL')">
+          PLACE SELL ORDER
+        </button>
+      </div>
+    </form>
+  </div>
+  <div class="row top10">
+      <div>Open Orders</div>
       <div *ngIf="orderArray?.length > 0">
-      <p-dataTable  [value]="orderArray" [rows]="5" [paginator]="true" [pageLinks]="0" [(selection)]="selectedOrder" dataKey="order"
-      styleClass="borderless">
-        <p-column field="type" header="Type"
-        [style]="{'text-align': 'center'}"></p-column>
-        <p-column field="amount" header="Amount"
-        [style]="{'text-align': 'center'}"></p-column>
-        <p-column field="price" header="price"
-        [style]="{'text-align': 'center'}"></p-column>
-        <p-column field="filledAmount" header="FilledAmount"
-        [style]="{'text-align': 'center'}"></p-column>
-        <p-column [style]="{'width':'38px'}" selectionMode="single"></p-column>
+      <p-dataTable  [value]="orderArray" [rows]="8" [paginator]="true" [pageLinks]="0" [(selection)]="selectedOrder" dataKey="order"
+      styleClass="borderless" tableStyleClass="prime-table">
+        <p-column field="type" header="Type"></p-column>
+        <p-column field="amount" header="Amount"></p-column>
+        <p-column field="price" header="price"></p-column>
+        <p-column field="filledAmount" header="FilledAmount"></p-column>
+        <p-column [style]="{'width':'30px'}" selectionMode="single"></p-column>
       </p-dataTable>
       <button type="submit" class="btn btn-danger btn-xs" (click)="cancelOrder()">Cancel</button>
       </div>
       <div *ngIf="orderArray?.length == 0">
           You are yet to enter Orders
       </div>
-    </md-tab>
-  </md-tab-group>
+  </div>
 </div>

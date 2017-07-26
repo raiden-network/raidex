@@ -1,6 +1,7 @@
 from ethereum import slogging
 
 from raidex import messages
+from raidex.utils import pex
 from raidex.raidex_node.listener_tasks import ListenerTask
 from raidex.tests.utils import float_isclose
 
@@ -15,7 +16,7 @@ class CommitmentProofTask(ListenerTask):
 
     def process(self, data):
         commitment_proof = data
-        log.debug('Received commitment proof {}'.format(commitment_proof))
+        log.debug('Received commitment proof: {}'.format(commitment_proof))
         assert isinstance(commitment_proof, messages.CommitmentProof)
 
         async_result = self.commitment_proofs.get(commitment_proof.commitment_sig)
@@ -44,7 +45,7 @@ class RefundReceivedTask(ListenerTask):
         receipt = data
         taker_commitment = self.taker_commitments.get(receipt.identifier)
         maker_commtiment = self.maker_commitments.get(receipt.identifier)
-        found = [commitment for commitment in taker_commitment, maker_commtiment if commitment is not None]
+        found = [commitment for commitment in [taker_commitment, maker_commtiment] if commitment is not None]
         if len(found) == 0:
             # we're not waiting for this refund
             log.debug("Received unexpected Refund: {}".format(receipt))
@@ -59,15 +60,21 @@ class RefundReceivedTask(ListenerTask):
             return
 
         commitment_minus_fee = commitment.amount - commitment.amount * self.fee_rate
-        if not float_isclose(commitment.amount, receipt.amount) or float_isclose(receipt.amount, commitment_minus_fee):
+        if not float_isclose(receipt.amount, commitment_minus_fee) and not float_isclose(commitment.amount, receipt.amount):
+            print(commitment.amount, receipt.amount)
             log.debug("Received refund that didn't match expected amount")
-            # if the refund doesn't comply with the expected amount, do nothing and keep the money
-            return
 
-        # FIXME signature should be different for MakerCommit/ TakerCommit
         async_result = self.commitment_proofs.get(commitment.signature)
         if async_result:
-            async_result.set(None)
-            log.debug("Refund received: {}".format(receipt))
+            if async_result.ready():
+                assert isinstance(async_result.get_nowait(), messages.CommitmentProof)
+                log.debug("Refund received for pex(id) {} (proven): {}".format(pex(commitment.offer_id), receipt))
+            else:
+                log.debug("Refund received for pex(id) {} (unproven): {}".format(pex(commitment.offer_id), receipt))
 
-            del self.commitments[receipt.identifier]
+            async_result.set(None)
+
+            if isinstance(commitment, messages.MakerCommitment):
+                del self.maker_commitments[receipt.identifier]
+            if isinstance(commitment, messages.TakerCommitment):
+                del self.taker_commitments[receipt.identifier]

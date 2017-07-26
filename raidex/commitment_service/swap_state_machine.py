@@ -139,7 +139,7 @@ class SwapStateMachine(Machine):
     def __init__(self, swap, auto_spawn_timeout=True):
         # TODO evaluate if queued_transition is better
         super(SwapStateMachine, self).__init__(self, states=SWAP_BASE_STATES, initial=SWAP_INITIAL_STATE,
-                                               send_event=True, ignore_invalid_triggers=False)
+                                               send_event=True, ignore_invalid_triggers=True)
         self.taker_commitment_pool = dict()
         self.swap = swap
 
@@ -157,10 +157,11 @@ class SwapStateMachine(Machine):
         print(event)
         # gets called with every event call, even if it raised an error or the state-transition wasn't successful
         transfer_receipt = event_get_receipt_kwarg(event)
-        # success = event_get_success(event)
+        success = event_get_success(event)
 
         # refund every receipt that didn't successfully trigger a state change
-        self.swap.queue_refund(transfer_receipt, priority=1, claim_fee=False)
+        if success is False:
+            self.swap.queue_refund(transfer_receipt, priority=1, claim_fee=False)
 
     def set_terminated_state(self, event):
         self.swap.terminated_state = event.transition.source

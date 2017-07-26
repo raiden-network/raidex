@@ -3,6 +3,7 @@ from flask.views import MethodView
 
 from raidex.raidex_node.offer_book import OfferType
 
+
 # API-Resources - the json encoding and decoding is handled manually for simplicity and readability
 # Type-checking, encoding/decoding and error-responses are kept very basic
 
@@ -13,16 +14,16 @@ class Offers(MethodView):
         self.interface = interface
 
     def get(self):
-        offer_book = self.interface.offer_book
-        buys = list(offer_book.buys.values())
-        sells = list(offer_book.sells.values())
+        # the offers are sorted, with lowest price first
+        buys = self.interface.grouped_buys()
+        sells = self.interface.grouped_sells()
         dict_ = dict(
             data=dict(
                 buys=[
                     dict(
                         amount=offer.amount,
                         price=offer.price,
-                        timeout=offer.timeout
+                        timeout=offer.avg_timeout
                     ) for offer in buys
                 ],
 
@@ -30,7 +31,7 @@ class Offers(MethodView):
                     dict(
                         amount=offer.amount,
                         price=offer.price,
-                        timeout=offer.timeout
+                        timeout=offer.avg_timeout
                     ) for offer in sells
                 ],
             ),
@@ -39,19 +40,20 @@ class Offers(MethodView):
 
 
 class Trades(MethodView):
-
+    # NOTE if you query multiple times within a time-interval smaller than the timestamp-bucket,
+    # the amount of the trades will change when matching trades are added to that bucket
     def __init__(self, interface):
         self.interface = interface
 
     def get(self):
-        trades = list(self.interface.trades.values())
+        trades = self.interface.grouped_trades()
         dict_ = dict(
             data=[
                 dict(
                     timestamp=trade.timestamp,
-                    amount=trade.offer.amount,
-                    price=trade.offer.price,
-                    type=trade.offer.type.value
+                    amount=trade.amount,
+                    price=trade.price,
+                    type=trade.type.value
                 ) for trade in trades
             ]
         )
