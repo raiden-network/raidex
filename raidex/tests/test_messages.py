@@ -67,6 +67,23 @@ def test_signing(accounts):
     assert raised
 
 
+def test_commitment_signature_difference(accounts):
+    timeout = timestamp.time_plus(milliseconds=100)
+    c_maker = MakerCommitment(offer_id=10, offer_hash=sha3('offer id'), timeout=timeout,
+                              amount=10)
+    c_taker = TakerCommitment(offer_id=10, offer_hash=sha3('offer id'), timeout=timeout,
+                              amount=10)
+    c_maker.sign(accounts[0].privatekey)
+    c_taker.sign(accounts[0].privatekey)
+
+    assert c_maker.cmdid != c_taker.cmdid
+
+    #check hashes/signatures, should all be different because of cmdid
+    assert c_maker.signature != c_taker.signature
+    assert c_maker._hash_without_signature != c_taker._hash_without_signature
+    assert c_maker.hash != c_taker.hash
+
+
 def test_maker_commitments(assets, accounts):
     offer = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
     maker = accounts[0]

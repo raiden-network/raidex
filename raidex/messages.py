@@ -4,7 +4,7 @@ import base64
 import rlp
 from rlp.sedes import binary
 from ethereum.utils import (address, int256, hash32, sha3, big_endian_to_int, int32)
-from raiden.utils import pex
+from raidex.utils import pex
 from raiden.encoding.signing import recover_publickey
 from raiden.encoding.signing import sign as _sign
 from coincurve import PrivateKey
@@ -35,6 +35,8 @@ class RLPHashable(rlp.Serializable):
 
     _mutable = True
 
+    fields = [('cmdid', int32)]
+
     @property
     def hash(self):
         return sha3(rlp.encode(self))  # this was `cached=True`, but made the obj immutable e.g. on every comparison
@@ -64,7 +66,7 @@ class Signed(RLPHashable):
 
     _sender = ''
     # signature = ''
-    fields = [('signature', sig65)]
+    fields = [('signature', sig65)] + RLPHashable.fields
 
     # def __init__(self, sender=''):
     #     assert not sender or isaddress(sender)
@@ -112,84 +114,6 @@ class Signed(RLPHashable):
         return obj
 
 
-class Ping(Signed):
-    """
-        Data:
-        nonce = int256 <will get increased after every ping to the sender>
-
-    Broadcast:
-        {
-            "msg": "ping",
-            "version": 1,
-            "data": "rlp([nonce])" # CHECKME
-        }
-
-    """
-
-    fields = [
-        ('nonce', int256),
-    ] + Signed.fields
-
-    def __init__(self, nonce, signature=''):
-        super(Ping, self).__init__(nonce, signature)
-
-
-class Pong(Signed):
-    """
-    TODO: Should Pings be signed?
-        Data:
-        nonce = int256 <will get increased after every ping to the sender>
-
-    Broadcast:
-        {
-            "msg": "ping",
-            "version": 1,
-            "data": "rlp([nonce])" # CHECKME
-        }
-
-    """
-
-    fields = [
-        ('nonce', int256),
-    ] + Signed.fields
-
-    def __init__(self, nonce, signature=''):
-        super(Pong, self).__init__(nonce, signature)
-
-
-class Ack(RLPHashable):
-    """from raiden, TODO: validate
-        ACKs are not signed because attack vector can be mitigated (?)
-        echo is the hash of the original message
-
-    Data:
-        sender = address <raiden address of the acknowledgement's sender>
-        echo = hash32 <the message.hash of the message to be acknowledged>
-
-    Broadcast:
-        {
-            "msg": "ack",
-            "version": 1,
-            "data": "rlp([sender, echo])"
-        }
-    """
-    fields = [
-        ('sender', address),
-        ('echo', hash32)
-    ]
-
-    # checks if a given message is acknowledged by this ACK
-    def acknowledges(self, message):
-        assert isinstance(message, RLPHashable)
-        if message.hash == self.echo:
-            return True
-        else:
-            return False
-
-    def __init__(self, sender, echo):
-        super(Ack, self).__init__(sender, echo)
-
-
 class SwapOffer(RLPHashable):
     """An `SwapOffer` is the base for a `ProvenOffer`. Its `offer_id`, `hash` and `timeout` should be sent
     as a `Commitment` to a commitment service provider.
@@ -214,10 +138,11 @@ class SwapOffer(RLPHashable):
         ('bid_amount', int256),
         ('offer_id', int256),  # arbitrarily chosen by node, bestcase: randomly chosen
         ('timeout', int256),
-    ] + Signed.fields
+    ] + RLPHashable.fields
 
-    def __init__(self, ask_token, ask_amount, bid_token, bid_amount, offer_id, timeout, signature=''):
-        super(SwapOffer, self).__init__(ask_token, ask_amount, bid_token, bid_amount, offer_id, timeout, signature)
+    def __init__(self, ask_token, ask_amount, bid_token, bid_amount, offer_id, timeout, cmdid=None):
+        cmdid = get_cmdid_for_class(self.__class__)
+        super(SwapOffer, self).__init__(ask_token, ask_amount, bid_token, bid_amount, offer_id, timeout, cmdid)
 
     def timed_out(self, at=None):
         if at is None:
@@ -268,8 +193,9 @@ class MakerCommitment(Signed):
         ('amount', int256),
     ] + Signed.fields
 
-    def __init__(self, offer_id, offer_hash, timeout, amount, signature=''):
-        super(MakerCommitment, self).__init__(offer_id, offer_hash, timeout, amount, signature)
+    def __init__(self, offer_id, offer_hash, timeout, amount, signature='', cmdid=None):
+        cmdid = get_cmdid_for_class(self.__class__)
+        super(MakerCommitment, self).__init__(offer_id, offer_hash, timeout, amount, signature, cmdid)
 
 
 class TakerCommitment(Signed):
@@ -300,8 +226,9 @@ class TakerCommitment(Signed):
         ('amount', int256),
     ] + Signed.fields
 
-    def __init__(self, offer_id, offer_hash, timeout, amount, signature=''):
-        super(TakerCommitment, self).__init__(offer_id, offer_hash, timeout, amount, signature)
+    def __init__(self, offer_id, offer_hash, timeout, amount, signature='', cmdid=None):
+        cmdid = get_cmdid_for_class(self.__class__)
+        super(TakerCommitment, self).__init__(offer_id, offer_hash, timeout, amount, signature, cmdid)
 
 
 class OfferTaken(Signed):
@@ -325,8 +252,9 @@ class OfferTaken(Signed):
         ('offer_id', int256),
     ] + Signed.fields
 
-    def __init__(self, offer_id, signature=''):
-        super(OfferTaken, self).__init__(offer_id, signature)
+    def __init__(self, offer_id, signature='', cmdid=None):
+        cmdid = get_cmdid_for_class(self.__class__)
+        super(OfferTaken, self).__init__(offer_id, signature, cmdid)
 
 
 class CommitmentProof(Signed):
@@ -347,8 +275,9 @@ class CommitmentProof(Signed):
         ('commitment_sig', sig65),
     ] + Signed.fields
 
-    def __init__(self, commitment_sig, signature=''):
-        super(CommitmentProof, self).__init__(commitment_sig, signature)
+    def __init__(self, commitment_sig, signature='', cmdid=None):
+        cmdid = get_cmdid_for_class(self.__class__)
+        super(CommitmentProof, self).__init__(commitment_sig, signature, cmdid)
 
 
 class ProvenOffer(Signed):
@@ -377,8 +306,9 @@ class ProvenOffer(Signed):
         ('commitment_proof', CommitmentProof),
     ] + Signed.fields
 
-    def __init__(self, offer, commitment, commitment_proof, signature=''):
-        super(ProvenOffer, self).__init__(offer, commitment, commitment_proof, signature)
+    def __init__(self, offer, commitment, commitment_proof, signature='', cmdid=None):
+        cmdid = get_cmdid_for_class(self.__class__)
+        super(ProvenOffer, self).__init__(offer, commitment, commitment_proof, signature, cmdid)
 
 
 class ProvenCommitment(Signed):
@@ -402,8 +332,9 @@ class ProvenCommitment(Signed):
         ('commitment_proof', CommitmentProof),
     ] + Signed.fields
 
-    def __init__(self, commitment, commitment_proof, signature=''):
-        super(ProvenCommitment, self).__init__(commitment, commitment_proof, signature)
+    def __init__(self, commitment, commitment_proof, signature='', cmdid=None):
+        cmdid = get_cmdid_for_class(self.__class__)
+        super(ProvenCommitment, self).__init__(commitment, commitment_proof, signature, cmdid)
 
 
 class CommitmentServiceAdvertisement(Signed):
@@ -442,8 +373,9 @@ class CommitmentServiceAdvertisement(Signed):
         ('fee_rate', int32),
     ] + Signed.fields
 
-    def __init__(self, address, commitment_asset, fee_rate, signature=''):
-        super(CommitmentServiceAdvertisement, self).__init__(address, commitment_asset, fee_rate, signature)
+    def __init__(self, address, commitment_asset, fee_rate, signature='', cmdid=None):
+        cmdid = get_cmdid_for_class(self.__class__)
+        super(CommitmentServiceAdvertisement, self).__init__(address, commitment_asset, fee_rate, signature, cmdid)
 
 
 class SwapExecution(Signed):
@@ -467,8 +399,9 @@ class SwapExecution(Signed):
         ('timestamp', int256),
     ] + Signed.fields
 
-    def __init__(self, offer_id, timestamp, signature=''):
-        super(SwapExecution, self).__init__(offer_id, timestamp, signature)
+    def __init__(self, offer_id, timestamp, signature='', cmdid=None):
+        cmdid = get_cmdid_for_class(self.__class__)
+        super(SwapExecution, self).__init__(offer_id, timestamp, signature, cmdid)
 
 
 class SwapCompleted(SwapExecution):
@@ -487,8 +420,9 @@ class SwapCompleted(SwapExecution):
         }
     """
 
-    def __init__(self, offer_id, timestamp, signature=''):
-        super(SwapCompleted, self).__init__(offer_id, timestamp, signature)
+    def __init__(self, offer_id, timestamp, signature='', cmdid=None):
+        cmdid = get_cmdid_for_class(self.__class__)
+        super(SwapCompleted, self).__init__(offer_id, timestamp, signature, cmdid)
 
 msg_types_map = dict(
         offer=SwapOffer,
@@ -504,6 +438,26 @@ msg_types_map = dict(
         )
 
 types_msg_map = {value: key for key, value in msg_types_map.items()}
+
+msg_cmdid_map = dict(
+        offer=1,
+        proven_offer=2,
+        proven_commitment=3,
+        taker_commitment=4,
+        maker_commitment=5,
+        commitment_proof=6,
+        commitment_service=7,
+        swap_executed=8,
+        swap_completed=9,
+        offer_taken=10,
+        )
+
+
+def get_cmdid_for_class(klass):
+    msg = types_msg_map[klass]
+    cmdid = msg_cmdid_map[msg]
+    return cmdid
+
 
 
 class Envelope(object):
