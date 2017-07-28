@@ -51,9 +51,9 @@ class Trades(MethodView):
             data=[
                 dict(
                     timestamp=trade.timestamp,
-                    amount=trade.amount,
-                    price=trade.price,
-                    type=trade.type_.value
+                    amount=trade.offer.amount,
+                    price=trade.offer.price,
+                    type=trade.offer.type_.name
                 ) for trade in trades
             ]
         )
@@ -88,9 +88,23 @@ class LimitOrders(MethodView):
         return jsonify(dict_)
 
     def get(self):
-        # TODO
+        orders = list(self.interface.limit_orders())
         dict_ = dict(
-            data=[]
+            data=[
+                dict(
+                    amount=order.amount,
+                    price=order.price,
+                    order_id=order.order_id,
+                    type=order.type_.name,
+                    filledAmount=order.amount_traded,
+                ) for order in orders
+            ]
         )
         return jsonify(dict_)
 
+    def delete(self, order_id):
+        self.interface.cancel_limit_order(order_id)
+        dict_ = dict(
+            data=order_id
+        )
+        return jsonify(dict_)
