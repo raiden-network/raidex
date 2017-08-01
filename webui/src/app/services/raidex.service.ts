@@ -24,7 +24,7 @@ export class RaidexService {
     }
 
     public getTrades(): Observable<Array<Trade>> {
-        return TimerObservable.create(0, 10000)
+        return TimerObservable.create(0, 1000)
             .flatMap(() => this.http.get(`${this.api}/markets/dummy/trades`)
                 .map((response) => {
                     let data = response.json().data;
@@ -39,7 +39,7 @@ export class RaidexService {
     }
 
     public getOffers(): Observable<any> {
-        return TimerObservable.create(0, 10000)
+        return TimerObservable.create(0, 1000)
             .flatMap(() => this.http.get(`${this.api}/markets/dummy/offers`)
                 .map((response) => {
                     let data = response.json().data;
