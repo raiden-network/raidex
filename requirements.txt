@@ -5,9 +5,9 @@ devp2p
 werkzeug
 ethereum
 gevent==1.1.0
-raiden
+#raiden
 coincurve
-rlp==0.4.6  # FIXME only temporary to remove installation failures
+rlp  # FIXME only temporary to remove installation failures
 enum34
 # TODO move to develop requirements later on
 noise
