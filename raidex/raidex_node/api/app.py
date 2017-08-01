@@ -24,5 +24,5 @@ class APIServer:
         bbp_v0_1 = v0_1.build_blueprint(self.raidex_node)
         self.app.register_blueprint(bbp_v0_1)
         # run the rest-server
-        rest_server = WSGIServer((self.address, self.port), self.app)
+        rest_server = WSGIServer((self.address, self.port), self.app, log=None)
         rest_server.start()
