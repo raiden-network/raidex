@@ -13,8 +13,8 @@ Offer = namedtuple("Offer", "amount, price, timeout type")
 def test_same_offer_grouping():
     price_group_precision = 3
 
-    offer1 = Offer(100, 0.12349, timeout=timestamp.time_plus(1), type_=OfferType.BUY)
-    offer2 = Offer(100, 0.12341, timeout=timestamp.time_plus(1), type_=OfferType.BUY)
+    offer1 = Offer(100, 0.12349, timestamp.time_plus(1), OfferType.BUY)
+    offer2 = Offer(100, 0.12341, timestamp.time_plus(1), OfferType.BUY)
 
     # test group_offers
     grouped = group_offers([offer1, offer2], price_group_precision=price_group_precision)
@@ -24,8 +24,8 @@ def test_same_offer_grouping():
 def test_different_offer_grouping():
     price_group_precision = 3
 
-    offer1 = Offer(100, 0.123501, timeout=timestamp.time_plus(1), type_=OfferType.BUY)
-    offer2 = Offer(100, 0.123401, timeout=timestamp.time_plus(1), type_=OfferType.BUY)
+    offer1 = Offer(100, 0.123501, timestamp.time_plus(1), OfferType.BUY)
+    offer2 = Offer(100, 0.123401, timestamp.time_plus(1), OfferType.BUY)
 
     # test group_offers
     grouped = group_offers([offer1, offer2], price_group_precision=price_group_precision)
@@ -36,14 +36,14 @@ def test_trade_gouping():
     price_group_precision = 3
     time_group_interval_ms = 100
 
-    offer1 = Offer(100, 0.12349, timeout=timestamp.time_plus(1), type_=OfferType.BUY)
-    offer2 = Offer(100, 0.12501, timeout=timestamp.time_plus(1), type_=OfferType.SELL)
+    offer1 = Offer(100, 0.12349, timestamp.time_plus(1), OfferType.BUY)
+    offer2 = Offer(100, 0.12501, timestamp.time_plus(1), OfferType.SELL)
 
     # don't work with epoch based timestamps here
-    trade1 = Trade(offer1, timestamp=100) # should be in 100 ms bucket
-    trade2 = Trade(offer1, timestamp=199) # should be in 100 ms bucket, gets grouped with trade1
-    trade3 = Trade(offer1, timestamp=201) # should be in 200 ms bucket (next highest bucket)
-    trade4 = Trade(offer2, timestamp=201) # should be in 200 ms bucket, but not grouped with trade3
+    trade1 = Trade(offer1, timestamp=100)  # should be in 100 ms bucket
+    trade2 = Trade(offer1, timestamp=199)  # should be in 100 ms bucket, gets grouped with trade1
+    trade3 = Trade(offer1, timestamp=201)  # should be in 200 ms bucket (next highest bucket)
+    trade4 = Trade(offer2, timestamp=201)  # should be in 200 ms bucket, but not grouped with trade3
 
     grouped = group_trades([trade1, trade2, trade3, trade4], price_group_precision, time_group_interval_ms)
     assert len(grouped) == 3
