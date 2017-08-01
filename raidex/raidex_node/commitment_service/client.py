@@ -114,7 +114,10 @@ class CommitmentServiceClient(object):
 
         commitment_amount = offer.commitment_amount
         offer_msg = self.create_offer_msg(offer)
-        commitment_msg = self._create_maker_commitment_msg(offer, offer_msg.hash, commitment_amount)
+        try:
+            commitment_msg = self._create_maker_commitment_msg(offer, offer_msg.hash, commitment_amount)
+        except OfferIdentifierCollision:
+            return None
         self.maker_commitments[offer.offer_id] = commitment_msg
 
         try:
@@ -158,7 +161,11 @@ class CommitmentServiceClient(object):
 
         assert offer.commitment_amount is not None
         offer_msg = self.create_offer_msg(offer)
-        commitment_msg = self._create_taker_commitment_msg(offer, offer_msg.hash, offer.commitment_amount)
+
+        try:
+            commitment_msg = self._create_taker_commitment_msg(offer, offer_msg.hash, offer.commitment_amount)
+        except OfferIdentifierCollision:
+            return None
         self.taker_commitments[offer.offer_id] = commitment_msg
 
         try:
