@@ -57,7 +57,8 @@ class RaidexNode(object):
         log.info('Placing limit order')
         order_task = LimitOrderTask(self.offer_book, self._trades, type_, amount, price, self.address,
                                     self.commitment_service,
-                                    self.message_broker, self.trader_client).start()
+                                    self.message_broker, self.trader_client)
+        order_task.start()
         order_id = self.next_order_id
         self.order_tasks_by_id[order_id] = order_task
         self.next_order_id += 1
@@ -117,5 +118,3 @@ class RaidexNode(object):
 
     def grouped_trades(self):
         return group_trades(self.trades())
-
-

@@ -4,7 +4,9 @@ from ethereum import slogging
 
 from raidex.raidex_node.api.app import APIServer
 from raidex.raidex_node.raidex_node import RaidexNode
+from raidex.raidex_node.bots import LiquidityProvider, RandomWalker
 
+#slogging.configure(':INFO,bots.random_walker:DEBUG,bots.liquidity_provider:DEBUG')
 slogging.configure(':DEBUG')
 
 
@@ -24,6 +26,7 @@ def main():
                         default='localhost')
     parser.add_argument("--trader-port", type=int, help='Specify the port for the trader mock, default is 5001',
                         default=5001)
+    parser.add_argument('--bots', action='store_true', help='Start a set of trading bots')
 
     args = parser.parse_args()
 
@@ -35,6 +38,12 @@ def main():
     if args.api is True:
         api = APIServer('', args.api_port, node)
         api.start()
+
+    if args.bots:
+        liquidity_provider = LiquidityProvider(node, 100)
+        random_walker = RandomWalker(node, int(10 * 1e18))
+        liquidity_provider.start()
+        random_walker.start()
 
     stop_event.wait()  # runs forever
 
