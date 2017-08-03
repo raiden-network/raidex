@@ -51,9 +51,9 @@ class Trades(MethodView):
             data=[
                 dict(
                     timestamp=trade.timestamp,
-                    amount=trade.offer.amount,
-                    price=trade.offer.price,
-                    type=trade.offer.type_.name
+                    amount=trade.amount,
+                    price=trade.price,
+                    type=trade.type_.name
                 ) for trade in trades
             ]
         )
@@ -97,6 +97,7 @@ class LimitOrders(MethodView):
                     order_id=order.order_id,
                     type=order.type_.name,
                     filledAmount=order.amount_traded,
+                    canceled=order.canceled
                 ) for order in orders
             ]
         )

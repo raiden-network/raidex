@@ -84,6 +84,7 @@ export class RaidexService {
                     format.formatCurrency(elem.price, 2),
                     elem.order_id,
                     format.formatCurrency(elem.filledAmount),
+                    elem.canceled
                 ));
             }))
             .retryWhen((errors) => this.printErrorAndRetry('Could not get Limitorders', errors));
