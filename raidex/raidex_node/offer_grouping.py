@@ -89,6 +89,10 @@ class GroupedTrade(object):
     def price_int(self):
         return int(self.price_decimal.to_integral())
 
+    @property
+    def price(self):
+        return float(self._price)
+
     def add(self, amount):
         self.amount += amount
 

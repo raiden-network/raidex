@@ -24,7 +24,7 @@ export class RaidexService {
     }
 
     public getTrades(): Observable<Array<Trade>> {
-        return TimerObservable.create(0, 10000)
+        return TimerObservable.create(0, 1000)
             .flatMap(() => this.http.get(`${this.api}/markets/dummy/trades`)
                 .map((response) => {
                     let data = response.json().data;
@@ -39,7 +39,7 @@ export class RaidexService {
     }
 
     public getOffers(): Observable<any> {
-        return TimerObservable.create(0, 10000)
+        return TimerObservable.create(0, 1000)
             .flatMap(() => this.http.get(`${this.api}/markets/dummy/offers`)
                 .map((response) => {
                     let data = response.json().data;
@@ -74,8 +74,20 @@ export class RaidexService {
     }
 
     public getLimitOrders() {
-        return this.http.get(`${this.api}/markets/dummy/orders/limit`).
-            map((response) => response.json().data).catch(this.handleError);
+        return TimerObservable.create(0, 1000)
+            .flatMap(() => this.http.get(`${this.api}/markets/dummy/orders/limit`).
+            map((response) => {
+                let data = response.json().data;
+                return data.map((elem) => new Order(
+                    elem.type,
+                    format.formatCurrency(elem.amount),
+                    format.formatCurrency(elem.price, 2),
+                    elem.order_id,
+                    format.formatCurrency(elem.filledAmount),
+                    elem.canceled
+                ));
+            }))
+            .retryWhen((errors) => this.printErrorAndRetry('Could not get Limitorders', errors));
     }
 
     public cancelLimitOrders(limitOrder: Order) {
@@ -90,7 +102,6 @@ export class RaidexService {
     }
 
     private handleError(error: Response | any) {
-      // In a real world app, you might use a remote logging infrastructure
       let errMsg: string;
       if (error instanceof Response) {
           const body = error.json() || '';

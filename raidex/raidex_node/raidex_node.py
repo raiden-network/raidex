@@ -54,13 +54,22 @@ class RaidexNode(object):
 
     def limit_order(self, type_, amount, price):
         log.info('Placing limit order')
-        order_task = LimitOrderTask(self.offer_book, self._trades, type_, amount, price, self.address,
-                                    self.commitment_service,
-                                    self.message_broker, self.trader).start()
         order_id = self.next_order_id
+        order_task = LimitOrderTask(self.offer_book, self._trades, type_, amount, price, order_id, self.address,
+                                    self.commitment_service,
+                                    self.message_broker, self.trader)
+        order_task.link(lambda x: self.order_tasks_by_id.pop(order_id))
+        order_task.start()
         self.order_tasks_by_id[order_id] = order_task
         self.next_order_id += 1
         return order_id
+
+    def limit_orders(self):
+        return self.order_tasks_by_id.values()
+
+    def cancel_limit_order(self, order_id):
+        log.info('Cancel limit order')
+        self.order_tasks_by_id[order_id].cancel()
 
     def print_offers(self):
         print(self.offer_book)

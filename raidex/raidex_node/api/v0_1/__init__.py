@@ -9,7 +9,9 @@ def build_blueprint(raidex):
 
     blueprint.add_url_rule('/trades', view_func=Trades.as_view('trades', raidex))
     blueprint.add_url_rule('/offers', view_func=Offers.as_view('offers', raidex))
-    blueprint.add_url_rule('/orders/limit', view_func=LimitOrders.as_view('limit_orders', raidex))
+    blueprint.add_url_rule('/orders/limit', view_func=LimitOrders.as_view('limit_orders', raidex), methods=['GET', 'POST'])
+    blueprint.add_url_rule('/orders/limit/<int:order_id>', view_func=LimitOrders.as_view('limit_orders_id', raidex),
+                           methods=['DELETE'])
 
     blueprint.register_error_handler(400, bad_request)
     blueprint.register_error_handler(404, not_found)
