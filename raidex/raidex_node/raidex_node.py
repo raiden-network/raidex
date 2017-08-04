@@ -118,3 +118,20 @@ class RaidexNode(object):
 
     def grouped_trades(self):
         return group_trades(self.trades())
+
+    def market_price(self, trade_count=5):
+        """Calculate a market price based on the most recent trades.
+
+        :param trade_count: number of redent trades to consider
+        :returns: a market price, or `None` if no trades have happened yet
+        """
+        trades = []
+        for trade in self.trades():
+            trades.append(trade)
+        trades = trades[-1:-trade_count - 1:-1]
+        if len(trades) == 0:
+            return None
+        else:
+            assert sorted(trades, key=lambda t: -t.timestamp) == trades  # newest should be first
+            total_volume = sum([t.offer.amount for t in trades])
+            return sum([t.offer.price * t.offer.amount for t in trades]) / total_volume

@@ -1,4 +1,5 @@
 import argparse
+import gevent
 from gevent.event import Event
 from ethereum import slogging
 
@@ -6,7 +7,6 @@ from raidex.raidex_node.api.app import APIServer
 from raidex.raidex_node.raidex_node import RaidexNode
 from raidex.raidex_node.bots import LiquidityProvider, RandomWalker
 
-#slogging.configure(':INFO,bots.random_walker:DEBUG,bots.liquidity_provider:DEBUG')
 slogging.configure(':DEBUG')
 
 
@@ -40,9 +40,11 @@ def main():
         api.start()
 
     if args.bots:
-        liquidity_provider = LiquidityProvider(node, 100)
-        random_walker = RandomWalker(node, int(10 * 1e18))
+        initial_price = 100.
+        liquidity_provider = LiquidityProvider(node, initial_price)
+        random_walker = RandomWalker(node, initial_price)
         liquidity_provider.start()
+        gevent.sleep(5)  # give liquidity provider head start
         random_walker.start()
 
     stop_event.wait()  # runs forever

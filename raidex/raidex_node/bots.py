@@ -1,6 +1,6 @@
 import math
 import random
-import logging
+from itertools import chain, repeat
 from gevent import Greenlet, sleep
 from gevent.event import Event
 from ethereum import slogging
@@ -14,145 +14,131 @@ log = slogging.get_logger('bots')
 class RandomWalker(Greenlet):
     """Bot that randomly buys or sells some amount."""
 
-    def __init__(self, raidex_node, average_volume):
+    def __init__(self, raidex_node, initial_price):
         """
         Args:
             raidex_node: the node that is used to place the orders
         """
         Greenlet.__init__(self)
         self.raidex_node = raidex_node
-        self.average_volume = average_volume
+        self.initial_price = initial_price
+        self.average_amount = int(10e18)  # average order amount
+        self.average_frequency = 0.2  # trades per second
+        self.urgency = 0.02  # percentag bot is willing to overpay to get its order filled quicker
         self.log = slogging.get_logger('bots.random_walker')
 
     def _run(self):
         while True:
             # counter intuitive: type_ is offer type to take (so SELL means buy something)
             type_ = random.choice([OfferType.BUY, OfferType.SELL])
-            #type_ = OfferType.SELL
-            offer_book = self.raidex_node.offer_book
-            try:
-                if type_ is OfferType.BUY:
-                    view = offer_book.buys
-                    _, offer_id = next(reversed(list(offer for offer in view)))
-                else:
-                    view = offer_book.sells
-                    _, offer_id = next(offer for offer in view)
-            except StopIteration:
-                self.log.warning('did not find offer', type=type_.name)
-            else:
-                offer = self.raidex_node.offer_book.get_offer_by_id(offer_id)
-                self.log.info('taking offer', type=type_.name, amount=offer.amount / 1e18,
-                              price=offer.price)
-                self.raidex_node.take_offer(offer_id)
-            sleep(1)
+            market_price = self.raidex_node.market_price() or self.initial_price
+            offset = market_price * self.urgency
+            price = market_price + offset if type_ is OfferType.BUY else market_price - offset
+            amount = self.average_amount
+            self.log.info('placing order', type=type_.name, amount=amount * 1e-18,
+                          market_price=market_price, price=price)
+            self.raidex_node.limit_order(type_, amount, price)
+            sleep(1. / self.average_frequency)
 
 
 class LiquidityProvider(Greenlet):
-    """Bot that sets both buy and sell orders around a given price.
 
-    This provides liquidity for other market participants and fills the market depth graph. It has
-    an indefinite amount of funds.
-    """
-
-    def __init__(self, raidex_node, price):
-        """
-        Args:
-            raidex_node: the node that is used to place the offers
-            price: the initial price
-        """
+    def __init__(self, raidex_node, initial_price):
         Greenlet.__init__(self)
         self.raidex_node = raidex_node
-        self.initial_price = float(price)
-        self.average_price_delta = price * 0.01
-        self.average_volume = int(10 * 1e18)
-        self.buy_orders = []  # sorted, highest price first
-        self.sell_orders = []  # sorted, lowest price first
+        self.initial_price = initial_price
+        # range around the market price in which liquidity will be provided (as a percentage)
+        self.range = 0.05
+        # range around market price in which no orders will be placed (as a percentage)
+        self.spread = 0.005  # 0.001
+        # target slope of market depth curve (unit: amount / range)
+        self.slope = 20e18 / 0.01
+        # number of points per unit range where liquidity is checked
+        self.homogenity = 10 * 2 / 0.01  # 10 / 0.01
+        # overshoot percentage when replenishing offers
+        self.overshoot = 0
         self.log = slogging.get_logger('bots.liquidity_provider')
 
-    def random_volume(self):
-        """Return a random non-negative number averaging to `self.average_volume`."""
-        return self.average_volume
-        # return int(round(random.expovariate(1. / self.average_volume)))
+    def calc_checkpoints(self, price):
+        """Calculate points at which slope is checked.
 
-    def random_price_delta(self):
-        """Calculate a random non-negative number averaging to `self.average_price_delta`."""
-        return self.average_price_delta
-        # return random.expovariate(1. / self.average_price_delta)
+        :param price: the current market price
+        :returns: check points for sell and buy offers as 2-tuple
+        """
+        n_check_points = int(round(self.homogenity * (self.range - self.spread) / 2))
+        assert self.range > self.spread
+        check_point_distance = float(self.range - self.spread) / 2 * price / n_check_points
+        check_points_sell = [price * (1 + self.spread / 2) + (i + 0.5) * check_point_distance
+                             for i in range(n_check_points)]
+        check_points_buy = [price * (1 - self.spread / 2) - (i + 0.5) * check_point_distance
+                            for i in range(n_check_points)]
+        return check_points_sell, check_points_buy
 
-    def place_buy_order(self, price):
-        """Place a buy order."""
-        volume = self.random_volume()
-        order_id = self.raidex_node.limit_order(OfferType.BUY, volume, price)
-        self.buy_orders.append(self.raidex_node.order_tasks_by_id[order_id])
-        self.buy_orders.sort(key=lambda o: o.price, reverse=True)
+    def calc_target_amount(self, market_price, check_point):
+        """Calculate the desired cumulative offered amount at a certain price."""
+        delta = abs(market_price - check_point) / market_price
+        if delta < self.spread / 2:
+            return 0
+        delta = min(delta, self.range / 2)
+        amount = (delta - self.spread / 2) * self.slope
+        assert amount >= 0
+        return amount
 
-    def place_sell_order(self, price):
-        """Place a buy order."""
-        volume = self.random_volume()
-        order_id = self.raidex_node.limit_order(OfferType.SELL, volume, price)
-        print volume, price
-        self.sell_orders.append(self.raidex_node.order_tasks_by_id[order_id])
-        self.sell_orders.sort(key=lambda o: o.price, reverse=False)
-        self.log.debug(len(self.sell_orders))
+    def integrate_offers_until(self, market_price, check_point):
+        """Sum the amount of offers with prices between `market_price` and `check_point`."""
+        if check_point >= market_price:
+            # integrate sell offers (from low to high prices)
+            offers = self.raidex_node.offer_book.sells
+        else:
+            # integrate buy offers (from high to low prices)
+            offers = reversed(list(self.raidex_node.offer_book.buys))
+        low = min(market_price, check_point)
+        high = max(market_price, check_point)
+        s = 0
+        for _, offer_id in offers:
+            offer = self.raidex_node.offer_book.get_offer_by_id(offer_id)
+            if low <= offer.price <= high:
+                s += offer.amount
+            else:
+                break
+        return s
 
-    def place_initial_orders(self):
-        # place buy orders
-        count = 0
-        price = self.initial_price
-        while price > self.initial_price * 0.9:
-            price -= self.random_price_delta()
-            self.place_buy_order(price)
-            count += 1
-        min_price = price
-        # place sell orders
-        price = self.initial_price
-        while price < self.initial_price * 1.1:
-            price += self.random_price_delta()
-            self.place_sell_order(price)
-            count += 1
-        max_price = price
-        self.log.info('placed initial orders', count=count, max_price=max_price,
-                      min_price=min_price)
+    def cancel_unattractive_orders(self, market_price):
+        """Cancel orders that have prices with unrealistic prices."""
+        high = market_price * (1 + self.range / 2)
+        low = market_price * (1 - self.range / 2)
+        n_canceled = 0
+        for order in self.raidex_node.order_tasks_by_id.values():
+            if order.price < low or order.price > high:
+                order.cancel()
+                n_canceled += 1
+        left = len(self.raidex_node.order_tasks_by_id)
+        self.log.info('canceled unattractive orders', n=n_canceled, left=left)
 
     def _run(self):
-        self.place_initial_orders()
         while True:
-            order_taken = Event()
-            order_taken.clear()
-            for order in self.raidex_node.order_tasks_by_id.values():
-                order.link(lambda _: order_taken.set())
-            order_taken.wait()  # wait for an order to be taken
-
-            # for every taken sell order
-            for order in self.sell_orders:
-                if not order.finished:
-                    continue
-                assert order.number_open_trades == 0
-                self.log.info('replacing fulfilled order', type=OfferType.BUY.name)
-                # place sell offer at higher price
-                sell_price = self.sell_orders[-1].price + self.random_price_delta()
-                self.place_sell_order(sell_price)
-                # place buy offer at higher price
-                buy_price = self.buy_orders[0].price + self.random_price_delta()
-                self.place_buy_order(buy_price)
-                # cancel worst buy offer
-                self.buy_orders[-1].cancel()
-
-            # for every taken buy order
-            for order in self.buy_orders:
-                if not order.finished:
-                    continue
-                assert order.number_open_trades == 0
-                self.log.info('replacing fulfilled order', type=OfferType.SELL.name)
-                # place buy offer at lower price
-                buy_price = self.buy_orders[-1].price - self.random_price_delta()
-                self.place_buy_order(buy_price)
-                # place sell offer at lower price
-                sell_price = self.sell_orders[0].price - self.random_price_delta()
-                self.place_sell_order(sell_price)
-                # cancel worst sell offer
-                self.sell_orders[-1].cancel()
-
-            # remove finished orders
-            self.buy_orders = [o for o in self.buy_orders if not (o.finished or o.canceled)]
-            self.sell_orders = [o for o in self.sell_orders if not (o.finished or o.canceled)]
+            price = self.raidex_node.market_price() or self.initial_price
+            # self.cancel_unattractive_orders(price)  # untested yet
+            check_points_sell, check_points_buy = self.calc_checkpoints(price)
+            check_point_diff = check_points_sell[1] - check_points_sell[0]
+            orders = []
+            additional_offers = {OfferType.BUY: 0, OfferType.SELL: 0}
+            for type_, cp in chain(zip(repeat(OfferType.BUY), check_points_buy),
+                                   zip(repeat(OfferType.SELL), check_points_sell)):
+                offered = self.integrate_offers_until(price, cp) + additional_offers[type_]
+                target = self.calc_target_amount(price, cp)
+                if offered < target:
+                    amount = int(round(target * (1 + self.overshoot) - offered))
+                    order_price = cp + check_point_diff / 2 * (1 if type_ is OfferType.BUY else -1)
+                    assert abs(price - order_price) < abs(price - cp)
+                    assert 1 - self.range / 2 <= order_price / price <= 1 + self.range / 2
+                    orders.append((type_, amount, order_price))
+                    additional_offers[type_] += amount
+            buys = len([o for o in orders if o[0] is OfferType.BUY])
+            sells = len(orders) - buys
+            self.log.info('replenishing offers', buys=buys, sells=sells, market_price=price)
+            for type_, amount, order_price in orders:
+                assert ((type_ is OfferType.BUY and order_price < price) or
+                        (type_ is OfferType.SELL and order_price > price))
+                self.raidex_node.limit_order(type_, amount, order_price)
+            sleep(5)
