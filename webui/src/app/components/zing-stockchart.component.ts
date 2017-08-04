@@ -12,6 +12,8 @@ import * as d3Array from 'd3-array';
         </div>
         <div class="chart-filter">
           <button class="btn btn-success btn-xs"
+          (click)="reinitialiseStockChart(1. / 6)">10 secs</button>
+          <button class="btn btn-success btn-xs"
           (click)="reinitialiseStockChart(10)">10 mins</button>
           <button class="btn btn-success btn-xs"
           (click)="reinitialiseStockChart(15)">15 mins</button>
@@ -195,5 +197,3 @@ function prepareStockChartData(tradesArray: Array<any>, interval, numberOfBars) 
     } while (startTimestamp <= lastTimestamp); // && count < numberOfBars
     return {stock: stockDataArray, volume: volumeDataArray};
 }
-
-
