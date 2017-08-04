@@ -22,7 +22,7 @@ class LimitOrderTask(gevent.Greenlet):
 
     def __init__(self, offer_book, trades, type_, amount, price, address, commitment_service, message_broker, trader,
                  offer_size=2 * 10 ** 18,  # for ether
-                 offer_lifetime=10):
+                 offer_lifetime=10000):
         self.offer_book = offer_book
         self.trades = trades
         self.type_ = type_
@@ -77,9 +77,9 @@ class LimitOrderTask(gevent.Greenlet):
     def _trade(self, amount):
         # type: (int) -> object
         # try to trade amount tokens
+        log.debug('Try to trade {} tokens'.format(amount))
         amount_taken, bundle_takes = self._take_offers(amount)
         amount_made, bundle_makes = self._make_offers(amount - amount_taken)
-        log.debug('Tried to trade', total=amount, taken=amount_taken, outstanding=amount_made)
         assert amount_taken + amount_made == amount
         return bundle_takes + bundle_makes
 
@@ -95,6 +95,8 @@ class LimitOrderTask(gevent.Greenlet):
         else:
             raise ValueError('Unknown OfferType')
 
+        log.debug('Available offers: {}'.format(len(offers)))
+
         for offer in offers:
             if self.type_ is OfferType.SELL:
                 if offer.price < self.price:
@@ -108,6 +110,7 @@ class LimitOrderTask(gevent.Greenlet):
             if amount_open + offer.amount > amount:
                 continue
             amount_open += offer.amount
+            log.debug('Take offer of {} tokens'.format(offer.amount))
             bundle_task = BundleTask([self._take_offer(offer)])
             bundle_task.start()
             bundle_tasks.append(bundle_task)
@@ -121,10 +124,12 @@ class LimitOrderTask(gevent.Greenlet):
         tasks = []
         while amount_open + offer_size <= amount:
             amount_open += offer_size
+            log.debug('Make offer of {} tokens'.format(self.offer_size))
             tasks.append(self._make_offer(offer_size))
         offer_amount = amount - amount_open
         if offer_amount > 0:
             amount_open += offer_amount
+            log.debug('Make offer of {} tokens'.format(offer_amount))
             tasks.append(self._make_offer(offer_amount))
         bundle_task = BundleTask(tasks)
         bundle_task.start()
