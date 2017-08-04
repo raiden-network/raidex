@@ -22,7 +22,7 @@ class LimitOrderTask(gevent.Greenlet):
 
     def __init__(self, offer_book, trades, type_, amount, price, address, commitment_service, message_broker, trader,
                  offer_size=2 * 10 ** 18,  # for ether
-                 offer_lifetime=10000):
+                 offer_lifetime=10):
         self.offer_book = offer_book
         self.trades = trades
         self.type_ = type_
