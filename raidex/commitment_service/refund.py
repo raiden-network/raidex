@@ -1,5 +1,6 @@
 from raidex.utils import pex
 
+
 class Refund(object):
 
     def __init__(self, receipt, priority, claim_fee):

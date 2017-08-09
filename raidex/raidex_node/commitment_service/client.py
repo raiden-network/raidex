@@ -127,7 +127,6 @@ class CommitmentServiceClient(object):
             log.debug('Message broker failed to send: {}'.format(commitment_msg))
             return None
 
-
         success = self._send_transfer(offer.offer_id, commitment_amount)
         if success is not True:
             log.debug(

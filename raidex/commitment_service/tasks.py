@@ -41,7 +41,6 @@ class RefundTask(QueueListenerTask):
     def process(self, data):
         refund = data
         amount = refund.receipt.amount
-        print(amount, self.fee_rate, refund.claim_fee)
         if self.fee_rate is not None and refund.claim_fee is True:
             amount -= amount * self.fee_rate
         transfer_async_result = self.trader_client.transfer_async(refund.receipt.sender, amount,

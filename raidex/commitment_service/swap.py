@@ -107,7 +107,6 @@ class SwapCommitment(object):
 
     def send_swap_completed(self):
         swap_completed_message = messages.SwapCompleted(self.offer_id, timestamp.time())
-        print(swap_completed_message.offer_id, swap_completed_message.timestamp)
         self.queue_send(swap_completed_message, None)
 
     def send_maker_commitment_proof(self):
