@@ -7,16 +7,25 @@ import json
 from flask import Flask, jsonify, request, Response
 from gevent.pywsgi import WSGIServer
 
-from message_broker import MessageBroker
-from listeners import MessageListener
+from ethereum.utils import decode_hex
+from raidex.message_broker.message_broker import MessageBroker
+from raidex.message_broker.listeners import MessageListener
 
+from ethereum import slogging
+
+log = slogging.get_logger('message_broker.server')
 
 app = Flask(__name__)
 message_broker = MessageBroker()
 
+nof_listeners = 0
+
 
 @app.route('/api/topics/<string:topic>', methods=['GET'])
 def messages_for(topic):
+    global nof_listeners
+    if not topic == 'broadcast':
+        topic = decode_hex(topic)
 
     listener = MessageListener(message_broker, topic)
     listener.start()
@@ -26,15 +35,22 @@ def messages_for(topic):
             yield json.dumps({'data': listener.get()}) + '\n'
 
     def on_close():  # stop listener on closed connection
+        global nof_listeners
+        nof_listeners -= 1
+        print('Nof-listeners: {}'.format(nof_listeners))
         listener.stop()
 
     r = Response(generate(), content_type='application/x-json-stream')
+    nof_listeners += 1
+    print('Nof-listeners: {}'.format(nof_listeners))
     r.call_on_close(on_close)
     return r
 
 
 @app.route('/api/topics/<string:topic>', methods=['POST'])
 def send_message(topic):
+    if not topic == 'broadcast':
+        topic = decode_hex(topic)
     message = request.json.get('message')
     status = message_broker.send(topic, message)
     return jsonify({'data': status})

@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import json
 import requests
-from gevent import Greenlet
+import gevent
 from gevent import monkey; monkey.patch_socket()
 from gevent.queue import Queue
 
@@ -12,6 +12,86 @@ from raidex.message_broker.message_broker import Listener
 import raidex.messages as messages
 
 
+class StreamingRequestIterator(object):
+
+    def __init__(self, response):
+        self.response = response
+        self._line_generator = response.iter_lines()
+        self.closed = False
+
+    def __next__(self):
+        if self.closed is False:
+            return next(self._line_generator)
+        if self.closed is True:
+            self.response.close()
+            raise StopIteration
+
+    def next(self):
+        return self.__next__()
+
+    def __iter__(self):
+        return self
+
+    # FIXME
+    def close(self):
+        self.closed = True
+
+
+def iter_streaming_response(response):
+    return StreamingRequestIterator(response)
+
+
+class StreamingRequestTask(gevent.Greenlet):
+
+    def __init__(self, api_url, topic, transform_func=None):
+        self.listeners = []
+        self.api_url = api_url
+        self.topic = topic
+        self.transform = transform_func
+        self.response_iter = None
+        gevent.Greenlet.__init__(self)
+
+    @property
+    def has_listeners(self):
+        if self.listeners:
+            return True
+        else:
+            return False
+
+    def _run(self):
+        # this initially blocks until something is sent on that topic
+        response = requests.get('{0}/topics/{1}'.format(self.api_url, self.topic), stream=True)
+        self.response_iter = iter_streaming_response(response)
+        for line in self.response_iter:
+            # filter out keep-alive new lines
+            if line:
+                decoded_line = line.decode('utf-8')
+                message = decode(json.loads(decoded_line)['data'])
+                for listener in self.listeners:
+                    message_for_listener = message
+                    if listener.transform is not None:
+                        message_for_listener = listener.transform(message_for_listener)
+                    if message_for_listener is not None:
+                        listener.message_queue_async.put(message_for_listener)
+
+    def create_listener(self, transform=None):
+        message_queue_async = Queue()
+        listener = Listener(self.topic, message_queue_async, transform)
+        self.listeners.append(listener)
+        return listener
+
+    def stop_listen(self, listener):
+        self.listeners.remove(listener)
+
+    # FIXME this isn't working yet,
+    # we want the server to notice the closed connection
+    # and the _run generator loop of the response to raise a StopIteration
+    def stop(self):
+        if self.response_iter is not None:
+            self.response_iter.close()
+            self.response_iter = None
+
+
 class MessageBrokerClient(object):
     """Handles the communication with other nodes"""
 
@@ -19,6 +99,8 @@ class MessageBrokerClient(object):
         self.port = port
         self.host = host
         self.apiUrl = 'http://{}:{}/api'.format(host, port)
+        self.topic_task_map = {}
+        self.listener_task_map = {}
 
     def send(self, topic, message):
         # HACK, allow 'broadcast' as non-binary input, everything else should be
@@ -59,22 +141,14 @@ class MessageBrokerClient(object):
             Listener: an object gathering all settings of this listener
 
         """
-        message_queue_async = Queue()
+        task = self.topic_task_map.get(topic)
+        if task is None:
+            task = StreamingRequestTask(self.apiUrl, topic, transform)
+            self.topic_task_map[topic] = task
+            task.start()
 
-        listener = Listener(topic, message_queue_async, transform)
-
-        def run():
-            r = requests.get('{0}/topics/{1}'.format(self.apiUrl, topic), stream=True)
-            for line in r.iter_lines():
-                # filter out keep-alive new lines
-                if line:
-                    decoded_line = line.decode('utf-8')
-                    message = decode(json.loads(decoded_line)['data'])
-                    if transform is not None:
-                        message = transform(message)
-                    if message is not None:
-                        message_queue_async.put(message)
-        Greenlet.spawn(run)
+        listener = task.create_listener(transform)
+        self.listener_task_map[listener] = task
 
         return listener
 
@@ -102,7 +176,13 @@ class MessageBrokerClient(object):
         return self._listen_on('broadcast', transform)
 
     def stop_listen(self, listener):
-        raise NotImplementedError
+        task = self.listener_task_map.get(listener)
+        if task is None:
+            raise Exception('Listener not found')
+        task.stop_listen(listener)
+        del self.listener_task_map[listener]
+        if not task.has_listeners:
+            task.stop()
 
 
 def encode(message):

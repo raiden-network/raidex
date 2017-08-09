@@ -1,8 +1,15 @@
+from contextlib import contextmanager
 from raidex.message_broker.message_broker import MessageBroker
 from raidex import messages
-from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.offer_book import OfferType, Offer
 from raidex.raidex_node.trades import SwapCompleted
+
+
+@contextmanager
+def listener_context(listener_task):
+    listener_task.start()
+    yield listener_task
+    listener_task.stop()
 
 
 class MessageListener(object):
@@ -39,7 +46,7 @@ class MessageListener(object):
         """starts the listener, returns one value, and stops"""
         self.start()
         result = self.get()
-        # self.stop() not fully implemented yet
+        self.stop()
         return result
 
     def start(self):

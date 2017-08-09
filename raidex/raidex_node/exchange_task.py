@@ -2,7 +2,7 @@ import gevent
 from raidex.utils import timestamp, pex
 from ethereum import slogging
 from ethereum.utils import encode_hex
-from raidex.message_broker.listeners import TakerListener
+from raidex.message_broker.listeners import TakerListener, listener_context
 from raidex.utils.gevent_helpers import switch_context
 
 log = slogging.get_logger('node.exchange')
@@ -35,22 +35,23 @@ class MakerExchangeTask(gevent.Greenlet):
                 log.debug('No proven offer received for {}'.format(pex(self.offer.offer_id)))
                 return False
             log.debug('Wait for taker of {}'.format(pex(self.offer.offer_id)))
-            taker_listener = TakerListener(self.offer, self.message_broker, self.maker_address)
-            taker_listener.start()
-            log.debug('Broadcast proven_offer for {}'.format(pex(self.offer.offer_id)))
-            self.message_broker.broadcast(proven_offer)
-            taker_address = taker_listener.get()
-            log.debug('Found taker, execute swap of {}'.format(pex(self.offer.offer_id)))
-            status = self.trader.exchange_async(self.offer.type, self.offer.base_amount, self.offer.counter_amount,
-                                                taker_address, self.offer.offer_id).get()
-            if status:
-                log.debug('Swap of {} done'.format(pex(self.offer.offer_id)))
-                self.commitment_service.report_swap_executed(self.offer.offer_id)
-                #  TODO check refund minus fee
-            else:
-                log.debug('Swap of {} failed'.format(pex(self.offer.offer_id)))
-                #  TODO check refund
-            return status
+            with listener_context(TakerListener(self.offer, self.message_broker, self.maker_address)) as taker_listener:
+                log.debug('Broadcast proven_offer for {}'.format(pex(self.offer.offer_id)))
+                self.message_broker.broadcast(proven_offer)
+                taker_address = taker_listener.get()
+                log.debug('taker address: {}'.format(encode_hex(taker_address)))
+
+                log.debug('Found taker, execute swap of {}'.format(pex(self.offer.offer_id)))
+                status = self.trader.exchange_async(self.offer.type, self.offer.base_amount, self.offer.counter_amount,
+                                                    taker_address, self.offer.offer_id).get()
+                if status:
+                    log.debug('Swap of {} done'.format(pex(self.offer.offer_id)))
+                    self.commitment_service.report_swap_executed(self.offer.offer_id)
+                    #  TODO check refund minus fee
+                else:
+                    log.debug('Swap of {} failed'.format(pex(self.offer.offer_id)))
+                    #  TODO check refund
+                return status
         except gevent.Timeout as t:
             if t is not timeout:
                 raise  # not my timeout
