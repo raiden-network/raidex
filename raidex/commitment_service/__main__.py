@@ -15,6 +15,8 @@ def main():
     stop_event = Event()
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--fee-rate", type=float, help='Specify how much percentage of the commitment amount will be '
+                                                       'hold as a fee for a succesful trade', default=None)
     parser.add_argument("--broker-host", type=str, help='Specify the host for the message broker, default is localhost',
                         default='localhost')
     parser.add_argument("--broker-port", type=int, help='Specify the port for the message broker, default is 5000',
@@ -29,7 +31,7 @@ def main():
     signer = Signer.from_seed('test')
     commitment_service = CommitmentService(signer, MessageBrokerClient(host=args.broker_host, port=args.broker_port),
                                            TraderClient(signer.address, host=args.trader_host, port=args.trader_port),
-                                           fee_rate=0.01)
+                                           fee_rate=args.fee_rate)
     commitment_service.start()
 
     stop_event.wait()
