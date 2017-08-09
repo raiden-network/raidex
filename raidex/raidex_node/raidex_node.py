@@ -68,14 +68,14 @@ class RaidexNode(object):
         print(self.offer_book)
 
     @classmethod
-    def build_default_from_config(cls, privkey=None, cs_fee_rate=0.01, base_token_addr=None, counter_token_addr=None,
-                                  message_broker_host='localhost', message_broker_port=5000, raiden_api_endpoint=None, mock_trading_activity=False,
-                                  trader_host='localhost', trader_port=5001):
+    def build_default_from_config(cls, privkey_seed=None, cs_fee_rate=0.01, base_token_addr=None, counter_token_addr=None,
+                                  message_broker_host='127.0.0.1', message_broker_port=5000, raiden_api_endpoint=None, mock_trading_activity=False,
+                                  trader_host='127.0.0.1', trader_port=5001):
 
-        if privkey is None:
+        if privkey_seed is None:
             signer = Signer.random()
         else:
-            signer = Signer(privkey)
+            signer = Signer.from_seed(privkey_seed)
 
         if base_token_addr is None and counter_token_addr is None:
             token_pair = TokenPair.from_seed('test')

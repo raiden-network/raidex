@@ -16,6 +16,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--mock', action='store_true', help='Spawns mock offers to simulate trading activity"')
+    parser.add_argument('--seed', type=str, help='Use the sha3 privkey from seed')
     parser.add_argument("--api", action='store_true', help='Run the REST-API')
     parser.add_argument("--api-port", type=int, help='Specify the port for the api, default is 5002', default=5002)
     parser.add_argument("--broker-host", type=str, help='Specify the host for the message broker, default is localhost',
@@ -30,7 +31,8 @@ def main():
 
     args = parser.parse_args()
 
-    node = RaidexNode.build_default_from_config(message_broker_host=args.broker_host,
+    node = RaidexNode.build_default_from_config(privkey_seed=args.seed,
+                                                message_broker_host=args.broker_host,
                                                 message_broker_port=args.broker_port, trader_host=args.trader_host,
                                                 trader_port=args.trader_port, mock_trading_activity=args.mock)
     node.start()
