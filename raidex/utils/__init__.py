@@ -10,6 +10,10 @@ DEFAULT_RAIDEN_PORT = 9999  # no raiden dependency for now
 DEFAULT_RAIDEX_PORT = DEFAULT_RAIDEN_PORT + 1
 
 
+def make_address():
+    return bytes(''.join(random.choice(string.printable) for _ in range(20)))
+
+
 def make_privkey_address():
     privkey = sha3(''.join(random.choice(string.printable) for _ in range(20)))
     address = privtoaddr(privkey)

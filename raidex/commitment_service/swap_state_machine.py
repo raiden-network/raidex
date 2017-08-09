@@ -32,8 +32,8 @@ def swap_setup_state_transitions(fsm, auto_spawn_timeout):
                        conditions=[fsm.sender_is_maker],
                        after=[fsm.set_maker_transfer_receipt,
                               omit_args_and_kwargs(fsm.swap.send_maker_commitment_proof)])
-    # TODO check if prepare is the right place to execute
-    fsm.add_transition('taker_commitment_msg', 'wait_for_taker', '=', prepare=[fsm.queue_commitment])
+    # TODO check if before is the right place to execute
+    fsm.add_transition('taker_commitment_msg', 'wait_for_taker', '=', before=[fsm.queue_commitment])
     fsm.add_transition('transfer_receipt', 'wait_for_taker', 'wait_for_execution',
                        conditions=[fsm.sender_sent_taker_commitment],
                        after=[fsm.accept_taker_commitment_from_receipt, fsm.set_taker_transfer_receipt,
@@ -154,8 +154,6 @@ class SwapStateMachine(Machine):
         gevent.spawn_later(seconds_to_timeout, self.swap.trigger_timeout)
 
     def refund_unsuccessful_transfer(self, event):
-        print(event)
-        # gets called with every event call, even if it raised an error or the state-transition wasn't successful
         transfer_receipt = event_get_receipt_kwarg(event)
         success = event_get_success(event)
 

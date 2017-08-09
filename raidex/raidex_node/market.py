@@ -1,4 +1,5 @@
-from raiden.utils import isaddress, make_address
+from raiden.utils import isaddress
+from raidex.utils import make_address
 from ethereum.utils import privtoaddr, sha3
 
 from raidex.raidex_node.offer_book import OfferType
