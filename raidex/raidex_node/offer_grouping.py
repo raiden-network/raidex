@@ -1,7 +1,7 @@
 import decimal
 
-PRICE_GROUP_PRECISION = 3  # default price-group precision are 3 digits after 0
-TIME_GROUP_INTERVAL_MS = 10000  # default timestamp bucket size for trades is 10s
+PRICE_GROUP_PRECISION = 1  # default price-group precision are 1s digits after 0
+TIME_GROUP_INTERVAL_MS = 60000  # default timestamp bucket size for trades is 60s
 
 
 class GroupedOffer(object):
