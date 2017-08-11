@@ -1,16 +1,10 @@
-pytest
-flask
 bintrees
-devp2p
 werkzeug
-ethereum
 gevent==1.1.0
-#raiden
 coincurve
-rlp  # FIXME only temporary to remove installation failures
 enum34
-# TODO move to develop requirements later on
-noise
 flask_cors
+Flask
 transitions
 pytest-mock
+pytest
