@@ -26,14 +26,14 @@ export class ZingPriceTimeSeriesComponent implements OnInit {
     }
 
     public initialisePriceChart(): void {
-        this.raidexSubscription = this.raidexService.getTrades().subscribe(
+        this.raidexSubscription = this.raidexService.getNewTrades(20).subscribe(
             (data) => {
-                let tempArray = data;
-                tempArray.sort(function (x, y) {
-                    return d3Array.ascending(x.timestamp, y.timestamp);
-                });
-                this.priceTimeSeriesArray = formatIntoPriceTimeSeries(tempArray);
-                this.volumeTimeSeriesArray = formatIntoVolumeTimeSeries(tempArray);
+                // let tempArray = data;
+                // tempArray.sort(function (x, y) {
+                //     return d3Array.ascending(x.timestamp, y.timestamp);
+                // });
+                this.priceTimeSeriesArray = formatIntoPriceTimeSeries(data);
+                this.volumeTimeSeriesArray = formatIntoVolumeTimeSeries(data);
                 this.populateChartData();
             }
         );

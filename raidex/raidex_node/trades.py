@@ -24,7 +24,7 @@ class TradesView(object):
     def __init__(self):
         self.pending_offer_by_id = {}
         self.trade_by_id = {}
-        self.trades = FastRBTree()
+        self._trades = FastRBTree()
 
     def add_pending(self, offer):
         self.pending_offer_by_id[offer.offer_id] = offer
@@ -40,7 +40,7 @@ class TradesView(object):
         trade = Trade(offer, completed_timestamp)
 
         # inserts in the RBTree
-        self.trades.insert((trade.timestamp, offer.offer_id), trade)
+        self._trades.insert((trade.timestamp, offer.offer_id), trade)
 
         # inserts in the dict for retrieval by offer_id
         self.trade_by_id[offer.offer_id] = trade
@@ -54,12 +54,48 @@ class TradesView(object):
         return self.pending_offer_by_id.get(offer_id)
 
     def __len__(self):
-        return len(self.trades)
+        return len(self._trades)
 
     def __iter__(self):
-        # when iterating over the TradesView, this iterates over the RBTree!
-        # self.trades = <FastRBTree>
-        return iter(self.trades)
+        return iter(self._trades)
 
-    def values(self):
-        return self.trades.values()
+    def trades(self, from_timestamp=None, to_timestamp=None):
+        """
+        returns a generator object for all trades
+        :param from_timestamp: first timestamp to include in result
+        :param to_timestamp: first timestamp to exclude from result
+        :return: generator object for the values of the RBtree
+        """
+        if (from_timestamp, to_timestamp) is (None, None):
+            return self.values()
+
+        min_key = None
+        if from_timestamp is not None:
+            try:
+                min_key, _ = self._trades.ceiling_item((from_timestamp, 0))
+            except KeyError:
+                pass
+
+        max_key = None
+        if to_timestamp is not None:
+            try:
+                key = self._trades.floor_key((to_timestamp, 0))
+                max_key, _ = self._trades.succ_item(key)
+            except KeyError:
+                pass
+
+        if (min_key, max_key) is (None, None):
+            # return empty generator
+            return iter(())
+
+        return self._trades.value_slice(min_key, max_key)
+
+    def latest_trades(self, trade_count=5):
+        # returns list of n-latest trades
+        return [trade for key, trade in self._trades.nlargest(trade_count)]
+
+    def values(self, reverse=False):
+        return self._trades.values(reverse)
+
+    def keys(self):
+        return self._trades.keys()

@@ -16,7 +16,7 @@ from raidex.raidex_node.trader.client import TraderClient
 from raidex.message_broker.client import MessageBrokerClient
 from raidex.utils import timestamp
 from raidex.signing import Signer
-from raidex.raidex_node.offer_grouping import group_offers, group_trades
+from raidex.raidex_node.offer_grouping import group_offers, group_trades_from, make_price_bins, get_n_recent_trades
 log = slogging.get_logger('node')
 
 
@@ -113,11 +113,19 @@ class RaidexNode(object):
     def grouped_sells(self):
         return group_offers(self.sells())
 
-    def trades(self):
-        return self._trades.values()
+    def trades(self, from_timestamp=None):
+        return self._trades.trades(from_timestamp)
 
-    def grouped_trades(self):
-        return group_trades(self.trades())
+    def grouped_trades(self, from_timestamp=None):
+        return group_trades_from(self._trades.trades, from_timestamp)
+
+    def recent_grouped_trades(self, chunk_size):
+        return get_n_recent_trades(self._trades, chunk_size)
+
+    def price_chart_bins(self, nof_buckets, interval):
+        if nof_buckets < 1 or interval < 0.:
+            raise ValueError()
+        return make_price_bins(self._trades.trades, nof_buckets, interval)
 
     def market_price(self, trade_count=20):
         """Calculate a market price based on the most recent trades.
@@ -125,10 +133,7 @@ class RaidexNode(object):
         :param trade_count: number of redent trades to consider
         :returns: a market price, or `None` if no trades have happened yet
         """
-        trades = []
-        for trade in self.trades():
-            trades.append(trade)
-        trades = trades[-1:-trade_count - 1:-1]
+        trades = self._trades.latest_trades(trade_count)
         if len(trades) == 0:
             return None
         else:

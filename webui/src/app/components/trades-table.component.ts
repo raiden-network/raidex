@@ -9,8 +9,9 @@ import { Trade } from '../model/trade';
 })
 export class TradesTableComponent implements OnInit {
 
-    public trades: Trade[];
+    public trades: Trade[] = [];
     private raidexSubscription: Subscription;
+    private observe_window: number = 30;
 
     constructor(private raidexService: RaidexService) { }
 
@@ -19,10 +20,10 @@ export class TradesTableComponent implements OnInit {
     }
 
     public getTrades(): void {
-        this.raidexSubscription = this.raidexService.getTrades().subscribe(
+        this.raidexSubscription = this.raidexService.getNewTrades(this.observe_window).subscribe(
             (trades) => {
-                this.trades = trades;
+                    this.trades = trades;
             },
-        );
-    }
+        );}
+
 }

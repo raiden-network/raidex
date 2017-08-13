@@ -12,7 +12,7 @@ import { RaidexService } from './services/raidex.service';
 
 import { ZingChartComponent } from './components/zingchart.component';
 import { ZingDepthChartComponent } from './components/zing-depthchart.component';
-import { ZingPriceTimeSeriesComponent } from './components/zing-pricechart.component';
+// import { ZingPriceTimeSeriesComponent } from './components/zing-pricechart.component';
 import { ZingStockChartComponent } from './components/zing-stockchart.component';
 import { TradesTableComponent } from './components/trades-table.component';
 import { OffersTableComponent } from './components/offers-table.component';
@@ -23,7 +23,7 @@ import { OffersTableComponent } from './components/offers-table.component';
         ZingChartComponent,
         UserInteractionComponent,
         ZingDepthChartComponent,
-        ZingPriceTimeSeriesComponent,
+        // ZingPriceTimeSeriesComponent,
         ZingStockChartComponent,
         TradesTableComponent,
         OffersTableComponent
