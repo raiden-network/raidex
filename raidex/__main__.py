@@ -5,9 +5,9 @@ from ethereum import slogging
 
 from raidex.raidex_node.api.app import APIServer
 from raidex.raidex_node.raidex_node import RaidexNode
-from raidex.raidex_node.bots import LiquidityProvider, RandomWalker
+from raidex.raidex_node.bots import LiquidityProvider, RandomWalker, Manipulator
 
-slogging.configure(':DEBUG')
+slogging.configure(':WARNING,bots.manipulator:DEBUG')
 
 
 def main():
@@ -45,9 +45,11 @@ def main():
         initial_price = 100.
         liquidity_provider = LiquidityProvider(node, initial_price)
         random_walker = RandomWalker(node, initial_price)
+        manipulator = Manipulator(node, initial_price)
         liquidity_provider.start()
         gevent.sleep(5)  # give liquidity provider head start
         random_walker.start()
+        manipulator.start()
 
     stop_event.wait()  # runs forever
 

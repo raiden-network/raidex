@@ -119,7 +119,7 @@ class RaidexNode(object):
     def grouped_trades(self):
         return group_trades(self.trades())
 
-    def market_price(self, trade_count=5):
+    def market_price(self, trade_count=20):
         """Calculate a market price based on the most recent trades.
 
         :param trade_count: number of redent trades to consider

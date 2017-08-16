@@ -49,7 +49,7 @@ class LimitOrderTask(gevent.Greenlet):
                 self.running_bundled_tasks += self._trade(next_amount)
             # get next bundle of finished tasks
             bundled_tasks = gevent.wait(self.running_bundled_tasks, count=1)
-            assert len(bundled_tasks) == 1
+            #assert len(bundled_tasks) == 1
             for bundled_task in bundled_tasks:
                 next_amount = self._process_task_termination(bundled_task)
                 if self.finished:

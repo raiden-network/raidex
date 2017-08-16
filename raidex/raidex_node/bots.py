@@ -1,8 +1,6 @@
-import math
 import random
 from itertools import chain, repeat
 from gevent import Greenlet, sleep
-from gevent.event import Event
 from ethereum import slogging
 from raidex.raidex_node.offer_book import OfferType
 
@@ -27,18 +25,72 @@ class RandomWalker(Greenlet):
         self.urgency = 0.02  # percentag bot is willing to overpay to get its order filled quicker
         self.log = slogging.get_logger('bots.random_walker')
 
+    def place_order(self, order_type):
+        market_price = self.raidex_node.market_price() or self.initial_price
+        offset = market_price * self.urgency
+        price = market_price + offset if order_type is OfferType.BUY else market_price - offset
+        amount = self.average_amount
+        self.log.info('placing order', type=order_type.name, amount=amount * 1e-18,
+                      market_price=market_price, price=price)
+        self.raidex_node.limit_order(order_type, amount, price)
+
     def _run(self):
         while True:
-            # counter intuitive: type_ is offer type to take (so SELL means buy something)
             type_ = random.choice([OfferType.BUY, OfferType.SELL])
-            market_price = self.raidex_node.market_price() or self.initial_price
-            offset = market_price * self.urgency
-            price = market_price + offset if type_ is OfferType.BUY else market_price - offset
-            amount = self.average_amount
-            self.log.info('placing order', type=type_.name, amount=amount * 1e-18,
-                          market_price=market_price, price=price)
-            self.raidex_node.limit_order(type_, amount, price)
+            self.place_order(type_)
             sleep(1. / self.average_frequency)
+
+
+class Manipulator(Greenlet):
+
+    def __init__(self, raidex_node, initial_price):
+        Greenlet.__init__(self)
+        self.raidex_node = raidex_node
+        self.initial_price = initial_price
+        self.log = slogging.get_logger('bots.manipulator')
+
+        self.order_amount_average = int(2e18)
+        self.order_frequency_average = 0.8
+
+        self.goal_delta_average = 0.1  # percentage of current price
+        self.goal_delta_sigma = self.goal_delta_average / 10  # percentage of current price
+
+        self.overpay = 0.02
+
+        self.goal = None
+        self.set_new_goal()
+
+    def set_new_goal(self):
+        price = self.raidex_node.market_price() or self.initial_price
+        delta = price * abs(random.normalvariate(self.goal_delta_average, self.goal_delta_sigma))
+        sign = random.choice([+1, -1])
+        self.goal = (price, sign * delta)
+        self.log.info('new goal set', price_delta=self.goal[1], current_price=price)
+
+    def is_goal_reached(self):
+        delta_reached = (self.raidex_node.market_price() or self.initial_price) - self.goal[0]
+        return ((self.goal[1] >= 0 and delta_reached >= self.goal[1]) or
+                (self.goal[1] < 0 and delta_reached < self.goal[1]))
+
+    def place_order(self):
+        market_price = self.raidex_node.market_price() or self.initial_price
+        # buy if price should increase, otherwise sell
+        if self.goal[1] >= 0:
+            order_type = OfferType.BUY
+            order_price = market_price * (1 + self.overpay)
+        else:
+            order_type = OfferType.SELL
+            order_price = market_price * (1 - self.overpay)
+        self.raidex_node.limit_order(order_type, self.order_amount_average, order_price)
+        self.log.debug('placed order', price=order_price, amount=self.order_amount_average)
+
+    def _run(self):
+        while True:
+            if self.is_goal_reached():
+                self.log.info('goal has been reached')
+                self.set_new_goal()
+            self.place_order()
+            sleep(1. / self.order_frequency_average)
 
 
 class LiquidityProvider(Greenlet):
