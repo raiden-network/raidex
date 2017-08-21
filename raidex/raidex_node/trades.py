@@ -4,6 +4,7 @@ from bintrees import FastRBTree
 from ethereum import slogging
 
 from offer_book import Offer
+from raidex.utils import timestamp
 
 
 log = slogging.get_logger('node.trades')
@@ -13,7 +14,6 @@ SwapCompleted = namedtuple('SwapCompleted', 'offer_id timestamp')
 
 
 class Trade(object):
-
     def __init__(self, offer, timestamp):
         self.offer = offer
         self.timestamp = timestamp
@@ -29,7 +29,19 @@ class TradesView(object):
     def add_pending(self, offer):
         self.pending_offer_by_id[offer.offer_id] = offer
 
+    def _cleanup_old_trades(self, minutes):
+        from_time = timestamp.to_milliseconds(timestamp.time_minus(seconds=60 * minutes))
+        try:
+            key = self._trades.floor_key((from_time, 0))
+            key, _ = self._trades.succ_item(key)
+            del self._trades[:key]
+            # TODO also cleanup offer_by_id_dict
+        except KeyError:
+            pass
+
     def report_completed(self, offer_id, completed_timestamp):
+        # self._cleanup_old_trades(20)  # untested yet
+
         offer = self.pending_offer_by_id.get(offer_id)
         if offer is None:
             return False
