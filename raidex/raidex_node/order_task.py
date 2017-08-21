@@ -6,7 +6,6 @@ from ethereum import slogging
 
 from exchange_task import MakerExchangeTask, TakerExchangeTask
 from offer_book import OfferType, Offer
-# TODO refactor to timestamp
 from raidex.utils import timestamp
 
 log = slogging.get_logger('node.order')
@@ -20,9 +19,11 @@ class LimitOrderTask(gevent.Greenlet):
     If the Order isn't filled after that, it will spawn MakerExchangeTasks to publish offers with a reversed asset_pair
     """
 
-    def __init__(self, offer_book, trades, type_, amount, price, address, commitment_service, message_broker, trader,
+    def __init__(self, order_id, offer_book, trades, type_, amount, price, address, commitment_service, message_broker,
+                 trader,
                  offer_size=2 * 10 ** 18,  # for ether
-                 offer_lifetime=10000):
+                 offer_lifetime=10000):  # FIXME this should be way shorter
+        self.order_id = order_id
         self.offer_book = offer_book
         self.trades = trades
         self.type_ = type_

@@ -164,7 +164,7 @@ class LiquidityProvider(Greenlet):
             if order.price < low or order.price > high:
                 order.cancel()
                 n_canceled += 1
-        left = len(self.raidex_node.order_tasks_by_id)
+        left = self.raidex_node.open_orders
         self.log.info('canceled unattractive orders', n=n_canceled, left=left)
 
     def _run(self):

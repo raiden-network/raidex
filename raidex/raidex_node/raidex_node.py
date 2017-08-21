@@ -31,7 +31,10 @@ class RaidexNode(object):
         self.offer_book = OfferBook()
         self._trades = TradesView()
         self.order_tasks_by_id = {}
-        self.next_order_id = 0
+        self._nof_started_orders = 0
+        self._nof_successful_orders = 0
+        self._nof_unsuccessful_orders = 0
+        self._max_open_orders = 0
 
     def start(self):
         log.info('Starting raidex node')
@@ -54,15 +57,47 @@ class RaidexNode(object):
         TakerExchangeTask(offer, self.commitment_service, self.message_broker, self.trader_client).start()
 
     def limit_order(self, type_, amount, price):
-        log.info('Placing limit order')
-        order_task = LimitOrderTask(self.offer_book, self._trades, type_, amount, price, self.address,
+        log.info('Placing limit order: type: {}, amount: {}, price: {}'.format(type_, amount, price))
+        open_orders = self.open_orders
+        if open_orders > self._max_open_orders:
+            log.debug('Open order count increased: {}'.format(open_orders))
+            self._max_open_orders = open_orders
+
+        order_id = self._nof_started_orders
+        order_task = LimitOrderTask(order_id, self.offer_book, self._trades, type_, amount, price, self.address,
                                     self.commitment_service,
                                     self.message_broker, self.trader_client)
+        order_task.link(self._add_finished_limit_order)
         order_task.start()
-        order_id = self.next_order_id
+        self._nof_started_orders += 1
         self.order_tasks_by_id[order_id] = order_task
-        self.next_order_id += 1
         return order_id
+
+    def _add_finished_limit_order(self, order_task):
+        value = order_task.get(block=False)
+        if value is True:
+            self._nof_successful_orders += 1
+        elif value is False:
+            self._nof_unsuccessful_orders += 1
+
+        # delete finished tasks, we don't need history of finished tasks for now
+        del self.order_tasks_by_id[order_task.order_id]
+
+    @property
+    def successful_orders(self):
+        return self._nof_successful_orders
+
+    @property
+    def unsuccessful_orders(self):
+        return self._nof_unsuccessful_orders
+
+    @property
+    def open_orders(self):
+        return self._nof_started_orders - self.finished_orders
+
+    @property
+    def finished_orders(self):
+        return self._nof_successful_orders + self._nof_unsuccessful_orders
 
     def print_offers(self):
         print(self.offer_book)
