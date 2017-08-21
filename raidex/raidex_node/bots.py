@@ -192,5 +192,6 @@ class LiquidityProvider(Greenlet):
             for type_, amount, order_price in orders:
                 assert ((type_ is OfferType.BUY and order_price < price) or
                         (type_ is OfferType.SELL and order_price > price))
-                self.raidex_node.limit_order(type_, amount, order_price)
+                if amount > 0:
+                    self.raidex_node.limit_order(type_, amount, order_price)
             sleep(5)

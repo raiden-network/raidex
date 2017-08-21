@@ -26,6 +26,7 @@ class LimitOrderTask(gevent.Greenlet):
         self.offer_book = offer_book
         self.trades = trades
         self.type_ = type_
+        assert amount > 0
         self.amount = amount
         self.price = price
         self.commitment_service = commitment_service
@@ -43,6 +44,7 @@ class LimitOrderTask(gevent.Greenlet):
 
     def _run(self):
         next_amount = self.amount
+        assert next_amount > 0
         while not self.canceled:
             # try to trade next_amount of tokens and add the bundled tasks to the running tasks
             if next_amount > 0:
@@ -139,7 +141,7 @@ class LimitOrderTask(gevent.Greenlet):
     def _make_offer(self, amount):
         # type: (int) -> MakerExchangeTask
         offer = Offer(self.type_, amount, int(self.price * amount), random.randint(0, 1000000000),
-                      timestamp.time_plus(self.offer_lifetime))  # TODO generate better offer id
+                      timestamp.time_plus(seconds=self.offer_lifetime))  # TODO generate better offer id
         task = MakerExchangeTask(offer, self.address, self.commitment_service, self.message_broker, self.trader)
         task.start()
         # TODO: catch OfferIdentifierCollision and recreate offer, if offerid already being processed
