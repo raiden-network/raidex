@@ -16,6 +16,8 @@ export class ZingDepthChartComponent implements OnInit {
     public charts: ZingChartModel[];
     public bidArray: any[] = [];
     public askArray: any[] = [];
+    private minValue: number = 0.;
+    private maxValue: number = 0.;
     public raidexSubscription: Subscription;
 
     constructor(private raidexService: RaidexService) {}
@@ -27,16 +29,10 @@ export class ZingDepthChartComponent implements OnInit {
     public initialiseOrderChart(): void {
         this.raidexSubscription = this.raidexService.getOffers().subscribe(
             (offer) => {
-                let tempArray = offer.buys;
-                tempArray.sort(function(x, y) {
-                    return d3Array.ascending(Number(x.price), Number(y.price));
-                });
-                this.bidArray = cumulativePoints(tempArray);
-                tempArray = offer.sells;
-                tempArray.sort(function(x, y) {
-                    return d3Array.descending(Number(x.price), Number(y.price));
-                });
-                this.askArray = cumulativePoints(tempArray);
+                this.bidArray = cumulativePoints(offer.buys);
+                this.askArray = cumulativePoints(offer.sells);
+                this.minValue = Math.min(this.bidArray[0][0], this.askArray[this.askArray.length - 1][0]);
+                this.maxValue = Math.max(this.bidArray[this.bidArray.length - 1][0], this.askArray[0][0]);
                 this.populateChartData();
             });
     }
@@ -48,6 +44,7 @@ export class ZingDepthChartComponent implements OnInit {
                 'type': 'area',
                 'backgroundColor': 'transparent',
                 'plot': {
+                    'aspect': 'stepped',
                     'line-width': 2,
                     'marker': {
                         'size': 1,
@@ -74,7 +71,7 @@ export class ZingDepthChartComponent implements OnInit {
                         'callout': true
                     }
                 },
-                'scaleY': {
+                'scale-y': {
                     // 'label': {'text': 'Cumulative Volume'}
                     'short': true,
                     'item': {
@@ -87,10 +84,15 @@ export class ZingDepthChartComponent implements OnInit {
                     'adjust-layout': true /* For automatic margin adjustment. */
                 },
                 'scale-x': {
-                    'auto-fit': true,
+                    // 'auto-fit': true,
                     // 'label': {
                     //     'text': 'Price'
                     // },
+                    'min-value': this.minValue,
+                    'max-value': this.maxValue,
+                    // 'zooming': true,
+                    'step': .001,
+                    'decimals': 3,
                     'item': {
                         'font-color': '#f7f7f7',
                         'font-size': '11px',
@@ -99,11 +101,13 @@ export class ZingDepthChartComponent implements OnInit {
                 },
                 'series': [
                     {
+                        'scales': 'scale-x, scale-y',
                         'values': this.bidArray,
                         'line-color': '#4fef4a',
                         'background-color': '#4fef4a'
                     },
                     {
+                        'scales': 'scale-x, scale-y',
                         'values': this.askArray,
                         'line-color': '#ef5439',
                         'background-color': '#ef5439'

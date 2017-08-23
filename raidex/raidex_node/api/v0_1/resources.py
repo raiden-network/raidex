@@ -14,9 +14,9 @@ class Offers(MethodView):
         self.raidex_node = raidex_node
 
     def get(self):
-        # the offers are sorted, with lowest price first
+        # the grouped offers are sorted, with lowest price first
         buys = self.raidex_node.grouped_buys()
-        sells = self.raidex_node.grouped_sells()
+        sells = reversed(self.raidex_node.grouped_sells())
         dict_ = dict(
             data=dict(
                 buys=[
