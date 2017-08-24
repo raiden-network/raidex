@@ -16,6 +16,7 @@ import { ZingDepthChartComponent } from './components/zing-depthchart.component'
 import { ZingStockChartComponent } from './components/zing-stockchart.component';
 import { TradesTableComponent } from './components/trades-table.component';
 import { OffersTableComponent } from './components/offers-table.component';
+import { OrdersTableComponent } from './components/limit-order-table.component';
 
 @NgModule({
     declarations: [
@@ -26,7 +27,8 @@ import { OffersTableComponent } from './components/offers-table.component';
         // ZingPriceTimeSeriesComponent,
         ZingStockChartComponent,
         TradesTableComponent,
-        OffersTableComponent
+        OffersTableComponent,
+        OrdersTableComponent
     ],
     imports: [
         BrowserModule,

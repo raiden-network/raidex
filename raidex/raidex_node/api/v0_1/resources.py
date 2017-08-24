@@ -115,15 +115,23 @@ class LimitOrders(MethodView):
             abort(400, 'Invalid price')
         price = float(price)
 
-        order_id = self.raidex_node.limit_order(OfferType[type_], amount, price)
+        order_id = self.raidex_node.limit_order(OfferType[type_], amount, price, user_initiated=True)
         dict_ = dict(
             data=order_id
         )
         return jsonify(dict_)
 
     def get(self):
-        # TODO
         dict_ = dict(
-            data=[]
+            data=[
+                dict(
+                    type=order.type_,
+                    amount=order.amount,
+                    price=order.price,
+                    id=order.order_id,
+                    filled_amount=order.amount_traded,
+
+                ) for order in self.raidex_node.initiated_orders
+            ]
         )
         return jsonify(dict_)

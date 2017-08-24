@@ -32,6 +32,7 @@ class RaidexNode(object):
         self.offer_book = OfferBook()
         self._trades_view = TradesView()
         self.order_tasks_by_id = {}
+        self.user_order_tasks_by_id = {}
         self._nof_started_orders = 0
         self._nof_successful_orders = 0
         self._nof_unsuccessful_orders = 0
@@ -59,7 +60,7 @@ class RaidexNode(object):
         offer = self.offer_book.get_offer_by_id(offer_id)
         TakerExchangeTask(offer, self.commitment_service, self.message_broker, self.trader_client).start()
 
-    def limit_order(self, type_, amount, price):
+    def limit_order(self, type_, amount, price, user_initiated=False):
         log.info('Placing limit order: type: {}, amount: {}, price: {}'.format(type_, amount, price))
         open_orders = self.open_orders
         if open_orders > self._max_open_orders:
@@ -70,13 +71,15 @@ class RaidexNode(object):
         order_task = LimitOrderTask(order_id, self.offer_book, self._trades_view, type_, amount, price, self.address,
                                     self.commitment_service,
                                     self.message_broker, self.trader_client)
-        order_task.link(self._add_finished_limit_order)
+        order_task.link(self._process_finished_limit_order)
         order_task.start()
         self._nof_started_orders += 1
         self.order_tasks_by_id[order_id] = order_task
+        if user_initiated is True:
+            self.user_order_tasks_by_id[order_id] = order_task
         return order_id
 
-    def _add_finished_limit_order(self, order_task):
+    def _process_finished_limit_order(self, order_task):
         value = order_task.get(block=False)
         if value is True:
             self._nof_successful_orders += 1
@@ -101,6 +104,10 @@ class RaidexNode(object):
     @property
     def finished_orders(self):
         return self._nof_successful_orders + self._nof_unsuccessful_orders
+
+    @property
+    def initiated_orders(self):
+        return self.user_order_tasks_by_id.values()
 
     def print_offers(self):
         print(self.offer_book)

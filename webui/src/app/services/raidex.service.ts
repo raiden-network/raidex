@@ -49,7 +49,6 @@ export class RaidexService {
     public getPriceChart(nof_buckets: number, interval: number): Observable<Array<Trade>> {
         return TimerObservable.create(0, 10000)
             .flatMap(() => {
-                let resp: Observable<Response>;
                     let params: URLSearchParams = new URLSearchParams();
                     params.set('nof_buckets', (nof_buckets).toString());
                     params.set('interval', (interval).toString());
@@ -105,10 +104,10 @@ export class RaidexService {
             data, options).map((response) => response.json().data).catch(this.handleError);
     }
 
-    public getLimitOrders() {
-        return this.http.get(`${this.api}/markets/dummy/orders/limit`).
-            map((response) => response.json().data).catch(this.handleError);
-    }
+    // public getLimitOrders() {
+    //     return this.http.get(`${this.api}/markets/dummy/orders/limit`).
+    //         map((response) => response.json().data).catch(this.handleError);
+    // }
 
     public cancelLimitOrders(limitOrder: Order) {
         return this.http.delete(`${this.api}/markets/dummy/orders/limit/${limitOrder.id}`)
@@ -119,6 +118,22 @@ export class RaidexService {
         return errors
             .map((error) => console.error(message + (error.json().message || error)))
             .delay(20000);
+    }
+
+    public getLimitOrders(): Observable<Array<Order>> {
+      return TimerObservable.create(0, 10000)
+          .flatMap(() => this.http.get(`${this.api}/markets/dummy/orders/limit`)
+              .map((response) => {
+                  let data = response.json().data;
+                  return data.map((elem) => new Order(
+                      elem.type,
+                      format.formatCurrency(elem.amount),
+                      format.formatCurrency(elem.price, 2),
+                      elem.id,
+                      format.formatCurrency(elem.filled_amount)
+                  ));
+              }))
+              .retryWhen((errors) => this.printErrorAndRetry('Could not get Orders', errors));
     }
 
     private handleError(error: Response | any) {
