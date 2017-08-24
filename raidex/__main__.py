@@ -32,7 +32,8 @@ def main():
                         default='localhost')
     parser.add_argument("--trader-port", type=int, help='Specify the port for the trader mock, default is 5001',
                         default=5001)
-    parser.add_argument('--bots', action='store_true', help='Start a set of trading bots')
+    parser.add_argument('--bots', nargs='+', help='Start a set of (/subset of) multiple trading bots.\
+                                                  <Options:\"liquidity\", \"random\", \"manipulator\">')
 
     args = parser.parse_args()
 
@@ -54,15 +55,22 @@ def main():
         api = APIServer('', args.api_port, node)
         api.start()
 
-    if args.bots:
+    bots = args.bots
+    if bots:
         initial_price = 100.
-        liquidity_provider = LiquidityProvider(node, initial_price)
-        random_walker = RandomWalker(node, initial_price)
-        manipulator = Manipulator(node, initial_price)
-        liquidity_provider.start()
-        gevent.sleep(5)  # give liquidity provider head start
-        random_walker.start()
-        manipulator.start()
+
+        if 'liquidity' in bots:
+            liquidity_provider = LiquidityProvider(node, initial_price)
+            liquidity_provider.start()
+        if 'random' in bots:
+            gevent.sleep(5)  # give liquidity provider head start
+            random_walker = RandomWalker(node, initial_price)
+            random_walker.start()
+        if 'maniplulator' in bots:
+            if 'random' not in bots:
+                gevent.sleep(5)  # give liquidity provider head start
+            manipulator = Manipulator(node, initial_price)
+            manipulator.start()
 
     stop_event.wait()  # runs forever
 
