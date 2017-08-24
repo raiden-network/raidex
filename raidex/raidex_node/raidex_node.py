@@ -13,10 +13,11 @@ from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.raidex_node.trades import TradesView
 from raidex.raidex_node.commitment_service.client import CommitmentServiceClient
 from raidex.raidex_node.trader.client import TraderClient
+from raidex.raidex_node.trader.trader import TraderClientMock
 from raidex.message_broker.client import MessageBrokerClient
 from raidex.utils import timestamp
 from raidex.signing import Signer
-from raidex.raidex_node.offer_grouping import group_offers, group_trades
+from raidex.raidex_node.offer_grouping import group_offers, group_trades_from, make_price_bins, get_n_recent_trades
 log = slogging.get_logger('node')
 
 
@@ -29,15 +30,21 @@ class RaidexNode(object):
         self.commitment_service = commitment_service
         self.trader_client = trader_client
         self.offer_book = OfferBook()
-        self._trades = TradesView()
+        self._trades_view = TradesView()
         self.order_tasks_by_id = {}
-        self.next_order_id = 0
+        self.user_order_tasks_by_id = {}
+        self._nof_started_orders = 0
+        self._nof_successful_orders = 0
+        self._nof_unsuccessful_orders = 0
+        self._max_open_orders = 0
+
+        self._get_trades = self._trades_view.trades
 
     def start(self):
         log.info('Starting raidex node')
         OfferBookTask(self.offer_book, self.token_pair, self.message_broker).start()
-        OfferTakenTask(self.offer_book, self._trades, self.message_broker).start()
-        SwapCompletedTask(self._trades, self.message_broker).start()
+        OfferTakenTask(self.offer_book, self._trades_view, self.message_broker).start()
+        SwapCompletedTask(self._trades_view, self.message_broker).start()
 
         # start task for updating the balance of the trader:
         self.trader_client.start()
@@ -53,16 +60,54 @@ class RaidexNode(object):
         offer = self.offer_book.get_offer_by_id(offer_id)
         TakerExchangeTask(offer, self.commitment_service, self.message_broker, self.trader_client).start()
 
-    def limit_order(self, type_, amount, price):
-        log.info('Placing limit order')
-        order_task = LimitOrderTask(self.offer_book, self._trades, type_, amount, price, self.address,
+    def limit_order(self, type_, amount, price, user_initiated=False):
+        log.info('Placing limit order: type: {}, amount: {}, price: {}'.format(type_, amount, price))
+        open_orders = self.open_orders
+        if open_orders > self._max_open_orders:
+            log.debug('Open order count increased: {}'.format(open_orders))
+            self._max_open_orders = open_orders
+
+        order_id = self._nof_started_orders
+        order_task = LimitOrderTask(order_id, self.offer_book, self._trades_view, type_, amount, price, self.address,
                                     self.commitment_service,
                                     self.message_broker, self.trader_client)
+        order_task.link(self._process_finished_limit_order)
         order_task.start()
-        order_id = self.next_order_id
+        self._nof_started_orders += 1
         self.order_tasks_by_id[order_id] = order_task
-        self.next_order_id += 1
+        if user_initiated is True:
+            self.user_order_tasks_by_id[order_id] = order_task
         return order_id
+
+    def _process_finished_limit_order(self, order_task):
+        value = order_task.get(block=False)
+        if value is True:
+            self._nof_successful_orders += 1
+        elif value is False:
+            self._nof_unsuccessful_orders += 1
+
+        # delete finished tasks, we don't need history of finished tasks for now
+        del self.order_tasks_by_id[order_task.order_id]
+
+    @property
+    def successful_orders(self):
+        return self._nof_successful_orders
+
+    @property
+    def unsuccessful_orders(self):
+        return self._nof_unsuccessful_orders
+
+    @property
+    def open_orders(self):
+        return self._nof_started_orders - self.finished_orders
+
+    @property
+    def finished_orders(self):
+        return self._nof_successful_orders + self._nof_unsuccessful_orders
+
+    @property
+    def initiated_orders(self):
+        return self.user_order_tasks_by_id.values()
 
     def print_offers(self):
         print(self.offer_book)
@@ -101,6 +146,28 @@ class RaidexNode(object):
 
         return raidex_node
 
+    @classmethod
+    def build_from_mocks(cls, message_broker, trader, cs_address, privkey_seed=None, cs_fee_rate=0.01, base_token_addr=None,
+                         counter_token_addr=None):
+
+        if privkey_seed is None:
+            signer = Signer.random()
+        else:
+            signer = Signer.from_seed(privkey_seed)
+
+        if base_token_addr is None and counter_token_addr is None:
+            token_pair = TokenPair.from_seed('test')
+        else:
+            token_pair = TokenPair(base_token_addr, counter_token_addr)
+
+        trader_client = TraderClientMock(signer.address, commitment_balance=10e18, trader=trader)
+
+        commitment_service_client = CommitmentServiceClient(signer, token_pair, trader_client,
+                                                            message_broker, cs_address, fee_rate=cs_fee_rate)
+        raidex_node = cls(signer.address, token_pair, commitment_service_client, message_broker, trader_client)
+
+        return raidex_node
+
     def buys(self):
         return self.offer_book.buys.values()
 
@@ -113,11 +180,19 @@ class RaidexNode(object):
     def grouped_sells(self):
         return group_offers(self.sells())
 
-    def trades(self):
-        return self._trades.values()
+    def trades(self, from_timestamp=None):
+        return self._get_trades(from_timestamp=from_timestamp)
 
-    def grouped_trades(self):
-        return group_trades(self.trades())
+    def grouped_trades(self, from_timestamp=None):
+        return group_trades_from(self._get_trades, from_timestamp)
+
+    def recent_grouped_trades(self, chunk_size):
+        return get_n_recent_trades(self.trades(), chunk_size)
+
+    def price_chart_bins(self, nof_buckets, interval):
+        if nof_buckets < 1 or interval < 0.:
+            raise ValueError()
+        return make_price_bins(self._get_trades, nof_buckets, interval)
 
     def market_price(self, trade_count=20):
         """Calculate a market price based on the most recent trades.
@@ -125,10 +200,9 @@ class RaidexNode(object):
         :param trade_count: number of redent trades to consider
         :returns: a market price, or `None` if no trades have happened yet
         """
-        trades = []
-        for trade in self.trades():
-            trades.append(trade)
-        trades = trades[-1:-trade_count - 1:-1]
+        trades_list = self._get_trades(trade_count)
+        trades = list(reversed(trades_list[-trade_count:]))
+
         if len(trades) == 0:
             return None
         else:

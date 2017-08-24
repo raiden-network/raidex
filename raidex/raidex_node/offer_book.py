@@ -1,7 +1,7 @@
 from __future__ import print_function
 import random
 
-from bintrees import FastRBTree
+from sortedcontainers import SortedDict
 from enum import Enum
 from ethereum import slogging
 from raidex.utils import pex
@@ -83,14 +83,14 @@ class OfferView(object):
     """
 
     def __init__(self):
-        self.offers = FastRBTree()
+        self.offers = SortedDict()
         self.offer_by_id = dict()
 
     def add_offer(self, offer):
         assert isinstance(offer, Offer)
 
-        # inserts in the RBTree
-        self.offers.insert((offer.price, offer.offer_id), offer)
+        # inserts in the SortedDict
+        self.offers[(offer.price, offer.offer_id)] = offer
 
         # inserts in the dict for retrieval by offer_id
         self.offer_by_id[offer.offer_id] = offer
@@ -101,8 +101,8 @@ class OfferView(object):
         if offer_id in self.offer_by_id:
             offer = self.offer_by_id[offer_id]
 
-            # remove from the RBTree
-            self.offers.remove((offer.price, offer.offer_id))
+            # remove from the SortedDict
+            del self.offers[(offer.price, offer.offer_id)]
 
             # remove from the dict
             del self.offer_by_id[offer_id]
@@ -119,7 +119,8 @@ class OfferView(object):
         return iter(self.offers)
 
     def values(self):
-        return self.offers.values()
+        # returns iterator of all offers, sorted by (price, offer_id)
+        return self.offers.itervalues()
 
 
 class OfferBook(object):

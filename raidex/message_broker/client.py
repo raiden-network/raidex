@@ -53,10 +53,7 @@ class StreamingRequestTask(gevent.Greenlet):
 
     @property
     def has_listeners(self):
-        if self.listeners:
-            return True
-        else:
-            return False
+        return bool(self.listeners)
 
     def _run(self):
         # this initially blocks until something is sent on that topic

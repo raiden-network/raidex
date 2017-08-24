@@ -14,8 +14,10 @@ import * as d3Array from 'd3-array';
 export class ZingDepthChartComponent implements OnInit {
 
     public charts: ZingChartModel[];
-    public bidArray: any[] = [];
-    public askArray: any[] = [];
+    public bidArray: number[][] = [];
+    public askArray: number[][] = [];
+    private minValue: number;
+    private maxValue: number;
     public raidexSubscription: Subscription;
 
     constructor(private raidexService: RaidexService) {}
@@ -24,30 +26,39 @@ export class ZingDepthChartComponent implements OnInit {
         setTimeout(() => this.initialiseOrderChart(), 1000);
     }
 
+    public calcMinMax(askArray: number[][], bidArray: number[][]){
+        let maxAsk = askArray.slice(0, 1).pop();
+        let minAsk = askArray.slice(-1).pop();
+        let maxBid = bidArray.slice(-1).pop();
+        let minBid = bidArray.slice(0, 1).pop();
+
+        let min = Math.min.apply(Math, [minAsk, minBid].filter(val => Boolean(val)).map(offer => offer[0]));
+        let max = Math.max.apply(Math, [maxAsk, maxBid].filter(val => Boolean(val)).map(offer => offer[0]));
+        return {'max': max, 'min': min}
+    }
+
     public initialiseOrderChart(): void {
         this.raidexSubscription = this.raidexService.getOffers().subscribe(
             (offer) => {
-                let tempArray = offer.buys;
-                tempArray.sort(function(x, y) {
-                    return d3Array.ascending(Number(x.price), Number(y.price));
-                });
-                this.bidArray = cumulativePoints(tempArray);
-                tempArray = offer.sells;
-                tempArray.sort(function(x, y) {
-                    return d3Array.descending(Number(x.price), Number(y.price));
-                });
-                this.askArray = cumulativePoints(tempArray);
+                // sells is sorted in descending order by (price, offer_id)
+                this.askArray = cumulativePoints(offer.sells);
+                // buys is sorted in ascending order by (price, offer_id)
+                this.bidArray = cumulativePoints(offer.buys);
+                let minMax = this.calcMinMax(this.askArray, this.bidArray);
+                this.minValue = minMax.min;
+                this.maxValue = minMax.max;
                 this.populateChartData();
             });
     }
 
     public populateChartData(): void {
-        this.charts = [{
+        let depth_chart = {
             id: 'depth-chart',
             data: {
                 'type': 'area',
                 'backgroundColor': 'transparent',
                 'plot': {
+                    'aspect': 'stepped',
                     'line-width': 2,
                     'marker': {
                         'size': 1,
@@ -74,7 +85,7 @@ export class ZingDepthChartComponent implements OnInit {
                         'callout': true
                     }
                 },
-                'scaleY': {
+                'scale-y': {
                     // 'label': {'text': 'Cumulative Volume'}
                     'short': true,
                     'item': {
@@ -87,10 +98,8 @@ export class ZingDepthChartComponent implements OnInit {
                     'adjust-layout': true /* For automatic margin adjustment. */
                 },
                 'scale-x': {
-                    'auto-fit': true,
-                    // 'label': {
-                    //     'text': 'Price'
-                    // },
+                    'step': .001,
+                    'decimals': 3,
                     'item': {
                         'font-color': '#f7f7f7',
                         'font-size': '11px',
@@ -99,11 +108,13 @@ export class ZingDepthChartComponent implements OnInit {
                 },
                 'series': [
                     {
+                        'scales': 'scale-x, scale-y',
                         'values': this.bidArray,
                         'line-color': '#4fef4a',
                         'background-color': '#4fef4a'
                     },
                     {
+                        'scales': 'scale-x, scale-y',
                         'values': this.askArray,
                         'line-color': '#ef5439',
                         'background-color': '#ef5439'
@@ -112,7 +123,14 @@ export class ZingDepthChartComponent implements OnInit {
             },
             height: '300px',
             width: '100%'
-        }];
+        };
+        if (this.minValue){
+            depth_chart.data['scale-x']['min-value'] = this.minValue;
+        }
+        if (this.maxValue){
+            depth_chart.data['scale-x']['max-value'] = this.maxValue;
+        }
+        this.charts = [depth_chart]
     }
 
 }

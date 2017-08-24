@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Http, Headers, RequestOptions, Response } from '@angular/http';
+import { Http, Headers, RequestOptions, Response, URLSearchParams } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
 import { TimerObservable} from 'rxjs/observable/TimerObservable';
 import 'rxjs/add/operator/map';
@@ -11,6 +11,7 @@ import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/mergeMap';
 import { Order } from '../model/order';
 import { Trade } from '../model/trade';
+import { PriceBin } from '../model/pricebin';
 import { Offer } from '../model/offer';
 import * as format from '../utils/format';
 
@@ -23,19 +24,49 @@ export class RaidexService {
 
     }
 
-    public getTrades(): Observable<Array<Trade>> {
+        public getNewTrades(chunk_size: number): Observable<Array<Trade>> {
         return TimerObservable.create(0, 1000)
-            .flatMap(() => this.http.get(`${this.api}/markets/dummy/trades`)
+            .flatMap(() => {
+                let resp: Observable<Response>;
+                    let params: URLSearchParams = new URLSearchParams();
+                    params.set('chunk_size', (chunk_size).toString());
+                    resp = this.http.get(`${this.api}/markets/dummy/trades`, {search: params});
+                return resp.map((response) => {
+                    let data = response.json().data;
+                    return data.map((elem) => {
+                        return new Trade(
+                            elem.timestamp,
+                            format.formatCurrency(elem.amount),
+                            format.formatCurrency(elem.price, 2),
+                            elem.type,
+                            elem.hash
+                        );}
+                        );
+                })
+            }).retryWhen((errors) => this.printErrorAndRetry('Could not get OrderHistory', errors));
+    }
+
+    public getPriceChart(nof_buckets: number, interval: number): Observable<Array<Trade>> {
+        return TimerObservable.create(0, 10000)
+            .flatMap(() => {
+                    let params: URLSearchParams = new URLSearchParams();
+                    params.set('nof_buckets', (nof_buckets).toString());
+                    params.set('interval', (interval).toString());
+                    return this.http.get(`${this.api}/markets/dummy/trades/price-chart`, {search: params})
                 .map((response) => {
                     let data = response.json().data;
-                    return data.map((elem) => new Trade(
-                        elem.timestamp,
-                        format.formatCurrency(elem.amount),
-                        format.formatCurrency(elem.price, 2),
-                        elem.type
-                    ));
-                }))
-                .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderHistory', errors));
+                    return data.map((elem) => {
+                        return new PriceBin(
+                            elem.timestamp,
+                            format.formatCurrency(elem.amount),
+                            format.formatCurrency(elem.open, 2),
+                            format.formatCurrency(elem.close, 2),
+                            format.formatCurrency(elem.max, 2),
+                            format.formatCurrency(elem.min, 2),
+                        );}
+                        );
+                })
+            }).retryWhen((errors) => this.printErrorAndRetry('Could not get PriceChart', errors));
     }
 
     public getOffers(): Observable<any> {
@@ -73,10 +104,10 @@ export class RaidexService {
             data, options).map((response) => response.json().data).catch(this.handleError);
     }
 
-    public getLimitOrders() {
-        return this.http.get(`${this.api}/markets/dummy/orders/limit`).
-            map((response) => response.json().data).catch(this.handleError);
-    }
+    // public getLimitOrders() {
+    //     return this.http.get(`${this.api}/markets/dummy/orders/limit`).
+    //         map((response) => response.json().data).catch(this.handleError);
+    // }
 
     public cancelLimitOrders(limitOrder: Order) {
         return this.http.delete(`${this.api}/markets/dummy/orders/limit/${limitOrder.id}`)
@@ -87,6 +118,22 @@ export class RaidexService {
         return errors
             .map((error) => console.error(message + (error.json().message || error)))
             .delay(20000);
+    }
+
+    public getLimitOrders(): Observable<Array<Order>> {
+      return TimerObservable.create(0, 10000)
+          .flatMap(() => this.http.get(`${this.api}/markets/dummy/orders/limit`)
+              .map((response) => {
+                  let data = response.json().data;
+                  return data.map((elem) => new Order(
+                      elem.type,
+                      format.formatCurrency(elem.amount),
+                      format.formatCurrency(elem.price, 2),
+                      elem.id,
+                      format.formatCurrency(elem.filled_amount)
+                  ));
+              }))
+              .retryWhen((errors) => this.printErrorAndRetry('Could not get Orders', errors));
     }
 
     private handleError(error: Response | any) {

@@ -36,6 +36,7 @@ install_requires = list(set(
     install_requires_replacements.get(requirement.strip(), requirement.strip())
     for requirement in open('requirements.txt')
 ))
+print(install_requires)
 
 test_requirements = []
 

@@ -1,7 +1,8 @@
 from ethereum import slogging
 from gevent.queue import PriorityQueue
 
-from raidex.commitment_service.swap import SwapFactory
+from raidex.raidex_node.trader.trader import TraderClientMock
+from raidex.signing import Signer
 from raidex.commitment_service.tasks import (
     RefundTask,
     MessageSenderTask,
@@ -51,3 +52,11 @@ class CommitmentService(object):
         TransferReceivedTask(self.swaps, self.trader_client).start()
         RefundTask(self.trader_client, self.refund_queue, self.fee_rate).start()
         MessageSenderTask(self.message_broker, self.message_queue, self._sign).start()
+
+    @classmethod
+    def build_from_mock(cls, privkey_seed, message_broker, trader, fee_rate=None):
+        signer = Signer.from_seed(privkey_seed)
+        message_broker_client = message_broker
+        trader_client = TraderClientMock(signer.address, commitment_balance=0, trader=trader)
+
+        return cls(signer, message_broker_client, trader_client, fee_rate)
