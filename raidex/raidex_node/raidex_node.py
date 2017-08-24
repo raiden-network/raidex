@@ -13,6 +13,7 @@ from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.raidex_node.trades import TradesView
 from raidex.raidex_node.commitment_service.client import CommitmentServiceClient
 from raidex.raidex_node.trader.client import TraderClient
+from raidex.raidex_node.trader.trader import TraderClientMock
 from raidex.message_broker.client import MessageBrokerClient
 from raidex.utils import timestamp
 from raidex.signing import Signer
@@ -135,6 +136,28 @@ class RaidexNode(object):
 
         if mock_trading_activity is True:
             raise NotImplementedError('Trading Mocking disabled a the moment')
+
+        return raidex_node
+
+    @classmethod
+    def build_from_mocks(cls, message_broker, trader, cs_address, privkey_seed=None, cs_fee_rate=0.01, base_token_addr=None,
+                         counter_token_addr=None):
+
+        if privkey_seed is None:
+            signer = Signer.random()
+        else:
+            signer = Signer.from_seed(privkey_seed)
+
+        if base_token_addr is None and counter_token_addr is None:
+            token_pair = TokenPair.from_seed('test')
+        else:
+            token_pair = TokenPair(base_token_addr, counter_token_addr)
+
+        trader_client = TraderClientMock(signer.address, commitment_balance=10e18, trader=trader)
+
+        commitment_service_client = CommitmentServiceClient(signer, token_pair, trader_client,
+                                                            message_broker, cs_address, fee_rate=cs_fee_rate)
+        raidex_node = cls(signer.address, token_pair, commitment_service_client, message_broker, trader_client)
 
         return raidex_node
 
