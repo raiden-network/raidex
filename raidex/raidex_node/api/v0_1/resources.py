@@ -125,7 +125,7 @@ class LimitOrders(MethodView):
         dict_ = dict(
             data=[
                 dict(
-                    type=order.type_,
+                    type=order.type_.value,
                     amount=order.amount,
                     price=order.price,
                     id=order.order_id,
