@@ -29,18 +29,20 @@ class RaidexNode(object):
         self.commitment_service = commitment_service
         self.trader_client = trader_client
         self.offer_book = OfferBook()
-        self._trades = TradesView()
+        self._trades_view = TradesView()
         self.order_tasks_by_id = {}
         self._nof_started_orders = 0
         self._nof_successful_orders = 0
         self._nof_unsuccessful_orders = 0
         self._max_open_orders = 0
 
+        self._get_trades = self._trades_view.trades
+
     def start(self):
         log.info('Starting raidex node')
         OfferBookTask(self.offer_book, self.token_pair, self.message_broker).start()
-        OfferTakenTask(self.offer_book, self._trades, self.message_broker).start()
-        SwapCompletedTask(self._trades, self.message_broker).start()
+        OfferTakenTask(self.offer_book, self._trades_view, self.message_broker).start()
+        SwapCompletedTask(self._trades_view, self.message_broker).start()
 
         # start task for updating the balance of the trader:
         self.trader_client.start()
@@ -64,7 +66,7 @@ class RaidexNode(object):
             self._max_open_orders = open_orders
 
         order_id = self._nof_started_orders
-        order_task = LimitOrderTask(order_id, self.offer_book, self._trades, type_, amount, price, self.address,
+        order_task = LimitOrderTask(order_id, self.offer_book, self._trades_view, type_, amount, price, self.address,
                                     self.commitment_service,
                                     self.message_broker, self.trader_client)
         order_task.link(self._add_finished_limit_order)
@@ -149,18 +151,18 @@ class RaidexNode(object):
         return group_offers(self.sells())
 
     def trades(self, from_timestamp=None):
-        return self._trades.trades(from_timestamp)
+        return self._get_trades(from_timestamp=from_timestamp)
 
     def grouped_trades(self, from_timestamp=None):
-        return group_trades_from(self._trades.trades, from_timestamp)
+        return group_trades_from(self._get_trades, from_timestamp)
 
     def recent_grouped_trades(self, chunk_size):
-        return get_n_recent_trades(self._trades, chunk_size)
+        return get_n_recent_trades(self.trades(), chunk_size)
 
     def price_chart_bins(self, nof_buckets, interval):
         if nof_buckets < 1 or interval < 0.:
             raise ValueError()
-        return make_price_bins(self._trades.trades, nof_buckets, interval)
+        return make_price_bins(self._get_trades, nof_buckets, interval)
 
     def market_price(self, trade_count=20):
         """Calculate a market price based on the most recent trades.
@@ -168,7 +170,9 @@ class RaidexNode(object):
         :param trade_count: number of redent trades to consider
         :returns: a market price, or `None` if no trades have happened yet
         """
-        trades = self._trades.latest_trades(trade_count)
+        trades_list = self._get_trades(trade_count)
+        trades = list(reversed(trades_list[-trade_count:]))
+
         if len(trades) == 0:
             return None
         else:

@@ -1,10 +1,9 @@
 from collections import namedtuple
 
-from bintrees import FastRBTree
+from sortedcontainers import SortedDict
 from ethereum import slogging
 
 from offer_book import Offer
-from raidex.utils import timestamp
 
 
 log = slogging.get_logger('node.trades')
@@ -24,24 +23,12 @@ class TradesView(object):
     def __init__(self):
         self.pending_offer_by_id = {}
         self.trade_by_id = {}
-        self._trades = FastRBTree()
+        self._trades = SortedDict()
 
     def add_pending(self, offer):
         self.pending_offer_by_id[offer.offer_id] = offer
 
-    def _cleanup_old_trades(self, minutes):
-        from_time = timestamp.to_milliseconds(timestamp.time_minus(seconds=60 * minutes))
-        try:
-            key = self._trades.floor_key((from_time, 0))
-            key, _ = self._trades.succ_item(key)
-            del self._trades[:key]
-            # TODO also cleanup offer_by_id_dict
-        except KeyError:
-            pass
-
     def report_completed(self, offer_id, completed_timestamp):
-        # self._cleanup_old_trades(20)  # untested yet
-
         offer = self.pending_offer_by_id.get(offer_id)
         if offer is None:
             return False
@@ -51,12 +38,9 @@ class TradesView(object):
         assert isinstance(offer, Offer)
         trade = Trade(offer, completed_timestamp)
 
-        # inserts in the RBTree
-        self._trades.insert((trade.timestamp, offer.offer_id), trade)
-
+        self._trades[(trade.timestamp, offer.offer_id)] = trade
         # inserts in the dict for retrieval by offer_id
         self.trade_by_id[offer.offer_id] = trade
-
         return offer.offer_id
 
     def get_trade_by_id(self, offer_id):
@@ -73,41 +57,24 @@ class TradesView(object):
 
     def trades(self, from_timestamp=None, to_timestamp=None):
         """
-        returns a generator object for all trades
         :param from_timestamp: first timestamp to include in result
         :param to_timestamp: first timestamp to exclude from result
-        :return: generator object for the values of the RBtree
+        :return: list
         """
         if (from_timestamp, to_timestamp) is (None, None):
-            return self.values()
+            return self._trades.values()
 
-        min_key = None
+        min_key, max_key = None, None
         if from_timestamp is not None:
-            try:
-                min_key, _ = self._trades.ceiling_item((from_timestamp, 0))
-            except KeyError:
-                pass
-
-        max_key = None
+            min_key = (from_timestamp, 0)
         if to_timestamp is not None:
-            try:
-                key = self._trades.floor_key((to_timestamp, 0))
-                max_key, _ = self._trades.succ_item(key)
-            except KeyError:
-                pass
+            max_key = (to_timestamp, 0)
 
-        if (min_key, max_key) is (None, None):
-            # return empty generator
-            return iter(())
+        # FIXME prevent modifying (from report_completed()) while iterating
+        trades = [self._trades[key] for key in self._trades.irange(minimum=min_key, maximum=max_key,
+                                                                   inclusive=(True, False))]
+        return trades
 
-        return self._trades.value_slice(min_key, max_key)
-
-    def latest_trades(self, trade_count=5):
-        # returns list of n-latest trades
-        return [trade for key, trade in self._trades.nlargest(trade_count)]
-
-    def values(self, reverse=False):
-        return self._trades.values(reverse)
-
-    def keys(self):
-        return self._trades.keys()
+    def values(self):
+        # FIXME refactor to return list and not iterator
+        return self._trades.itervalues()

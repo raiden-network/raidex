@@ -234,9 +234,8 @@ class PriceBin(object):
             return 0
 
 
-def get_n_recent_trades(trades, nof_trades):
-    iter_ = trades.values(reverse=True)
-    return group_trades(iter_, chunk_size=nof_trades)
+def get_n_recent_trades(trades_list, nof_trades):
+    return group_trades(reversed(trades_list), chunk_size=nof_trades)
 
 
 def make_price_bins(trades_gen_func, nof_buckets, interval):
