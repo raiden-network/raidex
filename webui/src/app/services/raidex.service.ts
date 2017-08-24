@@ -30,13 +30,10 @@ export class RaidexService {
                 let resp: Observable<Response>;
                     let params: URLSearchParams = new URLSearchParams();
                     params.set('chunk_size', (chunk_size).toString());
-                    // console.log(params);
                     resp = this.http.get(`${this.api}/markets/dummy/trades`, {search: params});
                 return resp.map((response) => {
                     let data = response.json().data;
-                    // console.log(response);
                     return data.map((elem) => {
-                        // console.log(elem);
                         return new Trade(
                             elem.timestamp,
                             format.formatCurrency(elem.amount),

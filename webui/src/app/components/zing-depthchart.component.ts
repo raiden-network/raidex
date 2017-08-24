@@ -14,10 +14,10 @@ import * as d3Array from 'd3-array';
 export class ZingDepthChartComponent implements OnInit {
 
     public charts: ZingChartModel[];
-    public bidArray: any[] = [];
-    public askArray: any[] = [];
-    private minValue: number = 0.;
-    private maxValue: number = 0.;
+    public bidArray: number[][] = [];
+    public askArray: number[][] = [];
+    private minValue: number;
+    private maxValue: number;
     public raidexSubscription: Subscription;
 
     constructor(private raidexService: RaidexService) {}
@@ -26,19 +26,33 @@ export class ZingDepthChartComponent implements OnInit {
         setTimeout(() => this.initialiseOrderChart(), 1000);
     }
 
+    public calcMinMax(askArray: number[][], bidArray: number[][]){
+        let maxAsk = askArray.slice(0, 1).pop();
+        let minAsk = askArray.slice(-1).pop();
+        let maxBid = bidArray.slice(-1).pop();
+        let minBid = bidArray.slice(0, 1).pop();
+
+        let min = Math.min.apply(Math, [minAsk, minBid].filter(val => Boolean(val)).map(offer => offer[0]));
+        let max = Math.max.apply(Math, [maxAsk, maxBid].filter(val => Boolean(val)).map(offer => offer[0]));
+        return {'max': max, 'min': min}
+    }
+
     public initialiseOrderChart(): void {
         this.raidexSubscription = this.raidexService.getOffers().subscribe(
             (offer) => {
-                this.bidArray = cumulativePoints(offer.buys);
+                // sells is sorted in descending order by (price, offer_id)
                 this.askArray = cumulativePoints(offer.sells);
-                this.minValue = Math.min(this.bidArray[0][0], this.askArray[this.askArray.length - 1][0]);
-                this.maxValue = Math.max(this.bidArray[this.bidArray.length - 1][0], this.askArray[0][0]);
+                // buys is sorted in ascending order by (price, offer_id)
+                this.bidArray = cumulativePoints(offer.buys);
+                let minMax = this.calcMinMax(this.askArray, this.bidArray);
+                this.minValue = minMax.min;
+                this.maxValue = minMax.max;
                 this.populateChartData();
             });
     }
 
     public populateChartData(): void {
-        this.charts = [{
+        let depth_chart = {
             id: 'depth-chart',
             data: {
                 'type': 'area',
@@ -84,13 +98,6 @@ export class ZingDepthChartComponent implements OnInit {
                     'adjust-layout': true /* For automatic margin adjustment. */
                 },
                 'scale-x': {
-                    // 'auto-fit': true,
-                    // 'label': {
-                    //     'text': 'Price'
-                    // },
-                    'min-value': this.minValue,
-                    'max-value': this.maxValue,
-                    // 'zooming': true,
                     'step': .001,
                     'decimals': 3,
                     'item': {
@@ -116,7 +123,14 @@ export class ZingDepthChartComponent implements OnInit {
             },
             height: '300px',
             width: '100%'
-        }];
+        };
+        if (this.minValue){
+            depth_chart.data['scale-x']['min-value'] = this.minValue;
+        }
+        if (this.maxValue){
+            depth_chart.data['scale-x']['max-value'] = this.maxValue;
+        }
+        this.charts = [depth_chart]
     }
 
 }
