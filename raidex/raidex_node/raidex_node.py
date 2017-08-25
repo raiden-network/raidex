@@ -68,15 +68,14 @@ class RaidexNode(object):
             self._max_open_orders = open_orders
 
         order_id = self._nof_started_orders
-        order_task = LimitOrderTask(order_id, self.offer_book, self._trades_view, type_, amount, price, self.address,
+        order_task = LimitOrderTask(self.offer_book, self._trades_view, type_, amount, price, order_id, self.address,
                                     self.commitment_service,
                                     self.message_broker, self.trader_client)
         order_task.link(self._process_finished_limit_order)
-        order_task.start()
-        self._nof_started_orders += 1
-        self.order_tasks_by_id[order_id] = order_task
         if user_initiated is True:
             self.user_order_tasks_by_id[order_id] = order_task
+        order_task.start()
+        self._nof_started_orders += 1
         return order_id
 
     def _process_finished_limit_order(self, order_task):
@@ -85,9 +84,7 @@ class RaidexNode(object):
             self._nof_successful_orders += 1
         elif value is False:
             self._nof_unsuccessful_orders += 1
-
-        # delete finished tasks, we don't need history of finished tasks for now
-        del self.order_tasks_by_id[order_task.order_id]
+        return self.user_order_tasks_by_id.pop(order_task.order_id, None)
 
     @property
     def successful_orders(self):
@@ -108,6 +105,13 @@ class RaidexNode(object):
     @property
     def initiated_orders(self):
         return self.user_order_tasks_by_id.values()
+
+    def limit_orders(self):
+        return self.user_order_tasks_by_id.values()
+
+    def cancel_limit_order(self, order_id):
+        log.info('Cancel limit order')
+        self.user_order_tasks_by_id[order_id].cancel()
 
     def print_offers(self):
         print(self.offer_book)

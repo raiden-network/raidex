@@ -76,7 +76,7 @@ def trades():
 
 
 def test_amount_of_offers_spawned(empty_offer_book, trades, accounts, commitment_service, message_broker, trader):
-    order_task = LimitOrderTask(1, empty_offer_book, trades, OfferType.BUY, 20, 10, accounts[0].address,
+    order_task = LimitOrderTask(empty_offer_book, trades, OfferType.BUY, 20, 10, 1, accounts[0].address,
                                 commitment_service, message_broker, trader, 2, 1)
     order_task.start()
     switch_context()
@@ -84,7 +84,7 @@ def test_amount_of_offers_spawned(empty_offer_book, trades, accounts, commitment
 
 
 def test_amount_of_offers_taken_and_spawned(offer_book, trades, accounts, commitment_service, message_broker, trader):
-    order_task = LimitOrderTask(1, offer_book, trades, OfferType.BUY, 10, 10, accounts[0].address, commitment_service,
+    order_task = LimitOrderTask(offer_book, trades, OfferType.BUY, 10, 10, 1, accounts[0].address, commitment_service,
                                 message_broker, trader, 2, 1)
     order_task.start()
     switch_context()
@@ -92,7 +92,7 @@ def test_amount_of_offers_taken_and_spawned(offer_book, trades, accounts, commit
 
 
 def test_amount_of_offers_taken(offer_book, trades, accounts, commitment_service, message_broker, trader):
-    order_task = LimitOrderTask(1, offer_book, trades, OfferType.BUY, 5, 10, accounts[0].address, commitment_service,
+    order_task = LimitOrderTask(offer_book, trades, OfferType.BUY, 5, 10, 1, accounts[0].address, commitment_service,
                                 message_broker, trader, 2, 0.2)
     order_task.start()
     switch_context()
@@ -102,7 +102,7 @@ def test_amount_of_offers_taken(offer_book, trades, accounts, commitment_service
 
 
 def test_of_respawn(empty_offer_book, trades, accounts, commitment_service, message_broker, trader):
-    order_task = LimitOrderTask(1, empty_offer_book, trades, OfferType.BUY, 10, 10, accounts[0].address,
+    order_task = LimitOrderTask(empty_offer_book, trades, OfferType.BUY, 10, 10, 1, accounts[0].address,
                                 commitment_service, message_broker, trader, 2, 0.5)
     order_task.start()
     switch_context()
@@ -121,9 +121,9 @@ def test_of_token_swap(accounts, token_pair, commitment_service, commitment_serv
     OfferBookTask(offer_book1, token_pair, message_broker).start()
     OfferTakenTask(offer_book1, trades1, message_broker).start()
     SwapCompletedTask(trades1, message_broker).start()
-    order_task1 = LimitOrderTask(1, offer_book1, trades1, OfferType.BUY, 10, 10, accounts[0].address, commitment_service,
+    order_task1 = LimitOrderTask(offer_book1, trades1, OfferType.BUY, 10, 10, 1, accounts[0].address, commitment_service,
                                  message_broker, trader, 2, 1)
-    order_task2 = LimitOrderTask(2, offer_book2, trades2, OfferType.SELL, 10, 10, accounts[1].address, commitment_service2,
+    order_task2 = LimitOrderTask(offer_book2, trades2, OfferType.SELL, 10, 10, 2, accounts[1].address, commitment_service2,
                                  message_broker, trader2, 2, 10)
 
     OfferBookTask(offer_book2, token_pair, message_broker).start()

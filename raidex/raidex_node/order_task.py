@@ -19,17 +19,16 @@ class LimitOrderTask(gevent.Greenlet):
     If the Order isn't filled after that, it will spawn MakerExchangeTasks to publish offers with a reversed asset_pair
     """
 
-    def __init__(self, order_id, offer_book, trades, type_, amount, price, address, commitment_service, message_broker,
-                 trader,
+    def __init__(self, offer_book, trades, type_, amount, price, order_id, address, commitment_service, message_broker, trader,
                  offer_size=2 * 10 ** 18,  # for ether
-                 offer_lifetime=10000):  # FIXME this should be way shorter
-        self.order_id = order_id
+                 offer_lifetime=10):
         self.offer_book = offer_book
         self.trades = trades
         self.type_ = type_
         assert amount > 0
         self.amount = amount
         self.price = price
+        self.order_id = order_id
         self.commitment_service = commitment_service
         self.message_broker = message_broker
         self.trader = trader
@@ -52,7 +51,7 @@ class LimitOrderTask(gevent.Greenlet):
                 self.running_bundled_tasks += self._trade(next_amount)
             # get next bundle of finished tasks
             bundled_tasks = gevent.wait(self.running_bundled_tasks, count=1)
-            #assert len(bundled_tasks) == 1
+            assert len(bundled_tasks) == 1
             for bundled_task in bundled_tasks:
                 next_amount = self._process_task_termination(bundled_task)
                 if self.finished:

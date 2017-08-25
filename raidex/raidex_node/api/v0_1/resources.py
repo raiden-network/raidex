@@ -59,7 +59,6 @@ class Trades(MethodView):
                     amount=trade.amount,
                     price=trade.price,
                     type=trade.type.value,
-                    hash=trade.hash
                 ) for trade in trades
             ]
         )
@@ -122,16 +121,24 @@ class LimitOrders(MethodView):
         return jsonify(dict_)
 
     def get(self):
+        orders = self.raidex_node.limit_orders()
         dict_ = dict(
             data=[
                 dict(
-                    type=order.type_.value,
                     amount=order.amount,
                     price=order.price,
-                    id=order.order_id,
-                    filled_amount=order.amount_traded,
-
-                ) for order in self.raidex_node.initiated_orders
+                    order_id=order.order_id,
+                    type=order.type_.name,
+                    filledAmount=order.amount_traded,
+                    canceled=order.canceled
+                ) for order in orders
             ]
+        )
+        return jsonify(dict_)
+
+    def delete(self, order_id):
+        self.raidex_node.cancel_limit_order(order_id)
+        dict_ = dict(
+            data=order_id
         )
         return jsonify(dict_)

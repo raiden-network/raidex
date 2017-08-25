@@ -10,7 +10,7 @@
   <p-column field="type" header="Type" styleClass="text-center"
             [style]="{'width': '50px','font-size': '11px', 'text-align': 'center'}">
     <template let-col let-data="rowData" pTemplate type="body">
-      <div *ngIf="(data.type == 0); else elseBlock" class="green-text">BUY</div>
+      <div *ngIf="(data.type === 'BUY'); else elseBlock" class="green-text">BUY</div>
       <ng-template #elseBlock><div class="red-text">SELL</div></ng-template>
     </template>
   </p-column>
