@@ -19,9 +19,12 @@ class LimitOrderTask(gevent.Greenlet):
     If the Order isn't filled after that, it will spawn MakerExchangeTasks to publish offers with a reversed asset_pair
     """
 
-    def __init__(self, offer_book, trades, type_, amount, price, order_id, address, commitment_service, message_broker, trader,
+    def __init__(self, offer_book, trades, type_, amount, price, order_id, address, commitment_service, message_broker,
+                 trader,
                  offer_size=2 * 10 ** 18,  # for ether
-                 offer_lifetime=10):
+                 offer_lifetime=None):
+        if offer_lifetime is None:
+            offer_lifetime = 10
         self.offer_book = offer_book
         self.trades = trades
         self.type_ = type_
