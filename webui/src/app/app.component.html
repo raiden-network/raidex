@@ -35,16 +35,20 @@
   <div class="row">
     <div class="col-md-2">
       <rex-user-interact></rex-user-interact>
-      <rex-alt-trades-table></rex-alt-trades-table>
+      <!--<rex-alt-trades-table></rex-alt-trades-table>-->
     </div>
     <div class="col-md-2">
       <rex-offers-table></rex-offers-table>
     </div>
+    <!-- TODO make the width of zingcharts be coherent with it's enclosing div-->
     <div class="col-md-5">
       <rex-zing-stockchart></rex-zing-stockchart>
       <rex-zing-depthchart></rex-zing-depthchart>
     </div>
-    <div class="col-md-3">
+    <!-- HACK provide some space to get rid of overlap -->
+    <div class="col-md-1">
+    </div>
+    <div class="col-md-2">
       <rex-trades-table></rex-trades-table>
     </div>
   </div>

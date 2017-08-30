@@ -36,8 +36,8 @@ export class RaidexService {
                     return data.map((elem) => {
                         return new Trade(
                             elem.timestamp,
-                            format.formatCurrency(elem.amount),
-                            format.formatCurrency(elem.price, 2),
+                            format.formatCurrency(elem.amount, 18 , 1),
+                            format.formatCurrency(elem.price, 2, 4),
                             elem.type,
                         );}
                         );

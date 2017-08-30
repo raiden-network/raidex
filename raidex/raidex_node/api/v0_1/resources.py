@@ -58,7 +58,7 @@ class Trades(MethodView):
                     timestamp=trade.timestamp,
                     amount=trade.amount,
                     price=trade.price,
-                    type=trade.type.value,
+                    type=trade.type.name,
                 ) for trade in trades
             ]
         )
