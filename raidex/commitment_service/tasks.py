@@ -77,7 +77,7 @@ class MessageSenderTask(QueueListenerTask):
                 log_messaging.debug('Broadcast successful: {}'.format(msg))
         else:
             success = self.message_broker.send(topic=recipient, message=msg)
-            if success:
+            if success is True:
                 log_messaging.debug('Sending successful: {} // recipient={}'.format(msg, pex(recipient)))
 
 
@@ -140,7 +140,6 @@ class MakerCommitmentTask(ListenerTask):
         offer_id = maker_commitment_msg.offer_id
 
         swap = self.factory.make_swap(offer_id)
-
         if swap is not None:
             swap.hand_maker_commitment_msg(maker_commitment_msg)
 

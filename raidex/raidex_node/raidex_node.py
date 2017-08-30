@@ -109,7 +109,8 @@ class RaidexNode(object):
         return self.user_order_tasks_by_id.values()
 
     def limit_orders(self):
-        return self.user_order_tasks_by_id.values()
+        # we only keep a reference of user-initiated LimitOrders at the moment
+        raise NotImplementedError()
 
     def cancel_limit_order(self, order_id):
         log.info('Cancel limit order')

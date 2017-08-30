@@ -114,13 +114,11 @@ class OfferView(object):
         return len(self.offers)
 
     def __iter__(self):
-        # when iterating over the OfferView, this iterates over the RBTree!
-        # self.offers = <FastRBTree>
         return iter(self.offers)
 
     def values(self):
-        # returns iterator of all offers, sorted by (price, offer_id)
-        return self.offers.itervalues()
+        # returns list of all offers, sorted by (price, offer_id)
+        return self.offers.values()
 
 
 class OfferBook(object):
