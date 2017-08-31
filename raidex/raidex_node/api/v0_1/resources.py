@@ -121,7 +121,7 @@ class LimitOrders(MethodView):
         return jsonify(dict_)
 
     def get(self):
-        orders = self.raidex_node.limit_orders()
+        orders = self.raidex_node.initiated_orders
         dict_ = dict(
             data=[
                 dict(
