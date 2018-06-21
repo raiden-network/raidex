@@ -103,7 +103,7 @@ class GroupedTrade(object):
 
     @property
     def price(self):
-        return float(self.price_decimal)
+        return float(self._price)
 
     def add(self, amount):
         self.amount += amount

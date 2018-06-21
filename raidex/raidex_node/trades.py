@@ -73,8 +73,8 @@ class TradesView(object):
         # FIXME prevent modifying (from report_completed()) while iterating
         trades = [self._trades[key] for key in self._trades.irange(minimum=min_key, maximum=max_key,
                                                                    inclusive=(True, False))]
-        return trades
+        return list(trades)
 
     def values(self):
-        # FIXME refactor to return list and not iterator
-        return self._trades.itervalues()
+        # returns sorted list of all values
+        return self._trades.values()

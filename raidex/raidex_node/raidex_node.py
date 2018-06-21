@@ -30,6 +30,8 @@ class RaidexNode(object):
         self.commitment_service = commitment_service
         self.trader_client = trader_client
         self.offer_book = OfferBook()
+        # don't make this accessible in the constructor args for now, set attribute instead if needed
+        self.default_offer_lifetime = None
         self._trades_view = TradesView()
         self.order_tasks_by_id = {}
         self.user_order_tasks_by_id = {}
@@ -68,15 +70,14 @@ class RaidexNode(object):
             self._max_open_orders = open_orders
 
         order_id = self._nof_started_orders
-        order_task = LimitOrderTask(order_id, self.offer_book, self._trades_view, type_, amount, price, self.address,
+        order_task = LimitOrderTask(self.offer_book, self._trades_view, type_, amount, price, order_id, self.address,
                                     self.commitment_service,
-                                    self.message_broker, self.trader_client)
+                                    self.message_broker, self.trader_client, offer_lifetime=self.default_offer_lifetime)
         order_task.link(self._process_finished_limit_order)
-        order_task.start()
-        self._nof_started_orders += 1
-        self.order_tasks_by_id[order_id] = order_task
         if user_initiated is True:
             self.user_order_tasks_by_id[order_id] = order_task
+        order_task.start()
+        self._nof_started_orders += 1
         return order_id
 
     def _process_finished_limit_order(self, order_task):
@@ -85,9 +86,7 @@ class RaidexNode(object):
             self._nof_successful_orders += 1
         elif value is False:
             self._nof_unsuccessful_orders += 1
-
-        # delete finished tasks, we don't need history of finished tasks for now
-        del self.order_tasks_by_id[order_task.order_id]
+        return self.user_order_tasks_by_id.pop(order_task.order_id, None)
 
     @property
     def successful_orders(self):
@@ -109,13 +108,21 @@ class RaidexNode(object):
     def initiated_orders(self):
         return self.user_order_tasks_by_id.values()
 
+    def limit_orders(self):
+        # we only keep a reference of user-initiated LimitOrders at the moment
+        raise NotImplementedError()
+
+    def cancel_limit_order(self, order_id):
+        log.info('Cancel limit order')
+        self.user_order_tasks_by_id[order_id].cancel()
+
     def print_offers(self):
         print(self.offer_book)
 
     @classmethod
     def build_default_from_config(cls, privkey_seed=None, cs_fee_rate=0.01, base_token_addr=None, counter_token_addr=None,
                                   message_broker_host='127.0.0.1', message_broker_port=5000, raiden_api_endpoint=None, mock_trading_activity=False,
-                                  trader_host='127.0.0.1', trader_port=5001):
+                                  trader_host='127.0.0.1', trader_port=5001, offer_lifetime=None):
 
         if privkey_seed is None:
             signer = Signer.random()
@@ -144,11 +151,13 @@ class RaidexNode(object):
         if mock_trading_activity is True:
             raise NotImplementedError('Trading Mocking disabled a the moment')
 
+        if offer_lifetime is not None:
+            raidex_node.default_offer_lifetime = offer_lifetime
         return raidex_node
 
     @classmethod
     def build_from_mocks(cls, message_broker, trader, cs_address, privkey_seed=None, cs_fee_rate=0.01, base_token_addr=None,
-                         counter_token_addr=None):
+                         counter_token_addr=None, offer_lifetime=None):
 
         if privkey_seed is None:
             signer = Signer.random()
@@ -165,6 +174,9 @@ class RaidexNode(object):
         commitment_service_client = CommitmentServiceClient(signer, token_pair, trader_client,
                                                             message_broker, cs_address, fee_rate=cs_fee_rate)
         raidex_node = cls(signer.address, token_pair, commitment_service_client, message_broker, trader_client)
+
+        if offer_lifetime is not None:
+            raidex_node.default_offer_lifetime = offer_lifetime
 
         return raidex_node
 

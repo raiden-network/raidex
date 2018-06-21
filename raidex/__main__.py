@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--seed', type=str, default='raidex-node', help='Use the sha3 privkey from seed')
     parser.add_argument("--api", action='store_true', help='Run the REST-API')
     parser.add_argument("--api-port", type=int, help='Specify the port for the api, default is 5002', default=5002)
+    parser.add_argument("--offer-lifetime", type=int, help='Lifetime of offers spawned by LimitOrders', default=10)
     parser.add_argument("--broker-host", type=str, help='Specify the host for the message broker, default is localhost',
                         default='localhost')
     parser.add_argument("--broker-port", type=int, help='Specify the port for the message broker, default is 5000',
@@ -41,13 +42,15 @@ def main():
         message_broker = MessageBroker()
         trader = Trader()
         commitment_service = CommitmentService.build_from_mock('commitment_service', message_broker, trader)
-        node = RaidexNode.build_from_mocks(message_broker, trader, commitment_service.address, privkey_seed=args.seed)
+        node = RaidexNode.build_from_mocks(message_broker, trader, commitment_service.address, privkey_seed=args.seed,
+                                           offer_lifetime=args.offer_lifetime)
         commitment_service.start()
     else:
         node = RaidexNode.build_default_from_config(privkey_seed=args.seed,
                                                     message_broker_host=args.broker_host,
                                                     message_broker_port=args.broker_port, trader_host=args.trader_host,
-                                                    trader_port=args.trader_port, mock_trading_activity=args.mock)
+                                                    trader_port=args.trader_port, mock_trading_activity=args.mock,
+                                                    offer_lifetime=args.offer_lifetime)
 
     node.start()
 

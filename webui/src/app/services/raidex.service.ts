@@ -36,10 +36,9 @@ export class RaidexService {
                     return data.map((elem) => {
                         return new Trade(
                             elem.timestamp,
-                            format.formatCurrency(elem.amount),
-                            format.formatCurrency(elem.price, 2),
+                            format.formatCurrency(elem.amount, 18 , 1),
+                            format.formatCurrency(elem.price, 2, 4),
                             elem.type,
-                            elem.hash
                         );}
                         );
                 })
@@ -104,10 +103,22 @@ export class RaidexService {
             data, options).map((response) => response.json().data).catch(this.handleError);
     }
 
-    // public getLimitOrders() {
-    //     return this.http.get(`${this.api}/markets/dummy/orders/limit`).
-    //         map((response) => response.json().data).catch(this.handleError);
-    // }
+    public getLimitOrders() {
+        return TimerObservable.create(0, 1000)
+            .flatMap(() => this.http.get(`${this.api}/markets/dummy/orders/limit`).
+            map((response) => {
+                let data = response.json().data;
+                return data.map((elem) => new Order(
+                    elem.type,
+                    format.formatCurrency(elem.amount),
+                    format.formatCurrency(elem.price, 2),
+                    elem.order_id,
+                    format.formatCurrency(elem.filledAmount),
+                    elem.canceled
+                ));
+            }))
+            .retryWhen((errors) => this.printErrorAndRetry('Could not get Limitorders', errors));
+    }
 
     public cancelLimitOrders(limitOrder: Order) {
         return this.http.delete(`${this.api}/markets/dummy/orders/limit/${limitOrder.id}`)
@@ -120,24 +131,7 @@ export class RaidexService {
             .delay(20000);
     }
 
-    public getLimitOrders(): Observable<Array<Order>> {
-      return TimerObservable.create(0, 10000)
-          .flatMap(() => this.http.get(`${this.api}/markets/dummy/orders/limit`)
-              .map((response) => {
-                  let data = response.json().data;
-                  return data.map((elem) => new Order(
-                      elem.type,
-                      format.formatCurrency(elem.amount),
-                      format.formatCurrency(elem.price, 2),
-                      elem.id,
-                      format.formatCurrency(elem.filled_amount)
-                  ));
-              }))
-              .retryWhen((errors) => this.printErrorAndRetry('Could not get Orders', errors));
-    }
-
     private handleError(error: Response | any) {
-      // In a real world app, you might use a remote logging infrastructure
       let errMsg: string;
       if (error instanceof Response) {
           const body = error.json() || '';

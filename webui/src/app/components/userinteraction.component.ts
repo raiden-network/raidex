@@ -13,8 +13,8 @@ export class UserInteractionComponent implements OnInit {
 
     @Input() public market: any;
 
-    public buyOrder = new Order();
-    public sellOrder = new Order();
+    public buyOrder = new Order('BUY', '0', '0', 0, '0', false);
+    public sellOrder = new Order('SELL', '0', '0', 0, '0', false);
     public tempBuyId: number;
     public tempSellId: number;
     public orderArray: Order[];
@@ -39,7 +39,6 @@ export class UserInteractionComponent implements OnInit {
             (id) => {
                 type === 'BUY' ? this.tempBuyId = id : this.tempSellId = id;
                 this.clearModel();
-                this.getOrders();
                 this.showMessage(type);
             },
         );
@@ -57,7 +56,6 @@ export class UserInteractionComponent implements OnInit {
         if (this.selectedOrder) {
             this.raidexService.cancelLimitOrders(this.selectedOrder).subscribe(
                 (value) => {
-                    this.getOrders();
                 },
             );
         }
