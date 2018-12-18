@@ -4,7 +4,7 @@ import gevent
 from gevent.event import AsyncResult
 from gevent.queue import Queue
 
-from ethereum import slogging
+import structlog
 
 from raidex.raidex_node.offer_book import OfferType
 from raidex.raidex_node.listener_tasks import ListenerTask

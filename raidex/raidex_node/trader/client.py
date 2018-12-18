@@ -7,7 +7,10 @@ from gevent.queue import Queue
 
 
 import requests
-from ethereum.utils import encode_hex, decode_hex
+from eth_utils import (
+    encode_hex,
+    decode_hex
+)
 
 from raidex.raidex_node.offer_book import OfferType
 from raidex.raidex_node.trader.trader import (

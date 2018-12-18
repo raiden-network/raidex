@@ -1,4 +1,4 @@
-from ethereum import slogging
+import structlog
 import gevent
 from gevent.event import AsyncResult
 

@@ -1,6 +1,6 @@
 import json
 
-from ethereum import slogging
+import structlog
 from flask import Flask, jsonify, request, Response
 from gevent.pywsgi import WSGIServer
 

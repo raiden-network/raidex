@@ -3,7 +3,7 @@ import random
 
 from gevent import monkey; monkey.patch_all()
 
-from ethereum import slogging
+import structlog
 
 from raidex.raidex_node.exchange_task import MakerExchangeTask, TakerExchangeTask
 from raidex.raidex_node.market import TokenPair

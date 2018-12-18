@@ -1,7 +1,7 @@
 import random
 from itertools import chain, repeat
 from gevent import Greenlet, sleep
-from ethereum import slogging
+import structlog
 from raidex.raidex_node.offer_book import OfferType
 
 random.seed(0)

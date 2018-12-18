@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 from gevent.pywsgi import WSGIServer
-from ethereum import slogging
+import structlog
 
 import v0_1
 

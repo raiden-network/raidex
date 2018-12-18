@@ -2,7 +2,7 @@ import random
 
 import gevent
 from gevent.event import AsyncResult
-from ethereum import slogging
+import structlog
 
 from exchange_task import MakerExchangeTask, TakerExchangeTask
 from offer_book import OfferType, Offer

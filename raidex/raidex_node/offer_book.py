@@ -3,7 +3,7 @@ import random
 
 from sortedcontainers import SortedDict
 from enum import Enum
-from ethereum import slogging
+import structlog
 from raidex.utils import pex
 
 

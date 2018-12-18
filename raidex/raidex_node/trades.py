@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 from sortedcontainers import SortedDict
-from ethereum import slogging
+import structlog
 
 from offer_book import Offer
 

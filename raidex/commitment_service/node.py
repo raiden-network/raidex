@@ -1,4 +1,4 @@
-from ethereum import slogging
+import structlog
 from gevent.queue import PriorityQueue
 
 from raidex.raidex_node.trader.trader import TraderClientMock

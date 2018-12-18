@@ -1,7 +1,7 @@
 import argparse
 import gevent
 from gevent.event import Event
-from ethereum import slogging
+import structlog
 
 from raidex.raidex_node.api.app import APIServer
 from raidex.raidex_node.raidex_node import RaidexNode
@@ -40,7 +40,7 @@ def main():
 
     if args.mock_networking is True:
         message_broker = MessageBroker()
-        trader = Trader()
+        trader = Trader() # Raiden Mock
         commitment_service = CommitmentService.build_from_mock('commitment_service', message_broker, trader)
         node = RaidexNode.build_from_mocks(message_broker, trader, commitment_service.address, privkey_seed=args.seed,
                                            offer_lifetime=args.offer_lifetime)

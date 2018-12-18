@@ -1,7 +1,7 @@
 import argparse
 
 from gevent.event import Event
-from ethereum import slogging
+import structlog
 
 from raidex.commitment_service.node import CommitmentService
 from raidex.message_broker.client import MessageBrokerClient

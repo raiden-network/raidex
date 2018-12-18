@@ -5,7 +5,7 @@ from collections import namedtuple
 import pytest
 
 from ethereum.utils import sha3, privtoaddr
-from ethereum import slogging
+import structlog
 
 from raidex.raidex_node.market import TokenPair
 from raidex.signing import generate_random_privkey

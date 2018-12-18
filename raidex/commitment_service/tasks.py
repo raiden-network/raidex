@@ -1,6 +1,6 @@
 import gevent
 
-from ethereum import slogging
+import structlog
 from raidex import messages
 from raidex.utils import pex
 

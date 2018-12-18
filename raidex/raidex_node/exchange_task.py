@@ -1,6 +1,6 @@
 import gevent
 from raidex.utils import timestamp, pex
-from ethereum import slogging
+import structlog
 from ethereum.utils import encode_hex
 from raidex.message_broker.listeners import TakerListener, listener_context
 from raidex.utils.gevent_helpers import switch_context

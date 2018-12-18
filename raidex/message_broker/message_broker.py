@@ -1,6 +1,6 @@
 from collections import namedtuple, defaultdict
-from ethereum.utils import encode_hex
-from ethereum import slogging
+from eth_utils import encode_hex
+import structlog
 from gevent.queue import Queue
 from raidex.utils import pex
 

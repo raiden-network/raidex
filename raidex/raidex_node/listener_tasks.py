@@ -1,5 +1,5 @@
 import gevent
-from ethereum import slogging
+import structlog
 
 from raidex.message_broker.listeners import OfferTakenListener, OfferListener, SwapCompletedListener
 from raidex.utils import timestamp, pex

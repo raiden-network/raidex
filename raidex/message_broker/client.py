@@ -6,7 +6,7 @@ import gevent
 from gevent import monkey; monkey.patch_socket()
 from gevent.queue import Queue
 
-from ethereum.utils import encode_hex
+from eth_utils import encode_hex
 
 from raidex.message_broker.message_broker import Listener
 import raidex.messages as messages

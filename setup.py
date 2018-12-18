@@ -28,14 +28,13 @@ with open('README.md') as readme_file:
 
 history = ''
 
+with open('constraints.txt') as req_file:
+    install_requires = list({
+        requirement
+        for requirement in req_file
+        if requirement.strip() and not requirement.lstrip().startswith('#')
+    })
 
-install_requires_replacements = {
-}
-
-install_requires = list(set(
-    install_requires_replacements.get(requirement.strip(), requirement.strip())
-    for requirement in open('requirements.txt')
-))
 print(install_requires)
 
 test_requirements = []
@@ -68,8 +67,8 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.7',
+        "Programming Language :: Python :: 3",
+        'Programming Language :: Python :: 3.6',
     ],
     cmdclass={'test': PyTest},
     install_requires=install_requires,

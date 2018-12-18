@@ -7,11 +7,11 @@ import json
 from flask import Flask, jsonify, request, Response
 from gevent.pywsgi import WSGIServer
 
-from ethereum.utils import decode_hex
+from eth_utils import decode_hex
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.message_broker.listeners import MessageListener
 
-from ethereum import slogging
+import structlog
 
 log = slogging.get_logger('message_broker.server')
 
