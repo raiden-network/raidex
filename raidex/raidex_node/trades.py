@@ -6,7 +6,7 @@ import structlog
 from offer_book import Offer
 
 
-log = slogging.get_logger('node.trades')
+log = structlog.get_logger('node.trades')
 
 
 SwapCompleted = namedtuple('SwapCompleted', 'offer_id timestamp')

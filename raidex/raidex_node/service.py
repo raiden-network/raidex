@@ -1,14 +1,14 @@
 import time
 
-from ethereum.utils import sha3, privtoaddr, big_endian_to_int, int_to_big_endian
-
+from eth_utils import keccak, decode_hex
+from eth_keys import keys
 from raidex_service import messages
 from raidex_service.message_broker.client import BroadcastClient
 from raidex_service.exceptions import UntradableAssetPair, UnknownCommitmentService, InsufficientCommitmentFunds
 from raidex_service.raidex_node.offer_book import Offer
 from raidex_service.utils import get_market_from_asset_pair
 
-ERC20_ETH_ADDRESS = sha3('ETHER') # mock for now
+ERC20_ETH_ADDRESS = keccak('ETHER') # mock for now
 
 class RaidexService(object):
 
@@ -23,7 +23,7 @@ class RaidexService(object):
             broadcast_protocol_cls):
 
         self.raiden = raiden_api
-        self.private_key = private_key
+        self.private_key = keys.PrivateKey(decode_hex(private_key))
 
         # use the raiden discovery/transport here, with the raidex port being `raiden_port + 1`
         self.protocol = protocol_cls(self.address, transport, raiden_discovery, MessageHandler(self), )
@@ -45,7 +45,7 @@ class RaidexService(object):
 
     @property
     def address(self):
-        return privtoaddr(self.private_key)
+        return self.private_key.public_key
 
     def ping(self, receiver_address):
         ping = messages.Signed()

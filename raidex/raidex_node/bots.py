@@ -6,7 +6,7 @@ from raidex.raidex_node.offer_book import OfferType
 
 random.seed(0)
 
-log = slogging.get_logger('bots')
+log = structlog.get_logger('bots')
 
 
 class RandomWalker(Greenlet):
@@ -23,7 +23,7 @@ class RandomWalker(Greenlet):
         self.average_amount = int(10e18)  # average order amount
         self.average_frequency = 0.2  # trades per second
         self.urgency = 0.02  # percentag bot is willing to overpay to get its order filled quicker
-        self.log = slogging.get_logger('bots.random_walker')
+        self.log = structlog.get_logger('bots.random_walker')
 
     def place_order(self, order_type):
         market_price = self.raidex_node.market_price() or self.initial_price
@@ -47,7 +47,7 @@ class Manipulator(Greenlet):
         Greenlet.__init__(self)
         self.raidex_node = raidex_node
         self.initial_price = initial_price
-        self.log = slogging.get_logger('bots.manipulator')
+        self.log = structlog.get_logger('bots.manipulator')
 
         self.order_amount_average = int(2e18)
         self.order_frequency_average = 0.8
@@ -109,7 +109,7 @@ class LiquidityProvider(Greenlet):
         self.homogenity = 10 * 2 / 0.01  # 10 / 0.01
         # overshoot percentage when replenishing offers
         self.overshoot = 0
-        self.log = slogging.get_logger('bots.liquidity_provider')
+        self.log = structlog.get_logger('bots.liquidity_provider')
 
     def calc_checkpoints(self, price):
         """Calculate points at which slope is checked.

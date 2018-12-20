@@ -4,7 +4,7 @@ import structlog
 from gevent.queue import Queue
 from raidex.utils import pex
 
-log = slogging.get_logger('message_broker.global')
+log = structlog.get_logger('message_broker.global')
 
 Listener = namedtuple('Listener', 'topic message_queue_async transform')
 

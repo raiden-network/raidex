@@ -7,7 +7,7 @@ import structlog
 from raidex.utils import pex
 
 
-log = slogging.get_logger('node.offer_book')
+log = structlog.get_logger('node.offer_book')
 
 
 class OfferType(Enum):

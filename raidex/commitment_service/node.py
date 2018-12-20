@@ -12,11 +12,11 @@ from raidex.commitment_service.tasks import (
     TransferReceivedTask
 )
 
-log = slogging.get_logger('commitment_service')
-log_swaps = slogging.get_logger('commitment_service.asset_swaps')
-log_messaging = slogging.get_logger('commitment_service.messaging')
-log_refunds = slogging.get_logger('commitment_service.refunds')
-log_trader = slogging.get_logger('commitment_service.trader')
+log = structlog.get_logger('commitment_service')
+log_swaps = structlog.get_logger('commitment_service.asset_swaps')
+log_messaging = structlog.get_logger('commitment_service.messaging')
+log_refunds = structlog.get_logger('commitment_service.refunds')
+log_trader = structlog.get_logger('commitment_service.trader')
 
 
 class RaidexException(Exception):

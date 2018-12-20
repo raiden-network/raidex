@@ -10,11 +10,11 @@ from raidex.raidex_node.trader.trader import TransferReceipt
 from raidex.raidex_node.trader.trader import TransferReceivedListener
 from raidex.message_broker.listeners import TakerCommitmentListener, MakerCommitmentListener, SwapExecutionListener
 
-log = slogging.get_logger('commitment_service')
-log_swaps = slogging.get_logger('commitment_service.asset_swaps')
-log_messaging = slogging.get_logger('commitment_service.messaging')
-log_refunds = slogging.get_logger('commitment_service.refunds')
-log_trader = slogging.get_logger('commitment_service.trader')
+log = structlog.get_logger('commitment_service')
+log_swaps = structlog.get_logger('commitment_service.asset_swaps')
+log_messaging = structlog.get_logger('commitment_service.messaging')
+log_refunds = structlog.get_logger('commitment_service.refunds')
+log_trader = structlog.get_logger('commitment_service.trader')
 
 
 class QueueListenerTask(gevent.Greenlet):

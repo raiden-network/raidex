@@ -1,7 +1,7 @@
 import gevent.hub
 import pytest
 
-from ethereum.utils import sha3
+from eth_utils import keccak
 from raidex.raidex_node.offer_book import OfferType
 from raidex.raidex_node.trader.trader import Trader, TraderClientMock, TransferReceivedListener
 
@@ -60,7 +60,7 @@ def test_false_type_atomic_exchange(trader_client1, trader_client2):
 
 
 def test_transfer(trader_client1, trader_client2):
-    identifier = sha3('id')
+    identifier = keccak('id')
     amount = 5
 
     # start the balanceupdate tasks

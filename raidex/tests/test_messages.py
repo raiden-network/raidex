@@ -2,7 +2,7 @@ import json
 from operator import attrgetter
 
 import pytest
-from ethereum.utils import sha3, big_endian_to_int
+from eth_utils import keccak, big_endian_to_int
 from raidex.messages import (
     SignatureMissingError,
     Signed,
@@ -24,7 +24,7 @@ UINT32_MAX_INT = 2 ** 32
 
 
 def test_offer(assets):
-    o = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), timestamp.time() - 10)
+    o = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(keccak('offer id')), timestamp.time() - 10)
     assert isinstance(o, SwapOffer)
     serial = o.serialize(o)
     assert_serialization(o)
@@ -35,15 +35,15 @@ def test_offer(assets):
 
 
 def test_hashable(assets):
-    o = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
+    o = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(keccak('offer id')), 10)
     assert o.hash
 
 
 def test_signing(accounts):
     timeout = timestamp.time_plus(milliseconds=100)
-    c = MakerCommitment(offer_id=10, offer_hash=sha3('offer id'), timeout=timeout,
+    c = MakerCommitment(offer_id=10, offer_hash=keccak('offer id'), timeout=timeout,
                             amount=10)
-    c_unsigned = MakerCommitment(offer_id=10, offer_hash=sha3('offer id'), timeout=timeout,
+    c_unsigned = MakerCommitment(offer_id=10, offer_hash=keccak('offer id'), timeout=timeout,
                             amount=10)
     assert c == c_unsigned
     c.sign(accounts[0].privatekey)
@@ -69,9 +69,9 @@ def test_signing(accounts):
 
 def test_commitment_signature_difference(accounts):
     timeout = timestamp.time_plus(milliseconds=100)
-    c_maker = MakerCommitment(offer_id=10, offer_hash=sha3('offer id'), timeout=timeout,
+    c_maker = MakerCommitment(offer_id=10, offer_hash=keccak('offer id'), timeout=timeout,
                               amount=10)
-    c_taker = TakerCommitment(offer_id=10, offer_hash=sha3('offer id'), timeout=timeout,
+    c_taker = TakerCommitment(offer_id=10, offer_hash=keccak('offer id'), timeout=timeout,
                               amount=10)
     c_maker.sign(accounts[0].privatekey)
     c_taker.sign(accounts[0].privatekey)
@@ -85,7 +85,7 @@ def test_commitment_signature_difference(accounts):
 
 
 def test_maker_commitments(assets, accounts):
-    offer = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
+    offer = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(keccak('offer id')), 10)
     maker = accounts[0]
     commitment_service = accounts[1]
 
@@ -112,7 +112,7 @@ def test_maker_commitments(assets, accounts):
 
 
 def test_taker_commitments(assets, accounts):
-    offer = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(sha3('offer id')), 10)
+    offer = SwapOffer(assets[0], 100, assets[1], 110, big_endian_to_int(keccak('offer id')), 10)
     maker = accounts[0]
     commitment_service = accounts[1]
 
@@ -165,7 +165,7 @@ def test_commitment_service_advertisements(accounts):
 
 def test_swap_execution(accounts):
     maker = accounts[0]
-    swap_execution_msg = SwapExecution(big_endian_to_int(sha3('offer id')), timestamp.time())
+    swap_execution_msg = SwapExecution(big_endian_to_int(keccak('offer id')), timestamp.time())
     swap_execution_msg.sign(maker.privatekey)
     assert_serialization(swap_execution_msg)
     assert_envelope_serialization(swap_execution_msg)
@@ -176,7 +176,7 @@ def test_swap_execution(accounts):
 
 def test_swap_completed(accounts):
     commitment_service = accounts[0]
-    swap_completed_msg = SwapCompleted(big_endian_to_int(sha3('offer id')), timestamp.time())
+    swap_completed_msg = SwapCompleted(big_endian_to_int(keccak('offer id')), timestamp.time())
     swap_completed_msg.sign(commitment_service.privatekey)
     time_ = timestamp.time_plus(1)
     assert_serialization(swap_completed_msg)

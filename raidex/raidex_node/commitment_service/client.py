@@ -11,7 +11,7 @@ from raidex.utils import timestamp, pex
 from raidex.utils.gevent_helpers import make_async
 
 
-log = slogging.get_logger('node.commitment_service')
+log = structlog.get_logger('node.commitment_service')
 
 class OfferIdentifierCollision(Exception):
     pass

@@ -7,7 +7,7 @@ from gevent.pywsgi import WSGIServer
 from raidex.raidex_node.offer_book import OfferType
 from raidex.raidex_node.trader.trader import Trader, EventListener, TransferReceivedEvent
 
-log = slogging.get_logger('trader.server')
+log = structlog.get_logger('trader.server')
 
 
 app = Flask(__name__)
@@ -99,7 +99,7 @@ def internal_error(error):
 
 
 def main():
-    slogging.configure(':DEBUG')
+    structlog.configure(':DEBUG')
     WSGIServer(('', 5001), app).serve_forever()
 
 

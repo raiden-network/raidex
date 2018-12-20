@@ -12,7 +12,9 @@ from collections import namedtuple
 
 import gevent
 from noise import pnoise1
-from ethereum.utils import denoms, sha3, privtoaddr, encode_hex, big_endian_to_int
+from eth_utils import denoms, keccak, encode_hex, big_endian_to_int
+from eth_keys import keys
+
 
 from raidex import messages
 from raidex.raidex_node.offer_book import Offer, OfferType
@@ -27,12 +29,12 @@ def _price(p):
 
 def _accounts():
     Account = namedtuple('Account', 'privatekey address')
-    privkeys = [sha3("account:{}".format(i)) for i in range(2)]
-    accounts = [Account(pk, privtoaddr(pk)) for pk in privkeys]
+    privkeys = [keccak("account:{}".format(i)) for i in range(2)]
+    accounts = [Account(pk, keys.PrivateKey(pk).public_key) for pk in privkeys]
     return accounts
 
 
-ASSETS = [privtoaddr(sha3("asset{}".format(i))) for i in range(2)]
+ASSETS = [keys.PrivateKey(keccak("asset{}".format(i))).public_key for i in range(2)]
 ACCOUNTS = _accounts()
 
 
@@ -44,7 +46,7 @@ def gen_orders(start_price=10, max_amount=1000 * ETH, num_entries=10, max_deviat
         factor = 1 + (2 * random.random() - 1) * max_deviation
         price *= factor
         amount = random.randrange(1, max_amount)
-        address = encode_hex(sha3(price * amount))[:40]
+        address = encode_hex(keccak(price * amount))[:40]
         orders.append((address, _price(price), amount))
     return orders
 
@@ -71,7 +73,7 @@ def gen_orderbook_messages(market_price=10, max_amount=1000 * ETH, num_messages=
         maker = ACCOUNTS[num_messages % 2]
         offer = messages.SwapOffer(ASSETS[i % 2], ask_amount,
                                    ASSETS[1 - i % 2], bid_amount,
-                                   sha3('offer {}'.format(i)),  # TODO better offer_ids
+                                   keccak('offer {}'.format(i)),  # TODO better offer_ids
                                    int(timestamp.time() * 10000 + 1000 * random.randint(1, 10) + i))
         offers.append(offer)
     return offers

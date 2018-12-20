@@ -8,7 +8,7 @@ from raidex.message_broker.client import MessageBrokerClient
 from raidex.raidex_node.trader.client import TraderClient
 from raidex.signing import Signer
 
-slogging.configure(':DEBUG')
+structlog.configure(':DEBUG')
 
 
 def main():

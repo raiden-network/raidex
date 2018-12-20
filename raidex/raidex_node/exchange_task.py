@@ -1,11 +1,11 @@
 import gevent
 from raidex.utils import timestamp, pex
 import structlog
-from ethereum.utils import encode_hex
+from eth_utils import encode_hex
 from raidex.message_broker.listeners import TakerListener, listener_context
 from raidex.utils.gevent_helpers import switch_context
 
-log = slogging.get_logger('node.exchange')
+log = structlog.get_logger('node.exchange')
 
 
 class MakerExchangeTask(gevent.Greenlet):

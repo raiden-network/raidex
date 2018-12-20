@@ -1,17 +1,17 @@
 import random
 import string
-from ethereum.utils import sha3, privtoaddr
-
+from eth_utils import keccak
+from eth_keys import keys
 
 def generate_random_privkey():
-    return sha3(''.join(random.choice(string.printable) for _ in range(20)))
+    return keccak(''.join(random.choice(string.printable) for _ in range(20)))
 
 
 class Signer(object):
 
     def __init__(self, private_key):
         self._private_key = private_key
-        self._address = privtoaddr(private_key)
+        self._address = keys.PrivateKey(private_key).public_key
 
     @classmethod
     def random(cls):
@@ -20,7 +20,7 @@ class Signer(object):
 
     @classmethod
     def from_seed(cls, seed):
-        private_key = sha3(seed)
+        private_key = keccak(seed)
         return cls(private_key)
 
     @property

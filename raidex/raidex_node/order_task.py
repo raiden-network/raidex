@@ -8,7 +8,7 @@ from exchange_task import MakerExchangeTask, TakerExchangeTask
 from offer_book import OfferType, Offer
 from raidex.utils import timestamp
 
-log = slogging.get_logger('node.order')
+log = structlog.get_logger('node.order')
 
 
 class LimitOrderTask(gevent.Greenlet):

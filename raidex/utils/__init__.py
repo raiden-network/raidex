@@ -1,11 +1,12 @@
 import string
 import random
 
-from ethereum.utils import privtoaddr, sha3, big_endian_to_int
+from eth_utils import keccak, big_endian_to_int
+from eth_keys import keys
 from rlp.utils import decode_hex as rlp_decode_hex, encode_hex as rlp_encode_hex
 from raidex.exceptions import UntradableAssetPair
 
-ETHER_TOKEN_ADDRESS = privtoaddr(sha3('ether'))
+ETHER_TOKEN_ADDRESS = keys.PrivateKey(keccak('ether')).public_key
 DEFAULT_RAIDEN_PORT = 9999  # no raiden dependency for now
 DEFAULT_RAIDEX_PORT = DEFAULT_RAIDEN_PORT + 1
 
@@ -15,9 +16,9 @@ def make_address():
 
 
 def make_privkey_address():
-    privkey = sha3(''.join(random.choice(string.printable) for _ in range(20)))
-    address = privtoaddr(privkey)
-    return privkey, address
+    private_key = keccak(''.join(random.choice(string.printable) for _ in range(20)))
+    address = keys.PrivateKey(private_key).public_key
+    return private_key, address
 
 
 def decode_hex(data):

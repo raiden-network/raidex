@@ -1,6 +1,6 @@
 import pytest
 
-from ethereum.utils import sha3
+from eth_utils import keccak
 
 from gevent.queue import PriorityQueue
 from raidex import messages
@@ -87,7 +87,7 @@ def maker_commitment_msg():
     seconds_to_timeout = 0.1
     timeout = timestamp.time_plus(seconds_to_timeout)
     offer_id = 123
-    maker_commitment_msg = messages.MakerCommitment(offer_id=offer_id, offer_hash=sha3(offer_id),
+    maker_commitment_msg = messages.MakerCommitment(offer_id=offer_id, offer_hash=keccak(offer_id),
                                                     timeout=timeout, amount=5)
     return maker_commitment_msg
 
@@ -97,7 +97,7 @@ def taker_commitment_msg():
     seconds_to_timeout = 0.1
     timeout = timestamp.time_plus(seconds_to_timeout)
     offer_id = 123
-    taker_commitment_msg = messages.TakerCommitment(offer_id=offer_id, offer_hash=sha3(offer_id),
+    taker_commitment_msg = messages.TakerCommitment(offer_id=offer_id, offer_hash=keccak(offer_id),
                                                     timeout=timeout, amount=5)
     return taker_commitment_msg
 

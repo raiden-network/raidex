@@ -5,7 +5,7 @@ from raidex.message_broker.listeners import OfferTakenListener, OfferListener, S
 from raidex.utils import timestamp, pex
 
 
-log = slogging.get_logger('node.listener_tasks')
+log = structlog.get_logger('node.listener_tasks')
 
 
 class ListenerTask(gevent.Greenlet):

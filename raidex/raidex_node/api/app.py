@@ -3,10 +3,10 @@ from flask_cors import CORS
 from gevent.pywsgi import WSGIServer
 import structlog
 
-import v0_1
+from .v0_1 import build_blueprint
 
 
-log = slogging.get_logger('node.api')
+log = structlog.get_logger('node.api')
 
 
 class APIServer:
@@ -21,7 +21,7 @@ class APIServer:
     def start(self):
         log.info('Start api at port {}'.format(self.port))
         # build blueprints for desired rest versions:
-        bbp_v0_1 = v0_1.build_blueprint(self.raidex_node)
+        bbp_v0_1 = build_blueprint(self.raidex_node)
         self.app.register_blueprint(bbp_v0_1)
         # run the rest-server
         rest_server = WSGIServer((self.address, self.port), self.app, log=None)

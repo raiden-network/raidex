@@ -3,7 +3,7 @@ import base64
 
 import rlp
 from rlp.sedes import binary
-from ethereum.utils import (address, int256, hash32, sha3, big_endian_to_int, int32)
+from eth_utils import (address, int256, hash32, keccak, big_endian_to_int, int32)
 from raidex.utils import pex
 from raiden.encoding.signing import recover_publickey
 from raiden.encoding.signing import sign as _sign
@@ -39,7 +39,7 @@ class RLPHashable(rlp.Serializable):
 
     @property
     def hash(self):
-        return sha3(rlp.encode(self))  # this was `cached=True`, but made the obj immutable e.g. on every comparison
+        return keccak(rlp.encode(self))  # this was `cached=True`, but made the obj immutable e.g. on every comparison
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.hash == other.hash
@@ -77,7 +77,7 @@ class Signed(RLPHashable):
 
     @property
     def _hash_without_signature(self):
-        return sha3(rlp.encode(self, self.__class__.exclude(['signature'])))
+        return keccak(rlp.encode(self, self.__class__.exclude(['signature'])))
 
     def sign(self, privkey):
         assert self.is_mutable()
@@ -100,7 +100,7 @@ class Signed(RLPHashable):
             if not self.signature:
                 raise SignatureMissingError()
             pub = recover_publickey(self._hash_without_signature, self.signature)
-            self._sender = sha3(pub[1:])[-20:]
+            self._sender = keccak(pub[1:])[-20:]
         return self._sender
 
     @classmethod
@@ -121,7 +121,7 @@ class SwapOffer(RLPHashable):
     Data:
         offer = rlp([ask_token, ask_amount, bid_token, bid_amount, offer_id, timeout])
         timeout = <UTC milliseconds since epoch>
-        offer_sig = sign(sha3(offer), maker)
+        offer_sig = sign(keccak(offer), maker)
 
     Broadcast:
         {
@@ -174,7 +174,7 @@ class MakerCommitment(Signed):
 
     Data:
         offer_id = offer_id
-        offer_hash = sha3(offer)
+        offer_hash = keccak(offer)
         timeout = int256 <unix timestamp (ms) for the end of the offers validity>
         amount = int256 <value of tokens in the commitment-service's commitment currency>
 
@@ -207,7 +207,7 @@ class TakerCommitment(Signed):
 
     Data:
         offer_id = offer_id
-        offer_hash = sha3(offer)
+        offer_hash = keccak(offer)
         timeout = int256 <unix timestamp (ms) for the end of the offers validity>
         amount = int256 <value of tokens in the commitment-service's commitment currency>
 
@@ -237,7 +237,7 @@ class OfferTaken(Signed):
 
     Data:
         offer_id = offer_id
-        offer_hash = sha3(offer)
+        offer_hash = keccak(offer)
 
         Broadcast:
         {
@@ -288,8 +288,8 @@ class ProvenOffer(Signed):
     Data:
         offer = rlp([ask_token, ask_amount, bid_token, bid_amount, offer_id, timeout])
         timeout = <UTC milliseconds since epoch>
-        offer_sig = sign(sha3(offer), maker)
-        commitment = rlp([offer_id, sha3(offer), timeout, amount])
+        offer_sig = sign(keccak(offer), maker)
+        commitment = rlp([offer_id, keccak(offer), timeout, amount])
         commitment_sig = raiden signature of the commitment transfer by the committer
         commitment_proof = sign(commitment_sig, cs)
 
@@ -316,7 +316,7 @@ class ProvenCommitment(Signed):
      the swap by having a proper Commitment open at the makers commitment-service to execute the swap.
 
     Data:
-        commitment = rlp([offer_id, sha3(offer), timeout, amount])
+        commitment = rlp([offer_id, keccak(offer), timeout, amount])
         commitment_sig = raiden signature of the commitment transfer by the committer
         commitment_proof = sign(commitment_sig, cs)
 

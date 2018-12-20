@@ -13,7 +13,7 @@ from raidex.message_broker.listeners import MessageListener
 
 import structlog
 
-log = slogging.get_logger('message_broker.server')
+log = structlog.get_logger('message_broker.server')
 
 app = Flask(__name__)
 message_broker = MessageBroker()

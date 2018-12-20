@@ -2,7 +2,7 @@ import time
 import pytest
 import gevent
 
-from ethereum.utils import int_to_big_endian, sha3
+from eth_utils import int_to_big_endian, keccak
 
 from raidex.raidex_node.offer_book import Offer, OfferBook, OfferType, OfferView
 from raidex.raidex_node.listener_tasks import OfferBookTask, SwapCompletedTask, OfferTakenTask

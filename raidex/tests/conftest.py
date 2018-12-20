@@ -4,7 +4,8 @@ from collections import namedtuple
 
 import pytest
 
-from ethereum.utils import sha3, privtoaddr
+from eth_utils import keccak
+from eth_keys import keys
 import structlog
 
 from raidex.raidex_node.market import TokenPair
@@ -13,7 +14,7 @@ from raidex.signing import generate_random_privkey
 
 @pytest.fixture(autouse=True)
 def logging_level():
-    slogging.configure(':DEBUG')
+    structlog.configure(':DEBUG')
 
 
 def number_of_greenlets_running():
@@ -31,7 +32,7 @@ def shutdown_greenlets():
 # TODO remove / factor out
 @pytest.fixture()
 def assets():
-    assets = [privtoaddr(sha3("asset{}".format(i))) for i in range(2)]
+    assets = [keys.PrivateKey(keccak("asset{}".format(i))).public_key for i in range(2)]
     return assets
 
 
@@ -39,7 +40,7 @@ def assets():
 def accounts():
     Account = namedtuple("Account", "privatekey address")
     private_keys = [generate_random_privkey() for _ in range(4)]
-    return [Account(privkey, privtoaddr(privkey)) for privkey in private_keys]
+    return [Account(privkey, keys.PrivateKey(privkey).public_key) for privkey in private_keys]
 
 
 @pytest.fixture()

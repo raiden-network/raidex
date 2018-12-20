@@ -18,7 +18,7 @@ from raidex.message_broker.client import MessageBrokerClient
 from raidex.utils import timestamp
 from raidex.signing import Signer
 from raidex.raidex_node.offer_grouping import group_offers, group_trades_from, make_price_bins, get_n_recent_trades
-log = slogging.get_logger('node')
+log = structlog.get_logger('node')
 
 
 class RaidexNode(object):

@@ -11,8 +11,8 @@ from raidex.raidex_node.listener_tasks import ListenerTask
 from raidex.utils import timestamp, pex
 from raidex.utils.gevent_helpers import make_async
 
-log = slogging.get_logger('trader.client')
-log_tglobal = slogging.get_logger('trader.global')
+log = structlog.get_logger('trader.client')
+log_tglobal = structlog.get_logger('trader.global')
 
 
 Listener = namedtuple('Listener', 'address event_queue_async transform')

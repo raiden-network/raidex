@@ -10,7 +10,7 @@ from raidex.message_broker.message_broker import MessageBroker
 from raidex.commitment_service.node import CommitmentService
 from raidex.raidex_node.bots import LiquidityProvider, RandomWalker, Manipulator
 
-slogging.configure(':WARNING,bots.manipulator:DEBUG')
+structlog.configure(':WARNING,bots.manipulator:DEBUG')
 
 
 def main():
@@ -21,7 +21,7 @@ def main():
     parser.add_argument('--mock-networking', action='store_true',
                         help='In-Process Trader, MessageBroker and CommitmentService')
     parser.add_argument('--mock', action='store_true', help='Spawns mock offers to simulate trading activity"')
-    parser.add_argument('--seed', type=str, default='raidex-node', help='Use the sha3 privkey from seed')
+    parser.add_argument('--seed', type=str, default='raidex-node', help='Use the keccak privkey from seed')
     parser.add_argument("--api", action='store_true', help='Run the REST-API')
     parser.add_argument("--api-port", type=int, help='Specify the port for the api, default is 5002', default=5002)
     parser.add_argument("--offer-lifetime", type=int, help='Lifetime of offers spawned by LimitOrders', default=10)
