@@ -6,7 +6,7 @@ from eth_keys import keys
 from rlp.utils import decode_hex as rlp_decode_hex, encode_hex as rlp_encode_hex
 from raidex.exceptions import UntradableAssetPair
 
-ETHER_TOKEN_ADDRESS = keys.PrivateKey(keccak('ether')).public_key
+ETHER_TOKEN_ADDRESS = keys.PrivateKey(keccak(text='ether')).public_key.to_address()
 DEFAULT_RAIDEN_PORT = 9999  # no raiden dependency for now
 DEFAULT_RAIDEX_PORT = DEFAULT_RAIDEN_PORT + 1
 
@@ -16,8 +16,8 @@ def make_address():
 
 
 def make_privkey_address():
-    private_key = keccak(''.join(random.choice(string.printable) for _ in range(20)))
-    address = keys.PrivateKey(private_key).public_key
+    private_key = keccak(text=''.join(random.choice(string.printable) for _ in range(20)))
+    address = keys.PrivateKey(private_key).public_key.to_address()
     return private_key, address
 
 

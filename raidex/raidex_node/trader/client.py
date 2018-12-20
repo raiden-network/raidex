@@ -147,7 +147,7 @@ class TraderClient(object):
         listener = Listener(self.address, event_queue_async, transform)
 
         def run():
-            r = requests.get('{}/events/{}'.format(self.apiUrl, encode_hex(self.address)), stream=True)
+            r = requests.get('{}/events/{}'.format(self.apiUrl, self.address), stream=True)
             for line in r.iter_lines():
                 # filter out keep-alive new lines
                 if line:

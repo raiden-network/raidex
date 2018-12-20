@@ -30,11 +30,11 @@ def _price(p):
 def _accounts():
     Account = namedtuple('Account', 'privatekey address')
     privkeys = [keccak("account:{}".format(i)) for i in range(2)]
-    accounts = [Account(pk, keys.PrivateKey(pk).public_key) for pk in privkeys]
+    accounts = [Account(pk, keys.PrivateKey(pk).public_key.to_address()) for pk in privkeys]
     return accounts
 
 
-ASSETS = [keys.PrivateKey(keccak("asset{}".format(i))).public_key for i in range(2)]
+ASSETS = [keys.PrivateKey(keccak("asset{}".format(i))).public_key.to_address() for i in range(2)]
 ACCOUNTS = _accounts()
 
 

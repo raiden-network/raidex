@@ -4,8 +4,8 @@ import gevent
 from gevent.event import AsyncResult
 import structlog
 
-from exchange_task import MakerExchangeTask, TakerExchangeTask
-from offer_book import OfferType, Offer
+from raidex.raidex_node.exchange_task import MakerExchangeTask, TakerExchangeTask
+from raidex.raidex_node.offer_book import OfferType, Offer
 from raidex.utils import timestamp
 
 log = structlog.get_logger('node.order')

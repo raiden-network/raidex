@@ -10,8 +10,8 @@ from raidex.message_broker.message_broker import MessageBroker
 from raidex.commitment_service.node import CommitmentService
 from raidex.raidex_node.bots import LiquidityProvider, RandomWalker, Manipulator
 
-structlog.configure(':WARNING,bots.manipulator:DEBUG')
-
+structlog.configure()
+#':WARNING,bots.manipulator:DEBUG'
 
 def main():
     stop_event = Event()

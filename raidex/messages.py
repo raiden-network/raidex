@@ -2,24 +2,25 @@ import json
 import base64
 
 import rlp
-from rlp.sedes import binary
-from eth_utils import (address, int256, hash32, keccak, big_endian_to_int, int32)
+from rlp.sedes import binary, BigEndianInt, Binary
+from eth_utils import (address, keccak, big_endian_to_int, decode_hex)
+from eth_keys import keys
 from raidex.utils import pex
-from raiden.encoding.signing import recover_publickey
-from raiden.encoding.signing import sign as _sign
-from coincurve import PrivateKey
-
 from raidex.utils import timestamp
+
+int32 = BigEndianInt(32)
+int256 = BigEndianInt(256)
+hash32 = Binary.fixed_length(32)
 
 sig65 = binary.fixed_length(65, allow_empty=True)
 
 
 def sign(messagedata, private_key):
-    if not isinstance(private_key, PrivateKey):
-        privkey_instance = PrivateKey(secret=private_key)
+    if not isinstance(private_key, keys.PrivateKey):
+        privkey_instance = keys.PrivateKey(decode_hex(private_key))
     else:
         privkey_instance = private_key
-    return _sign(messagedata, privkey_instance)
+    return private_key.sign_msg(messagedata, privkey_instance)
 
 
 def is_sig_65(value):
@@ -99,7 +100,7 @@ class Signed(RLPHashable):
         if not self._sender:
             if not self.signature:
                 raise SignatureMissingError()
-            pub = recover_publickey(self._hash_without_signature, self.signature)
+            pub = keys.PublicKey.recover_from_msg_hash(self._hash_without_signature, self.signature)
             self._sender = keccak(pub[1:])[-20:]
         return self._sender
 

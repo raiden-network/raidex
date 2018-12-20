@@ -8,7 +8,7 @@ import structlog
 from raidex.raidex_node.exchange_task import MakerExchangeTask, TakerExchangeTask
 from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.offer_book import OfferBook, Offer
-from listener_tasks import OfferBookTask, OfferTakenTask, SwapCompletedTask
+from raidex.raidex_node.listener_tasks import OfferBookTask, OfferTakenTask, SwapCompletedTask
 from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.raidex_node.trades import TradesView
 from raidex.raidex_node.commitment_service.client import CommitmentServiceClient
@@ -18,6 +18,7 @@ from raidex.message_broker.client import MessageBrokerClient
 from raidex.utils import timestamp
 from raidex.signing import Signer
 from raidex.raidex_node.offer_grouping import group_offers, group_trades_from, make_price_bins, get_n_recent_trades
+
 log = structlog.get_logger('node')
 
 
@@ -148,8 +149,8 @@ class RaidexNode(object):
 
         raidex_node = cls(signer.address, token_pair, commitment_service_client, message_broker, trader_client)
 
-        if mock_trading_activity is True:
-            raise NotImplementedError('Trading Mocking disabled a the moment')
+        #if mock_trading_activity is True:
+        #    raise NotImplementedError('Trading Mocking disabled a the moment')
 
         if offer_lifetime is not None:
             raidex_node.default_offer_lifetime = offer_lifetime

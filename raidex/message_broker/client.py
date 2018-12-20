@@ -1,5 +1,5 @@
 from __future__ import print_function
-
+import structlog
 import json
 import requests
 import gevent
@@ -8,9 +8,12 @@ from gevent.queue import Queue
 
 from eth_utils import encode_hex
 
+
+
 from raidex.message_broker.message_broker import Listener
 import raidex.messages as messages
 
+log = structlog.get_logger("TOPIC")
 
 class StreamingRequestIterator(object):
 
@@ -123,7 +126,8 @@ class MessageBrokerClient(object):
         # binary data/ decoded addresses
         if topic == 'broadcast':
             return self.listen_on_broadcast(transform)
-        return self._listen_on(encode_hex(topic), transform)
+        log.msg(topic)
+        return self._listen_on(topic, transform)
 
     def _listen_on(self, topic, transform=None):
         """Starts listening for new messages on this topic

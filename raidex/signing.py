@@ -20,12 +20,12 @@ class Signer(object):
 
     @classmethod
     def from_seed(cls, seed):
-        private_key = keccak(seed)
+        private_key = keccak(text=seed)
         return cls(private_key)
 
     @property
     def address(self):
-        return self._address
+        return self._address.to_address()
 
     def sign(self, message):
         message.sign(self._private_key)

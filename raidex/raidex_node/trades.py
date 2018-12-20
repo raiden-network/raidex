@@ -3,7 +3,7 @@ from collections import namedtuple
 from sortedcontainers import SortedDict
 import structlog
 
-from offer_book import Offer
+from .offer_book import Offer
 
 
 log = structlog.get_logger('node.trades')
