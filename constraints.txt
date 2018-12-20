@@ -22,6 +22,7 @@ py==1.7.0
 pycparser==2.19
 pytest-mock==1.10.0
 pytest==4.0.1
+requests==2.21.0
 six==1.12.0
 sortedcontainers==2.1.0
 structlog==18.2.0

@@ -26,6 +26,7 @@ py
 pycparser
 pytest-mock
 pytest
+requests
 six
 sortedcontainers
 structlog
