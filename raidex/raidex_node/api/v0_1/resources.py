@@ -106,11 +106,11 @@ class LimitOrders(MethodView):
             abort(400, 'Invalid type')
 
         amount = kwargs['amount']
-        if not isinstance(amount, (int, long)) or amount < 1:
+        if not isinstance(amount, int) or amount < 1:
             abort(400, 'Invalid amount or type: {}'.format(type(amount)))
 
         price = kwargs['price']
-        if not isinstance(price, (float, int, long)):
+        if not isinstance(price, (float, int)):
             abort(400, 'Invalid price')
         price = float(price)
 

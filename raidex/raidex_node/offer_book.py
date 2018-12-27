@@ -46,10 +46,10 @@ class Offer(object):
     def __init__(self, type_, base_amount, counter_amount, offer_id, timeout,
                  maker_address=None, taker_address=None, commitment_amount=1):
         assert isinstance(type_, OfferType)
-        assert isinstance(base_amount, (int, long))
-        assert isinstance(counter_amount, (int, long))
-        assert isinstance(offer_id, (int, long))
-        assert isinstance(timeout, (int, long))
+        assert isinstance(base_amount, int)
+        assert isinstance(counter_amount, int)
+        assert isinstance(offer_id, int)
+        assert isinstance(timeout, int)
         assert base_amount > 0
         assert counter_amount > 0
         self.offer_id = offer_id

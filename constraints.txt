@@ -20,9 +20,11 @@ more-itertools==4.3.0
 pluggy==0.8.0
 py==1.7.0
 pycparser==2.19
+pycryptodome==3.7.2
 pytest-mock==1.10.0
 pytest==4.0.1
 requests==2.21.0
+rlp==0.6
 six==1.12.0
 sortedcontainers==2.1.0
 structlog==18.2.0

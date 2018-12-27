@@ -23,7 +23,7 @@ def main():
     parser.add_argument('--mock', action='store_true', help='Spawns mock offers to simulate trading activity"')
     parser.add_argument('--seed', type=str, default='raidex-node', help='Use the keccak privkey from seed')
     parser.add_argument("--api", action='store_true', help='Run the REST-API')
-    parser.add_argument("--api-port", type=int, help='Specify the port for the api, default is 5002', default=5002)
+    parser.add_argument("--api-port", type=int, help='Specify the port for the api, default is 50001', default=50001)
     parser.add_argument("--offer-lifetime", type=int, help='Lifetime of offers spawned by LimitOrders', default=10)
     parser.add_argument("--broker-host", type=str, help='Specify the host for the message broker, default is localhost',
                         default='localhost')

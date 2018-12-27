@@ -27,6 +27,7 @@ pycparser
 pytest-mock
 pytest
 requests
+rlp
 six
 sortedcontainers
 structlog
