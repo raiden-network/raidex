@@ -46,7 +46,7 @@ class MessageBroker(object):
         # binary data/ decoded addresses
         if topic == 'broadcast':
             return self.listen_on_broadcast(transform)
-        return self._listen_on(encode_hex(topic), transform)
+        return self._listen_on(topic, transform)
 
     def _listen_on(self, topic, transform=None):
         message_queue_async = Queue()

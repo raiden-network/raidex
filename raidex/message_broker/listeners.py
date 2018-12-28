@@ -21,18 +21,7 @@ class MessageListener(object):
         self.topic = topic
         self.listener = None
 
-    def _transform(self, message):
-        """Filters and transforms messages
 
-        Should be overwritten by subclasses
-
-        Args:
-            message: The message to filter and transform
-
-        Returns: The transformed message or None if it should be filtered out
-
-        """
-        return message
 
     def get(self, *args, **kwargs):
         """Gets the next message or blocks until there is one
