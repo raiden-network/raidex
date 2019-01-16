@@ -6,6 +6,8 @@ from enum import Enum
 import structlog
 from raidex.utils import pex
 
+from eth_utils import int_to_big_endian
+
 
 log = structlog.get_logger('node.offer_book')
 
@@ -72,7 +74,7 @@ class Offer(object):
 
     def __repr__(self):
         return "Offer<pex(id)={} amount={} price={} type={}>".format(
-                pex(self.offer_id), self.amount, self.price, self.type)
+                pex(int_to_big_endian(self.offer_id)), self.amount, self.price, self.type)
 
 
 class OfferView(object):

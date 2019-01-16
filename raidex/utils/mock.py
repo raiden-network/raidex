@@ -30,16 +30,16 @@ def _price(p):
 def _accounts():
     Account = namedtuple('Account', 'privatekey address')
     privkeys = [keccak("account:{}".format(i)) for i in range(2)]
-    accounts = [Account(pk, keys.PrivateKey(pk).public_key.to_address()) for pk in privkeys]
+    accounts = [Account(pk, keys.PrivateKey(pk).public_key.to_bytes()) for pk in privkeys]
     return accounts
 
 
-ASSETS = [keys.PrivateKey(keccak("asset{}".format(i))).public_key.to_address() for i in range(2)]
+ASSETS = [keys.PrivateKey(keccak("asset{}".format(i))).public_key.to_bytes() for i in range(2)]
 ACCOUNTS = _accounts()
 
 
 def gen_orders(start_price=10, max_amount=1000 * ETH, num_entries=10, max_deviation=0.01):
-    assert isinstance(start_price, (int, long))
+    assert isinstance(start_price, int)
     orders = []
     price = start_price
     for _ in range(num_entries):
@@ -52,7 +52,7 @@ def gen_orders(start_price=10, max_amount=1000 * ETH, num_entries=10, max_deviat
 
 
 def gen_orderbook_messages(market_price=10, max_amount=1000 * ETH, num_messages=200, max_deviation=0.01):
-    assert isinstance(market_price, (int, long))
+    assert isinstance(market_price, int)
     offers = []
     asks_price = copy.deepcopy(market_price)
     bids_price = copy.deepcopy(market_price)

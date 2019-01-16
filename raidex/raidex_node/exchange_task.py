@@ -1,7 +1,7 @@
 import gevent
 from raidex.utils import timestamp, pex
 import structlog
-from eth_utils import encode_hex
+from eth_utils import encode_hex, int_to_big_endian
 from raidex.message_broker.listeners import TakerListener, listener_context
 from raidex.utils.gevent_helpers import switch_context
 
@@ -32,24 +32,24 @@ class MakerExchangeTask(gevent.Greenlet):
         try:
             proven_offer = self.commitment_service.maker_commit_async(self.offer).get()
             if proven_offer is None:
-                log.debug('No proven offer received for {}'.format(pex(self.offer.offer_id)))
+                log.debug('No proven offer received for {}'.format(pex(int_to_big_endian(self.offer.offer_id))))
                 return False
-            log.debug('Wait for taker of {}'.format(pex(self.offer.offer_id)))
+            log.debug('Wait for taker of {}'.format(pex(int_to_big_endian(self.offer.offer_id))))
             with listener_context(TakerListener(self.offer, self.message_broker, self.maker_address)) as taker_listener:
-                log.debug('Broadcast proven_offer for {}'.format(pex(self.offer.offer_id)))
+                log.debug('Broadcast proven_offer for {}'.format(pex(int_to_big_endian(self.offer.offer_id))))
                 self.message_broker.broadcast(proven_offer)
                 taker_address = taker_listener.get()
                 log.debug('taker address: {}'.format(encode_hex(taker_address)))
 
-                log.debug('Found taker, execute swap of {}'.format(pex(self.offer.offer_id)))
+                log.debug('Found taker, execute swap of {}'.format(pex(int_to_big_endian(self.offer.offer_id))))
                 status = self.trader.exchange_async(self.offer.type, self.offer.base_amount, self.offer.counter_amount,
                                                     taker_address, self.offer.offer_id).get()
                 if status:
-                    log.debug('Swap of {} done'.format(pex(self.offer.offer_id)))
+                    log.debug('Swap of {} done'.format(pex(int_to_big_endian(self.offer.offer_id))))
                     self.commitment_service.report_swap_executed(self.offer.offer_id)
                     #  TODO check refund minus fee
                 else:
-                    log.debug('Swap of {} failed'.format(pex(self.offer.offer_id)))
+                    log.debug('Swap of {} failed'.format(pex(int_to_big_endian(self.offer.offer_id))))
                     #  TODO check refund
                 return status
         except gevent.Timeout as t:
@@ -87,20 +87,20 @@ class TakerExchangeTask(gevent.Greenlet):
         try:
             proven_commitment = self.commitment_service.taker_commit_async(self.offer).get()
             if proven_commitment is None:
-                log.debug('No proven commitment received for {}'.format(pex(self.offer.offer_id)))
+                log.debug('No proven commitment received for {}'.format(pex(int_to_big_endian(self.offer.offer_id))))
                 return False
             status_async = self.trader.expect_exchange_async(self.offer.type, self.offer.base_amount,
                                                              self.offer.counter_amount, self.offer.maker_address,
                                                              self.offer.offer_id)
             switch_context()  # give async function chance to execute
-            log.debug('Send proven-commitment of {} to maker'.format(pex(self.offer.offer_id)))
+            log.debug('Send proven-commitment of {} to maker'.format(pex(int_to_big_endian(self.offer.offer_id))))
             self.message_broker.send(self.offer.maker_address, proven_commitment)
             status = status_async.get()
             if status:
-                log.debug('Swap of {} done'.format(pex(self.offer.offer_id)))
+                log.debug('Swap of {} done'.format(pex(int_to_big_endian(self.offer.offer_id))))
                 self.commitment_service.report_swap_executed(self.offer.offer_id)
             else:
-                log.debug('Swap of {} failed'.format(pex(self.offer.offer_id)))
+                log.debug('Swap of {} failed'.format(pex(int_to_big_endian(self.offer.offer_id))))
                 # TODO check refund
             return status
         except gevent.Timeout as t:

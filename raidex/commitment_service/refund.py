@@ -24,6 +24,6 @@ class Refund(object):
     def __repr__(self):
         return "{}<receipt={}, claim_fee={}>".format(
             self.__class__.__name__,
-            pex(self.receipt),
+            self.receipt,
             self.claim_fee,
         )

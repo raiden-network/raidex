@@ -34,8 +34,7 @@ class GroupedOffer(object):
 
     @property
     def avg_timeout(self):
-        # TODO make python3 compatible
-        return reduce(lambda x, y: x + y, self._timeouts) / len(self._timeouts)
+        return sum(self._timeouts) / len(self._timeouts)
 
     @property
     def max_timeout(self):
@@ -72,7 +71,7 @@ def group_offers(offers, price_group_precision=None):
             quantized_offers_by_price[quantized] = grouped_offer
         else:
             grouped_offer.add(offer.amount, offer.timeout)
-
+    print("I WAS HERE")
     unsorted_list = quantized_offers_by_price.values()
     return sorted(unsorted_list)
 

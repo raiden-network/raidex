@@ -32,7 +32,7 @@ def shutdown_greenlets():
 # TODO remove / factor out
 @pytest.fixture()
 def assets():
-    assets = [keys.PrivateKey(keccak("asset{}".format(i))).public_key.to_address() for i in range(2)]
+    assets = [keys.PrivateKey(keccak("asset{}".format(i))).public_key.to_bytes() for i in range(2)]
     return assets
 
 
@@ -40,7 +40,7 @@ def assets():
 def accounts():
     Account = namedtuple("Account", "privatekey address")
     private_keys = [generate_random_privkey() for _ in range(4)]
-    return [Account(privkey, keys.PrivateKey(privkey).public_key.to_address()) for privkey in private_keys]
+    return [Account(privkey, keys.PrivateKey(privkey).public_key.to_bytes()) for privkey in private_keys]
 
 
 @pytest.fixture()

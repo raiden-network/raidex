@@ -1,6 +1,6 @@
 import random
 import string
-from eth_utils import keccak
+from eth_utils import keccak, decode_hex, encode_hex
 from eth_keys import keys
 
 def generate_random_privkey():
@@ -12,6 +12,7 @@ class Signer(object):
     def __init__(self, private_key):
         self._private_key = private_key
         self._address = keys.PrivateKey(private_key).public_key
+        print("SIGNER CREATED: {}".format(self._address))
 
     @classmethod
     def random(cls):
@@ -25,7 +26,10 @@ class Signer(object):
 
     @property
     def address(self):
-        return self._address.to_address()
+        return decode_hex(self._address.to_address())
 
     def sign(self, message):
         message.sign(self._private_key)
+
+    def __repr__(self):
+        return '<{}, {}>'.format(self.__class__.__name__, encode_hex(self.address))

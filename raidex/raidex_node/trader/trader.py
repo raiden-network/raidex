@@ -1,10 +1,10 @@
 from collections import namedtuple, defaultdict
 
-import gevent
 from gevent.event import AsyncResult
 from gevent.queue import Queue
 
 import structlog
+from eth_utils import int_to_big_endian
 
 from raidex.raidex_node.offer_book import OfferType
 from raidex.raidex_node.listener_tasks import ListenerTask
@@ -55,7 +55,7 @@ class TransferReceipt(object):
             self.__class__.__name__,
             pex(self.sender),
             self.amount,
-            pex(self.identifier),
+            pex(int_to_big_endian(self.identifier)),
             self.timestamp
         )
 
@@ -140,7 +140,7 @@ class TraderClientMock(object):
     trader = Trader()
 
     def __init__(self, address, commitment_balance=10, trader=None):
-        assert isinstance(address, str)
+        assert isinstance(address, bytes)
         self.address = address
         self.base_amount = 100
         self.counter_amount = 100
@@ -198,7 +198,7 @@ class TraderClientMock(object):
         successful = self.trader.transfer(self.address, target_address, amount, identifier)
         if successful is True:
             self.commitment_balance -= amount
-            log.debug('{} transferred {} to {} for pex(id): {}'.format(self, amount, pex(target_address), pex(identifier)))
+            log.debug('{} transferred {} to {} for pex(id): {}'.format(self, amount, pex(target_address), pex(int_to_big_endian(identifier))))
         return successful
 
     @make_async

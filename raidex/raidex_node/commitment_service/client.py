@@ -1,6 +1,7 @@
 import structlog
 import gevent
 from gevent.event import AsyncResult
+from eth_utils import int_to_big_endian
 
 from raidex import messages
 from raidex.raidex_node.commitment_service.tasks import CommitmentProofTask, RefundReceivedTask
@@ -130,7 +131,7 @@ class CommitmentServiceClient(object):
         success = self._send_transfer(offer.offer_id, commitment_amount)
         if success is not True:
             log.debug(
-                'Trader failed to transfer maker-commitment for offer: pex(id)={}'.format(pex(offer.offer_id)))
+                'Trader failed to transfer maker-commitment for offer: pex(id)={}'.format(pex(int_to_big_endian(offer.offer_id))))
             return None
 
         seconds_to_timeout = timestamp.seconds_to_timeout(offer.timeout)

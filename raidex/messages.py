@@ -2,33 +2,26 @@ import json
 import base64
 
 import rlp
-from rlp.sedes import binary, BigEndianInt, Binary
-from eth_utils import (address, keccak, big_endian_to_int, decode_hex)
+from rlp.sedes import BigEndianInt, Binary
+from eth_utils import (keccak, big_endian_to_int, int_to_big_endian, encode_hex, decode_hex)
 from eth_keys import keys
 from raidex.utils import pex
 from raidex.utils import timestamp
 
+sig65 = Binary.fixed_length(65, allow_empty=True)
+address = Binary.fixed_length(20, allow_empty=True)
 int32 = BigEndianInt(32)
 int256 = BigEndianInt(256)
 hash32 = Binary.fixed_length(32)
-
-sig65 = binary.fixed_length(65, allow_empty=True)
+trie_root = Binary.fixed_length(32, allow_empty=True)
 
 
 def sign(messagedata, private_key):
     if not isinstance(private_key, keys.PrivateKey):
-        privkey_instance = keys.PrivateKey(decode_hex(private_key))
+        privkey_instance = keys.PrivateKey(private_key)
     else:
         privkey_instance = private_key
-    return private_key.sign_msg(messagedata, privkey_instance)
-
-
-def is_sig_65(value):
-    # this excludes the empty '' - signature!
-    if len(value) != 0:
-        return sig65.is_valid_type(value) and sig65.is_valid_length(len(value))
-    else:
-        return False
+    return privkey_instance.sign_msg(messagedata).to_bytes()
 
 
 class RLPHashable(rlp.Serializable):
@@ -52,10 +45,10 @@ class RLPHashable(rlp.Serializable):
         return not self.__eq__(other)
 
     def __repr__(self):
-        try:
-            h = self.hash
-        except Exception:
-            h = ''
+        #try:
+        h = self.hash
+        #except Exception:
+        #   h = b''
         return '<%s(%s)>' % (self.__class__.__name__, pex(h))
 
 
@@ -89,9 +82,8 @@ class Signed(RLPHashable):
 
     @property
     def has_sig(self):
-        if self.signature:  # '' - string is falsy
-            if is_sig_65(self.signature):
-                return True
+        if isinstance(self.signature, sig65):
+            return True
         else:
             return False
 
@@ -100,8 +92,9 @@ class Signed(RLPHashable):
         if not self._sender:
             if not self.signature:
                 raise SignatureMissingError()
-            pub = keys.PublicKey.recover_from_msg_hash(self._hash_without_signature, self.signature)
-            self._sender = keccak(pub[1:])[-20:]
+            signature_obj = keys.Signature(signature_bytes=self.signature)
+            pub = signature_obj.recover_public_key_from_msg(self._hash_without_signature)
+            self._sender = decode_hex(pub.to_address())
         return self._sender
 
     @classmethod
@@ -143,6 +136,7 @@ class SwapOffer(RLPHashable):
 
     def __init__(self, ask_token, ask_amount, bid_token, bid_amount, offer_id, timeout, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
+
         super(SwapOffer, self).__init__(ask_token, ask_amount, bid_token, bid_amount, offer_id, timeout, cmdid)
 
     def timed_out(self, at=None):
@@ -154,10 +148,10 @@ class SwapOffer(RLPHashable):
         try:
             h = self.hash
         except Exception:
-            h = ''
+            h = b''
         return '<%s(%s) ask: %s[%s] bid %s[%s] h:%s>' % (
             self.__class__.__name__,
-            pex(self.offer_id),
+            pex(int_to_big_endian(self.offer_id)),
             pex(self.ask_token),
             self.ask_amount,
             pex(self.bid_token),
@@ -194,7 +188,7 @@ class MakerCommitment(Signed):
         ('amount', int256),
     ] + Signed.fields
 
-    def __init__(self, offer_id, offer_hash, timeout, amount, signature='', cmdid=None):
+    def __init__(self, offer_id, offer_hash, timeout, amount, signature=None, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
         super(MakerCommitment, self).__init__(offer_id, offer_hash, timeout, amount, signature, cmdid)
 
@@ -227,7 +221,7 @@ class TakerCommitment(Signed):
         ('amount', int256),
     ] + Signed.fields
 
-    def __init__(self, offer_id, offer_hash, timeout, amount, signature='', cmdid=None):
+    def __init__(self, offer_id, offer_hash, timeout, amount, signature=None, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
         super(TakerCommitment, self).__init__(offer_id, offer_hash, timeout, amount, signature, cmdid)
 
@@ -253,7 +247,7 @@ class OfferTaken(Signed):
         ('offer_id', int256),
     ] + Signed.fields
 
-    def __init__(self, offer_id, signature='', cmdid=None):
+    def __init__(self, offer_id, signature=None, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
         super(OfferTaken, self).__init__(offer_id, signature, cmdid)
 
@@ -276,7 +270,7 @@ class CommitmentProof(Signed):
         ('commitment_sig', sig65),
     ] + Signed.fields
 
-    def __init__(self, commitment_sig, signature='', cmdid=None):
+    def __init__(self, commitment_sig, signature=None, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
         super(CommitmentProof, self).__init__(commitment_sig, signature, cmdid)
 
@@ -307,7 +301,7 @@ class ProvenOffer(Signed):
         ('commitment_proof', CommitmentProof),
     ] + Signed.fields
 
-    def __init__(self, offer, commitment, commitment_proof, signature='', cmdid=None):
+    def __init__(self, offer, commitment, commitment_proof, signature=None, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
         super(ProvenOffer, self).__init__(offer, commitment, commitment_proof, signature, cmdid)
 
@@ -333,7 +327,7 @@ class ProvenCommitment(Signed):
         ('commitment_proof', CommitmentProof),
     ] + Signed.fields
 
-    def __init__(self, commitment, commitment_proof, signature='', cmdid=None):
+    def __init__(self, commitment, commitment_proof, signature=None, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
         super(ProvenCommitment, self).__init__(commitment, commitment_proof, signature, cmdid)
 
@@ -374,7 +368,7 @@ class CommitmentServiceAdvertisement(Signed):
         ('fee_rate', int32),
     ] + Signed.fields
 
-    def __init__(self, address, commitment_asset, fee_rate, signature='', cmdid=None):
+    def __init__(self, address, commitment_asset, fee_rate, signature=None, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
         super(CommitmentServiceAdvertisement, self).__init__(address, commitment_asset, fee_rate, signature, cmdid)
 
@@ -400,7 +394,7 @@ class SwapExecution(Signed):
         ('timestamp', int256),
     ] + Signed.fields
 
-    def __init__(self, offer_id, timestamp, signature='', cmdid=None):
+    def __init__(self, offer_id, timestamp, signature=None, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
         super(SwapExecution, self).__init__(offer_id, timestamp, signature, cmdid)
 
@@ -421,7 +415,7 @@ class SwapCompleted(SwapExecution):
         }
     """
 
-    def __init__(self, offer_id, timestamp, signature='', cmdid=None):
+    def __init__(self, offer_id, timestamp, signature=None, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
         super(SwapCompleted, self).__init__(offer_id, timestamp, signature, cmdid)
 

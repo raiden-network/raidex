@@ -45,7 +45,7 @@ class RaidexService(object):
 
     @property
     def address(self):
-        return self.private_key.public_key.to_address()
+        return self.private_key.public_key.to_bytes()
 
     def ping(self, receiver_address):
         ping = messages.Signed()

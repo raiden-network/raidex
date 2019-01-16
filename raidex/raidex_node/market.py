@@ -1,4 +1,4 @@
-from eth_utils import keccak, is_address
+from eth_utils import keccak, is_address, decode_hex, encode_hex
 from eth_keys import keys
 from raidex.raidex_node.offer_book import OfferType
 from raidex.utils import pex, make_address
@@ -7,6 +7,7 @@ from raidex.utils import pex, make_address
 class TokenPair(object):
 
     def __init__(self, base_token, counter_token):
+
         if not is_address(base_token) or not is_address(counter_token):
             raise ValueError("base_token and counter_token must be valid addresses")
         self.base_token = base_token
@@ -22,7 +23,10 @@ class TokenPair(object):
     def from_seed(cls, seed):
         private_key_base = keys.PrivateKey(keccak(text=seed))
         private_key_counter = keys.PrivateKey(keccak(text=(seed+seed)))
-        return cls(private_key_base.public_key.to_address(), private_key_counter.public_key.to_address())
+        public_key_base = private_key_base.public_key
+        public_key_counter = private_key_counter.public_key
+
+        return cls(decode_hex(public_key_base.to_address()), decode_hex(public_key_counter.to_address()))
 
     def opposite(self):
         return TokenPair(base_token=self.counter_token, counter_token=self.base_token)

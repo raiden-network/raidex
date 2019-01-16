@@ -51,7 +51,7 @@ def transfer():
     target_address = request.json.get('targetAddress')
     amount = request.json.get('amount')
     identifier = request.json.get('identifier')
-    log.debug('transfer: ', amount=amount, self_address=self_address, target_address=target_address, identifier=identifier)
+    log.debug('transfer: {}, {}, {}, {}'.format(amount, self_address, target_address, identifier))
     success = trader.transfer(self_address, target_address, amount, identifier)
     return jsonify({'data': success})
 
@@ -99,7 +99,7 @@ def internal_error(error):
 
 
 def main():
-    structlog.configure(':DEBUG')
+    structlog.configure()
     WSGIServer(('', 5001), app).serve_forever()
 
 

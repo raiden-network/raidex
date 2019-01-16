@@ -1,12 +1,13 @@
 import string
 import random
 
-from eth_utils import keccak, big_endian_to_int
+from codecs import encode
+from eth_utils import keccak, big_endian_to_int, decode_hex as eth_decode_hex, encode_hex as eth_encode_hex
 from eth_keys import keys
 from rlp.utils import decode_hex as rlp_decode_hex, encode_hex as rlp_encode_hex
 from raidex.exceptions import UntradableAssetPair
 
-ETHER_TOKEN_ADDRESS = keys.PrivateKey(keccak(text='ether')).public_key.to_address()
+ETHER_TOKEN_ADDRESS = eth_decode_hex(keys.PrivateKey(keccak(text='ether')).public_key.to_address())
 DEFAULT_RAIDEN_PORT = 9999  # no raiden dependency for now
 DEFAULT_RAIDEX_PORT = DEFAULT_RAIDEN_PORT + 1
 
@@ -17,7 +18,7 @@ def make_address():
 
 def make_privkey_address():
     private_key = keccak(text=''.join(random.choice(string.printable) for _ in range(20)))
-    address = keys.PrivateKey(private_key).public_key.to_address()
+    address = keys.PrivateKey(private_key).public_key.to_bytes()
     return private_key, address
 
 
@@ -30,7 +31,7 @@ def encode_hex(data):
 
 
 def pex(data):
-    return str(data).encode('hex')[:8]
+    return encode(data, "hex")[:8]
 
 
 def get_market_from_asset_pair(asset_pair):

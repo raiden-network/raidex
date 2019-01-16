@@ -4,6 +4,7 @@ from raidex import messages
 from raidex.utils import pex
 from raidex.raidex_node.listener_tasks import ListenerTask
 from raidex.tests.utils import float_isclose
+from eth_utils import int_to_big_endian
 
 
 log = structlog.get_logger('node.commitment_service.tasks')
@@ -68,9 +69,9 @@ class RefundReceivedTask(ListenerTask):
         if async_result:
             if async_result.ready():
                 assert isinstance(async_result.get_nowait(), messages.CommitmentProof)
-                log.debug("Refund received for pex(id) {} (proven): {}".format(pex(commitment.offer_id), receipt))
+                log.debug("Refund received for pex(id) {} (proven): {}".format(pex(int_to_big_endian(commitment.offer_id)), receipt))
             else:
-                log.debug("Refund received for pex(id) {} (unproven): {}".format(pex(commitment.offer_id), receipt))
+                log.debug("Refund received for pex(id) {} (unproven): {}".format(pex(int_to_big_endian(commitment.offer_id)), receipt))
 
             async_result.set(None)
 
