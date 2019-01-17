@@ -8,15 +8,35 @@
 @import '~@angular/material/prebuilt-themes/deeppurple-amber.css';
 
 /* colors */
-.primary-text { color: #41BAAE; }
-.white-text { color: white; }
-.green-text { color: #4fef4a; }
-.red-text { color: #ef5439; }
-.dark-background { background-color: rgba(37, 37, 37, 1); }
-.grey-background { background-color: #575757; }
+.primary-text {
+    color: #41BAAE;
+}
+
+.white-text {
+    color: white;
+}
+
+.green-text {
+    color: #4fef4a;
+}
+
+.red-text {
+    color: #ef5439;
+}
+
+.dark-background {
+    background-color: rgba(37, 37, 37, 1);
+}
+
+.grey-background {
+    background-color: #575757;
+}
 
 /* navigation */
-.navbar { background-color: #333333; }
+.navbar {
+    background-color: #333333;
+}
+
 .navbar-brand {
     font-family: arial;
     font-size: xx-Large;
@@ -27,19 +47,53 @@
     margin: 0px !important;
 }
 
-.top5 { margin-top:5px; }
-.top7 { margin-top:7px; }
-.top10 { margin-top:10px; }
-.top15 { margin-top:15px; }
-.top17 { margin-top:17px; }
-.top30 { margin-top:30px; }
+.top5 {
+    margin-top: 5px;
+}
 
-.bottom5 { margin-bottom:5px; }
-.bottom7 { margin-bottom:7px; }
-.bottom10 { margin-bottom:10px; }
-.bottom15 { margin-bottom:15px; }
-.bottom17 { margin-bottom:17px; }
-.bottom30 { margin-bottom:30px; }
+.top7 {
+    margin-top: 7px;
+}
+
+.top10 {
+    margin-top: 10px;
+}
+
+.top15 {
+    margin-top: 15px;
+}
+
+.top17 {
+    margin-top: 17px;
+}
+
+.top30 {
+    margin-top: 30px;
+}
+
+.bottom5 {
+    margin-bottom: 5px;
+}
+
+.bottom7 {
+    margin-bottom: 7px;
+}
+
+.bottom10 {
+    margin-bottom: 10px;
+}
+
+.bottom15 {
+    margin-bottom: 15px;
+}
+
+.bottom17 {
+    margin-bottom: 17px;
+}
+
+.bottom30 {
+    margin-bottom: 30px;
+}
 
 /* PrimeNG Datatable */
 .ui-datatable {
@@ -54,28 +108,28 @@
 }
 
 .ui-datatable-scrollable-body::-webkit-scrollbar-track {
-  	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
-  	background-color: #575757;
+    -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+    background-color: #575757;
 }
 
 .ui-datatable-scrollable-body::-webkit-scrollbar {
-  	width: 8px;
-  	background-color: #3d3d3d;
+    width: 8px;
+    background-color: #3d3d3d;
 }
 
 .ui-datatable-scrollable-body::-webkit-scrollbar-thumb {
-  	border-radius: 10px;
-  	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,.3);
-  	background-color: #3d3d3d;
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, .3);
+    background-color: #3d3d3d;
 }
 
-select option{
+select option {
     color: black;
 }
 
-#stockchart{
-  position: relative;
-  z-index: 1;
+#stockchart {
+    position: relative;
+    z-index: 1;
 }
 
 div.alert-success {

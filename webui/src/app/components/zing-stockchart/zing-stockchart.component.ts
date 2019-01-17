@@ -1,27 +1,30 @@
 import { Component, OnInit } from '@angular/core';
-import { ZingChartModel } from '../model/zing-chart.model';
-import { RaidexService } from '../services/raidex.service';
-import { Subscription } from 'rxjs/Subscription';
-import * as d3Array from 'd3-array';
+import { ZingChartModel } from '../../model/zing-chart.model';
+import { RaidexService } from '../../services/raidex.service';
+import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'rex-zing-stockchart',
     template: `
         <div class="chart-title">
-          Stock and Volume
+            Stock and Volume
         </div>
         <div class="chart-filter">
-          <button class="btn btn-success btn-xs"
-          (click)="reinitialiseStockChart(30)">30 secs</button>
-          <button class="btn btn-success btn-xs"
-          (click)="reinitialiseStockChart(60)">1 min</button>
-          <button class="btn btn-success btn-xs"
-          (click)="reinitialiseStockChart(15 * 60)">15 mins</button>
-          <button class="btn btn-success btn-xs"
-          (click)="reinitialiseStockChart(30 * 60)">30 mins</button>
+            <button class="btn btn-success btn-xs"
+                    (click)="reinitialiseStockChart(30)">30 secs
+            </button>
+            <button class="btn btn-success btn-xs"
+                    (click)="reinitialiseStockChart(60)">1 min
+            </button>
+            <button class="btn btn-success btn-xs"
+                    (click)="reinitialiseStockChart(15 * 60)">15 mins
+            </button>
+            <button class="btn btn-success btn-xs"
+                    (click)="reinitialiseStockChart(30 * 60)">30 mins
+            </button>
         </div>
         <rex-zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></rex-zingchart>
-        `,
+    `,
 })
 export class ZingStockChartComponent implements OnInit {
 
@@ -31,11 +34,12 @@ export class ZingStockChartComponent implements OnInit {
     public volumeChartDataArray: any[] = [];
     public min_scale: number;
     public max_scale: number;
-    public interval: number = 10; // interval in seconds
-    public numberOfBars: number = 15;
+    public interval = 10; // interval in seconds
+    public numberOfBars = 15;
     private raidexSubscription: Subscription;
 
-    constructor(private raidexService: RaidexService) {}
+    constructor(private raidexService: RaidexService) {
+    }
 
     public ngOnInit(): void {
         setTimeout(() => this.initialiseStockChart(), 3000);
@@ -46,7 +50,7 @@ export class ZingStockChartComponent implements OnInit {
             data => {
                 console.log(data);
                 this.tradesArray = data;
-                let stockUtil = prepareStockChartData(data);
+                const stockUtil = prepareStockChartData(data);
                 this.stockChartDataArray = stockUtil.stock;
                 this.volumeChartDataArray = stockUtil.volume;
                 this.min_scale = stockUtil.min_price;
@@ -63,7 +67,7 @@ export class ZingStockChartComponent implements OnInit {
             data => {
                 console.log(data);
                 this.tradesArray = data;
-                let stockUtil = prepareStockChartData(data);
+                const stockUtil = prepareStockChartData(data);
                 this.stockChartDataArray = stockUtil.stock;
                 this.volumeChartDataArray = stockUtil.volume;
                 this.min_scale = stockUtil.min_price;
@@ -176,18 +180,18 @@ export class ZingStockChartComponent implements OnInit {
 }
 
 function prepareStockChartData(tradesArray: Array<any>) {
-    let stockDataArray: Array<any> = [];
-    let volumeDataArray: Array<any> = [];
+    const stockDataArray: Array<any> = [];
+    const volumeDataArray: Array<any> = [];
     let chart_min_price = Infinity;
     let chart_max_price = 0;
     tradesArray.map((priceBin) => {
         // let timestamp = priceBin.timestamp ? priceBin.timestamp : 0;
-        let amount = parseFloat(priceBin.amount);
+        const amount = parseFloat(priceBin.amount);
         // ignore all bins with amount of 0
         if (amount > 0.) {
             volumeDataArray.push([priceBin.timestamp, amount]);
-            let min_price = parseFloat(priceBin.min);
-            let max_price = parseFloat(priceBin.max);
+            const min_price = parseFloat(priceBin.min);
+            const max_price = parseFloat(priceBin.max);
 
             stockDataArray.push(
                 [priceBin.timestamp, [
@@ -196,7 +200,7 @@ function prepareStockChartData(tradesArray: Array<any>) {
                     min_price,
                     parseFloat(priceBin.close),
                 ]]);
-            if (min_price < chart_min_price && min_price != 0) {
+            if (min_price < chart_min_price && min_price !== 0) {
                 chart_min_price = min_price;
             }
             if (max_price > chart_max_price) {

@@ -1,7 +1,7 @@
-import { Component, OnInit} from '@angular/core';
-import { ZingChartModel } from '../model/zing-chart.model';
-import { RaidexService } from '../services/raidex.service';
-import { Subscription } from 'rxjs/Subscription';
+import { Component, OnInit } from '@angular/core';
+import { ZingChartModel } from '../../model/zing-chart.model';
+import { RaidexService } from '../../services/raidex.service';
+import { Subscription } from 'rxjs';
 import * as d3Array from 'd3-array';
 
 @Component({
@@ -20,21 +20,22 @@ export class ZingDepthChartComponent implements OnInit {
     private maxValue: number;
     public raidexSubscription: Subscription;
 
-    constructor(private raidexService: RaidexService) {}
+    constructor(private raidexService: RaidexService) {
+    }
 
     public ngOnInit(): void {
         setTimeout(() => this.initialiseOrderChart(), 1000);
     }
 
-    public calcMinMax(askArray: number[][], bidArray: number[][]){
-        let maxAsk = askArray.slice(0, 1).pop();
-        let minAsk = askArray.slice(-1).pop();
-        let maxBid = bidArray.slice(-1).pop();
-        let minBid = bidArray.slice(0, 1).pop();
+    public calcMinMax(askArray: number[][], bidArray: number[][]) {
+        const maxAsk = askArray.slice(0, 1).pop();
+        const minAsk = askArray.slice(-1).pop();
+        const maxBid = bidArray.slice(-1).pop();
+        const minBid = bidArray.slice(0, 1).pop();
 
-        let min = Math.min.apply(Math, [minAsk, minBid].filter(val => Boolean(val)).map(offer => offer[0]));
-        let max = Math.max.apply(Math, [maxAsk, maxBid].filter(val => Boolean(val)).map(offer => offer[0]));
-        return {'max': max, 'min': min}
+        const min = Math.min.apply(Math, [minAsk, minBid].filter(val => Boolean(val)).map(offer => offer[0]));
+        const max = Math.max.apply(Math, [maxAsk, maxBid].filter(val => Boolean(val)).map(offer => offer[0]));
+        return {'max': max, 'min': min};
     }
 
     public initialiseOrderChart(): void {
@@ -44,7 +45,7 @@ export class ZingDepthChartComponent implements OnInit {
                 this.askArray = cumulativePoints(offer.sells);
                 // buys is sorted in ascending order by (price, offer_id)
                 this.bidArray = cumulativePoints(offer.buys);
-                let minMax = this.calcMinMax(this.askArray, this.bidArray);
+                const minMax = this.calcMinMax(this.askArray, this.bidArray);
                 this.minValue = minMax.min;
                 this.maxValue = minMax.max;
                 this.populateChartData();
@@ -52,7 +53,7 @@ export class ZingDepthChartComponent implements OnInit {
     }
 
     public populateChartData(): void {
-        let depth_chart = {
+        const depth_chart = {
             id: 'depth-chart',
             data: {
                 'type': 'area',
@@ -66,16 +67,16 @@ export class ZingDepthChartComponent implements OnInit {
                     },
                     'tooltip': {
                         'text': '<table border="0" rules=none>' +
-                        '<col width="150">' +
-                        '<tr align="left">' +
-                        '<td>Cumulative Volume (ETH)</td>' +
-                        '<td>%vt</td>' +
-                        '</tr>' +
-                        '<tr align="right">' +
-                        '<td>Price (USD)</td>' +
-                        '<td>%kt</td>' +
-                        '</tr>' +
-                        '</table>',
+                            '<col width="150">' +
+                            '<tr align="left">' +
+                            '<td>Cumulative Volume (ETH)</td>' +
+                            '<td>%vt</td>' +
+                            '</tr>' +
+                            '<tr align="right">' +
+                            '<td>Price (USD)</td>' +
+                            '<td>%kt</td>' +
+                            '</tr>' +
+                            '</table>',
                         'html-mode': true,
                         'background-color': 'white',
                         'border-color': 'black',
@@ -124,13 +125,13 @@ export class ZingDepthChartComponent implements OnInit {
             height: '300px',
             width: '100%'
         };
-        if (this.minValue){
+        if (this.minValue) {
             depth_chart.data['scale-x']['min-value'] = this.minValue;
         }
-        if (this.maxValue){
+        if (this.maxValue) {
             depth_chart.data['scale-x']['max-value'] = this.maxValue;
         }
-        this.charts = [depth_chart]
+        this.charts = [depth_chart];
     }
 
 }

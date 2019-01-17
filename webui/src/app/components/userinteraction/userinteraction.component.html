@@ -2,38 +2,40 @@
   <p-growl [value]="msgs"></p-growl>
   <div class="row">
     <button class="btn col-md-6" [ngClass]="(selectedType==='BUY')?'btn-success':'btn-white'"
-            (click)="selectType('BUY')">BUY</button>
+            (click)="selectType('BUY')">BUY
+    </button>
     <button class="btn col-md-6" [ngClass]="(selectedType==='SELL')?'btn-danger':'btn-white'"
-            (click)="selectType('SELL')">SELL</button>
+            (click)="selectType('SELL')">SELL
+    </button>
   </div>
   <div class="row">
     <form class="interaction-form">
       <div *ngIf="(selectedType === 'BUY')">
-        <md-input-container class="full-width">
-          <span class="suffix" md-suffix>ETH</span>
-          <input mdInput type="number" id="amount" name="amount"
-          [(ngModel)]="buyOrder.amount" placeholder="Amount">
-        </md-input-container>
-        <md-input-container class="full-width">
-          <span class="suffix" md-suffix>USD</span>
-          <input mdInput type="number" id="price" name="price"
-          [(ngModel)]="buyOrder.price" placeholder="Price">
-        </md-input-container>
+        <mat-form-field class="full-width">
+          <span class="suffix" matSuffix>ETH</span>
+          <input matInput type="number" id="amount" name="amount"
+                 [(ngModel)]="buyOrder.amount" placeholder="Amount">
+        </mat-form-field>
+        <mat-form-field class="full-width">
+          <span class="suffix" matSuffix>USD</span>
+          <input matInput type="number" id="price" name="price"
+                 [(ngModel)]="buyOrder.price" placeholder="Price">
+        </mat-form-field>
         <button type="submit" class="btn btn-success col-md-12" (click)="submitOrder('BUY')">
           PLACE BUY ORDER
         </button>
       </div>
       <div *ngIf="(selectedType === 'SELL')">
-        <md-input-container class="full-width">
-          <span class="suffix" md-suffix>ETH</span>
-          <input mdInput type="number" id="amount" name="amount"
+        <mat-form-field class="full-width">
+          <span class="suffix" matSuffix>ETH</span>
+          <input matInput type="number" id="amount" name="amount"
                  [(ngModel)]="sellOrder.amount" placeholder="Amount">
-        </md-input-container>
-        <md-input-container class="full-width">
-          <span class="suffix" md-suffix>USD</span>
-          <input mdInput type="number" id="price" name="price"
+        </mat-form-field>
+        <mat-form-field class="full-width">
+          <span class="suffix" matSuffix>USD</span>
+          <input matInput type="number" id="price" name="price"
                  [(ngModel)]="sellOrder.price" placeholder="Price">
-        </md-input-container>
+        </mat-form-field>
         <button type="submit" class="btn btn-danger col-md-12" (click)="submitOrder('SELL')">
           PLACE SELL ORDER
         </button>
@@ -41,10 +43,15 @@
     </form>
   </div>
   <div class="row top10">
-      <div>Open Orders</div>
-      <div *ngIf="orderArray?.length > 0">
-      <p-dataTable  [value]="orderArray" [rows]="8" [paginator]="true" [pageLinks]="0" [(selection)]="selectedOrder" dataKey="order"
-      styleClass="borderless" tableStyleClass="prime-table">
+    <div>Open Orders</div>
+    <div *ngIf="orderArray?.length > 0">
+      <p-dataTable [value]="orderArray"
+                   [rows]="8"
+                   [paginator]="true"
+                   [pageLinks]="0"
+                   [(selection)]="selectedOrder"
+                   dataKey="order"
+                   styleClass="borderless" tableStyleClass="prime-table">
         <!--<p-column field="type" header="Type" [style]="{'font-size': '11px', 'text-align': 'right'}"></p-column>-->
         <p-column field="shortAmount" header="Amount" [style]="{'font-size': '11px', 'text-align': 'right'}"></p-column>
         <p-column field="shortPrice" header="Price" [style]="{'font-size': '11px', 'text-align': 'right'}"></p-column>
@@ -53,9 +60,9 @@
         <p-column [style]="{'width':'30px'}" selectionMode="single"></p-column>
       </p-dataTable>
       <button type="submit" class="btn btn-danger btn-xs" (click)="cancelOrder()">Cancel</button>
-      </div>
-      <div *ngIf="orderArray?.length == 0">
-          You are yet to enter Orders
-      </div>
+    </div>
+    <div *ngIf="orderArray?.length == 0">
+      You are yet to enter Orders
+    </div>
   </div>
 </div>

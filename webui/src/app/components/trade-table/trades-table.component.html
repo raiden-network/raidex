@@ -3,16 +3,16 @@
   <p-header>Trade History</p-header>
   <p-column field="timestamp" header="Time" [sortable]="true"
             [style]="{'font-size': '11px', 'text-align': 'center'}">
-    <template let-col let-data="rowData" pTemplate type="body">
+    <ng-template let-col let-data="rowData" pTemplate type="body">
       <span>{{data.timestamp | date: 'HH:mm:ss'}}</span>
-    </template>
+    </ng-template>
   </p-column>
   <p-column field="type" header="Type" styleClass="text-center"
             [style]="{'width': '50px','font-size': '11px', 'text-align': 'center'}">
-    <template let-col let-data="rowData" pTemplate type="body">
+    <ng-template let-col let-data="rowData" pTemplate type="body">
       <div *ngIf="(data.type === 'BUY'); else elseBlock" class="green-text">BUY</div>
       <ng-template #elseBlock><div class="red-text">SELL</div></ng-template>
-    </template>
+    </ng-template>
   </p-column>
   <p-column field="amount" styleClass="text-right" header="Amount" [sortable]="true"
             [style]="{'font-size': '11px', 'text-align': 'right'}">

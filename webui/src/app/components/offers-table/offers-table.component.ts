@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { Subscription } from 'rxjs/Subscription';
-import { RaidexService } from '../services/raidex.service';
-import { Offer } from '../model/offer';
+import { Subscription } from 'rxjs';
+import { RaidexService } from '../../services/raidex.service';
+import { Offer } from '../../model/offer';
 
 @Component({
     selector: 'rex-offers-table',
@@ -12,7 +12,8 @@ export class OffersTableComponent implements OnInit {
     public sells: Offer[] = [];
     private raidexSubscription: Subscription;
 
-    constructor(private raidexService: RaidexService) {}
+    constructor(private raidexService: RaidexService) {
+    }
 
     public ngOnInit(): void {
         this.getOrderBook();
