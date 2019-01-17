@@ -12,21 +12,18 @@ module.exports = function (config) {
       require('angular-cli/plugins/karma')
     ],
     files: [
-      { pattern: './src/test.ts', watched: false }
+      
     ],
     preprocessors: {
       './src/test.ts': ['angular-cli']
     },
     remapIstanbulReporter: {
-      reports: {
+      dir: require('path').join(__dirname, 'coverage'), reports: {
         html: 'coverage',
         lcovonly: './coverage/coverage.lcov'
       }
     },
-    angularCli: {
-      config: './angular-cli.json',
-      environment: 'dev'
-    },
+    
     reporters: ['progress', 'karma-remap-istanbul'],
     port: 9876,
     colors: true,

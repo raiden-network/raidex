@@ -1,14 +1,13 @@
 import { Component, OnInit } from '@angular/core';
-import { ZingChartModel } from '../model/zing-chart.model';
-import { RaidexService } from '../services/raidex.service';
-import { Subscription } from 'rxjs/Subscription';
-import * as d3Array from 'd3-array';
+import { ZingChartModel } from '../../model/zing-chart.model';
+import { RaidexService } from '../../services/raidex.service';
+import { Subscription } from 'rxjs';
 
 @Component({
     selector: 'rex-zing-pricechart',
     template: `
         <rex-zingchart *ngFor="let chartObj of charts" [chart]="chartObj"></rex-zingchart>
-        `,
+    `,
 })
 export class ZingPriceTimeSeriesComponent implements OnInit {
 
@@ -149,8 +148,8 @@ export class ZingPriceTimeSeriesComponent implements OnInit {
 
 function formatIntoPriceTimeSeries(orderHistoryArray: Array<any>) {
     return orderHistoryArray.map((element) => [
-            element.timestamp,
-            parseFloat(element.price)
+        element.timestamp,
+        parseFloat(element.price)
     ]);
 }
 

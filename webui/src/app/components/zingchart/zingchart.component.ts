@@ -1,5 +1,5 @@
 import { Component, Input, NgZone, AfterViewInit, HostBinding, OnDestroy } from '@angular/core';
-import { ZingChartModel } from '../model/zing-chart.model';
+import { ZingChartModel } from '../../model/zing-chart.model';
 
 declare var zingchart: any;
 

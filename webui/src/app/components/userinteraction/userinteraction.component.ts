@@ -1,6 +1,6 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { Order } from '../model/order';
-import { RaidexService } from '../services/raidex.service';
+import { Order } from '../../model/order';
+import { RaidexService } from '../../services/raidex.service';
 import { Message } from 'primeng/primeng';
 
 @Component({
@@ -21,7 +21,9 @@ export class UserInteractionComponent implements OnInit {
     public selectedOrder: Order;
     public msgs: Message[] = [];
     public selectedType: String;
-    constructor(private raidexService: RaidexService) {}
+
+    constructor(private raidexService: RaidexService) {
+    }
 
     public ngOnInit(): void {
         this.buyOrder.type = 'BUY';
@@ -47,7 +49,7 @@ export class UserInteractionComponent implements OnInit {
     public getOrders() {
         this.raidexService.getLimitOrders().subscribe(
             (limitOrders) => {
-                this.orderArray = <Order[]> limitOrders;
+                this.orderArray = <Order[]>limitOrders;
             },
         );
     }
@@ -72,31 +74,38 @@ export class UserInteractionComponent implements OnInit {
         if (type === 'BUY') {
             return this.buyOrder;
         } else {
-          return this.sellOrder;
+            return this.sellOrder;
         }
     }
 
     public showMessage(type: string) {
         this.msgs = [];
         if (type === 'BUY' && this.tempBuyId !== null) {
-            this.msgs.push({severity: 'info',
-                            summary: 'Buy Order Submitted',
-                            detail: 'Your Buy Order has been submitted with id ' + this.tempBuyId
-                          });
+            this.msgs.push({
+                severity: 'info',
+                summary: 'Buy Order Submitted',
+                detail: 'Your Buy Order has been submitted with id ' + this.tempBuyId
+            });
         } else if (type === 'SELL' && this.tempSellId !== null) {
-            this.msgs.push({severity: 'info',
-                            summary: 'Sell Order Submitted',
-                            detail: 'Your Sell Order has been submitted with id ' +
-                            this.tempSellId
-                          });
+            this.msgs.push({
+                severity: 'info',
+                summary: 'Sell Order Submitted',
+                detail: 'Your Sell Order has been submitted with id ' +
+                    this.tempSellId
+            });
         } else {
-            this.msgs.push({severity: 'error',
-                            summary: 'Error',
-                            detail: 'Error in submitting orders please try again'});
+            this.msgs.push({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Error in submitting orders please try again'
+            });
         }
 
 
     }
+
     // TODO: Remove this when we're done
-    get diagnostic() { return JSON.stringify(this.buyOrder); }
+    get diagnostic() {
+        return JSON.stringify(this.buyOrder);
+    }
 }

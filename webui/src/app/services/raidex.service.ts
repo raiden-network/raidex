@@ -1,147 +1,145 @@
+import { throwError as observableThrowError, Observable, timer } from 'rxjs';
+import { delay, mergeMap, retryWhen, map, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { Http, Headers, RequestOptions, Response, URLSearchParams } from '@angular/http';
-import { Observable } from 'rxjs/Observable';
-import { TimerObservable} from 'rxjs/observable/TimerObservable';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/toPromise';
-import 'rxjs/add/observable/throw';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/retryWhen';
-import 'rxjs/add/operator/delay';
-import 'rxjs/add/operator/mergeMap';
 import { Order } from '../model/order';
 import { Trade } from '../model/trade';
 import { PriceBin } from '../model/pricebin';
 import { Offer } from '../model/offer';
 import * as format from '../utils/format';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { ApiResponse, OffersData, OrderResponse } from '../model/responses';
 
 @Injectable()
 export class RaidexService {
 
-    api = 'http://127.0.0.1:5002/api/v01';
-
-    constructor(private http: Http) {
+    constructor(private http: HttpClient) {
 
     }
 
-        public getNewTrades(chunk_size: number): Observable<Array<Trade>> {
-        return TimerObservable.create(0, 1000)
-            .flatMap(() => {
-                let resp: Observable<Response>;
-                    let params: URLSearchParams = new URLSearchParams();
-                    params.set('chunk_size', (chunk_size).toString());
-                    resp = this.http.get(`${this.api}/markets/dummy/trades`, {search: params});
-                return resp.map((response) => {
-                    let data = response.json().data;
-                    return data.map((elem) => {
-                        return new Trade(
-                            elem.timestamp,
-                            format.formatCurrency(elem.amount, 18 , 1),
-                            format.formatCurrency(elem.price, 2, 4),
-                            elem.type,
-                        );}
-                        );
-                })
-            }).retryWhen((errors) => this.printErrorAndRetry('Could not get OrderHistory', errors));
+    api = 'http://127.0.0.1:50001/api/v01';
+
+    private static handleError(error: Response | any) {
+        let errMsg: string;
+        if (error instanceof Response) {
+            const body = error.json() || '';
+            const err = body['error'] || JSON.stringify(body);
+            errMsg = `${error.status} - ${error.statusText || ''} ${err}`;
+        } else {
+            errMsg = error.message ? error.message : error.toString();
+        }
+        console.error(errMsg);
+        return observableThrowError(errMsg);
     }
 
-    public getPriceChart(nof_buckets: number, interval: number): Observable<Array<Trade>> {
-        return TimerObservable.create(0, 10000)
-            .flatMap(() => {
-                    let params: URLSearchParams = new URLSearchParams();
-                    params.set('nof_buckets', (nof_buckets).toString());
-                    params.set('interval', (interval).toString());
-                    return this.http.get(`${this.api}/markets/dummy/trades/price-chart`, {search: params})
-                .map((response) => {
-                    let data = response.json().data;
+    public getNewTrades(chunk_size: number): Observable<Array<Trade>> {
+        return timer(0, 1000).pipe(
+            mergeMap(() => {
+                const params: HttpParams = new HttpParams().set('chunk_size', chunk_size.toString());
+                const resp = this.http.get<ApiResponse<Array<Trade>>>(`${this.api}/markets/dummy/trades`, {params: params});
+                return resp.pipe(map((response) => {
+                    const data = response.data;
                     return data.map((elem) => {
-                        return new PriceBin(
-                            elem.timestamp,
-                            format.formatCurrency(elem.amount),
-                            format.formatCurrency(elem.open, 2),
-                            format.formatCurrency(elem.close, 2),
-                            format.formatCurrency(elem.max, 2),
-                            format.formatCurrency(elem.min, 2),
-                        );}
+                            return new Trade(
+                                elem.timestamp,
+                                format.formatCurrency(elem.amount, 18, 1),
+                                format.formatCurrency(elem.price, 2, 4),
+                                elem.type,
+                            );
+                        }
+                    );
+                }));
+            }), retryWhen((errors) => this.printErrorAndRetry('Could not get OrderHistory', errors)));
+    }
+
+    public getPriceChart(nof_buckets: number, interval: number): Observable<Array<PriceBin>> {
+        return timer(0, 10000).pipe(
+            mergeMap(() => {
+                const params: HttpParams = new HttpParams()
+                    .set('nof_buckets', (nof_buckets).toString())
+                    .set('interval', (interval).toString());
+
+                return this.http.get<ApiResponse<Array<PriceBin>>>(`${this.api}/markets/dummy/trades/price-chart`, {params: params}).pipe(
+                    map((response) => {
+                        const data = response.data;
+                        return data.map((elem) => {
+                                return new PriceBin(
+                                    elem.timestamp,
+                                    format.formatCurrency(elem.amount),
+                                    format.formatCurrency(elem.open, 2),
+                                    format.formatCurrency(elem.close, 2),
+                                    format.formatCurrency(elem.max, 2),
+                                    format.formatCurrency(elem.min, 2),
+                                );
+                            }
                         );
-                })
-            }).retryWhen((errors) => this.printErrorAndRetry('Could not get PriceChart', errors));
+                    }));
+            }), retryWhen((errors) => this.printErrorAndRetry('Could not get PriceChart', errors)));
     }
 
     public getOffers(): Observable<any> {
-        return TimerObservable.create(0, 1000)
-            .flatMap(() => this.http.get(`${this.api}/markets/dummy/offers`)
-                .map((response) => {
-                    let data = response.json().data;
-                    let buys = data.buys;
-                    let sells = data.sells;
+        return timer(0, 1000).pipe(
+            mergeMap(() => this.http.get<ApiResponse<OffersData>>(`${this.api}/markets/dummy/offers`).pipe(
+                map((response) => {
+                    const data = response.data;
+                    const buys = data.buys;
+                    const sells = data.sells;
                     return {
-                        'buys': buys.map((elem) =>
+                        buys: buys.map((elem) =>
                             new Offer(
                                 format.formatCurrency(elem.amount),
                                 format.formatCurrency(elem.price, 2)
                             )),
-                        'sells': sells.map((elem) =>
+                        sells: sells.map((elem) =>
                             new Offer(
                                 format.formatCurrency(elem.amount),
                                 format.formatCurrency(elem.price, 2)
                             ))
                     };
-                }))
-            .retryWhen((errors) => this.printErrorAndRetry('Could not get OrderBook', errors));
+                }))),
+            retryWhen((errors) => this.printErrorAndRetry('Could not get OrderBook', errors)));
     }
 
-    public submitLimitOrder(limitOrder: Order) {
-        let data = {
+    public submitLimitOrder(limitOrder: Order): Observable<number> {
+        const data = {
             'type': limitOrder.type,
             'amount': format.parseCurrency(limitOrder.amount),
             'price': format.parseCurrency(limitOrder.price, 2)
         };
-        const headers = new Headers({ 'Content-Type': 'application/json' });
-        const options = new RequestOptions({ headers: headers });
-        return this.http.post(`${this.api}/markets/dummy/orders/limit`,
-            data, options).map((response) => response.json().data).catch(this.handleError);
+        const options = new HttpHeaders().set('Content-Type', 'application/json');
+        return this.http.post<ApiResponse<number>>(`${this.api}/markets/dummy/orders/limit`, data, {headers: options}).pipe(
+            map((response) => response.data), catchError(RaidexService.handleError)
+        );
     }
 
     public getLimitOrders() {
-        return TimerObservable.create(0, 1000)
-            .flatMap(() => this.http.get(`${this.api}/markets/dummy/orders/limit`).
-            map((response) => {
-                let data = response.json().data;
-                return data.map((elem) => new Order(
-                    elem.type,
-                    format.formatCurrency(elem.amount),
-                    format.formatCurrency(elem.price, 2),
-                    elem.order_id,
-                    format.formatCurrency(elem.filledAmount),
-                    elem.canceled
-                ));
-            }))
-            .retryWhen((errors) => this.printErrorAndRetry('Could not get Limitorders', errors));
+        return timer(0, 1000).pipe(
+            mergeMap(() => this.http.get<ApiResponse<Array<OrderResponse>>>(`${this.api}/markets/dummy/orders/limit`).pipe(
+                map((response) => {
+                    const data = response.data;
+                    return data.map((elem) => new Order(
+                        elem.type,
+                        format.formatCurrency(elem.amount),
+                        format.formatCurrency(elem.price, 2),
+                        elem.order_id,
+                        format.formatCurrency(elem.filledAmount),
+                        elem.canceled
+                    ));
+                }))),
+            retryWhen((errors) => this.printErrorAndRetry('Could not get Limitorders', errors)));
     }
 
-    public cancelLimitOrders(limitOrder: Order) {
-        return this.http.delete(`${this.api}/markets/dummy/orders/limit/${limitOrder.id}`)
-            .map((response) => response.json().data).catch(this.handleError);
+    public cancelLimitOrders(limitOrder: Order): Observable<number> {
+        return this.http.delete<ApiResponse<number>>(`${this.api}/markets/dummy/orders/limit/${limitOrder.id}`).pipe(
+            map((response) => response.data),
+            catchError(RaidexService.handleError)
+        );
     }
 
     private printErrorAndRetry(message: string, errors: Observable<any>): Observable<any> {
-        return errors
-            .map((error) => console.error(message + (error.json().message || error)))
-            .delay(20000);
+        return errors.pipe(
+            map((error) => console.error(message + (error.message || error))),
+            delay(20000)
+        );
     }
-
-    private handleError(error: Response | any) {
-      let errMsg: string;
-      if (error instanceof Response) {
-          const body = error.json() || '';
-          const err = body.error || JSON.stringify(body);
-          errMsg = `${error.status} - ${error.statusText || ''} ${err}`;
-      } else {
-          errMsg = error.message ? error.message : error.toString();
-      }
-      console.error(errMsg);
-      return Observable.throw(errMsg);
-}
 
 }

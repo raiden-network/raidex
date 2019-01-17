@@ -1,14 +1,22 @@
-import {formatCurrency, parseCurrency} from "../utils/format";
-export class Order {
-    constructor(public type: string, public amount: string, public price: string,
-                public id: number, public filledAmount: string, public canceled: Boolean) {}
+import { formatCurrency } from '../utils/format';
 
-    // TODO price as a private attribute and provide getters for string repr.
-    get shortPrice(): String{
-       return formatCurrency(parseFloat(this.price), 0 , 1);
+export class Order {
+    constructor(
+        public type: string,
+        public amount: string,
+        public price: string,
+        public id: number,
+        public filledAmount: string,
+        public canceled: Boolean
+    ) {
     }
 
-    get shortAmount(): String{
+    // TODO price as a private attribute and provide getters for string repr.
+    get shortPrice(): String {
+        return formatCurrency(parseFloat(this.price), 0, 1);
+    }
+
+    get shortAmount(): String {
         return formatCurrency(Number(this.amount), 0, 1);
     }
 
