@@ -1,3 +1,5 @@
+
+from functools import total_ordering
 import decimal
 from decimal import Decimal, getcontext
 
@@ -11,7 +13,7 @@ getcontext().rounding = decimal.ROUND_FLOOR
 # getcontext().Emin = 0
 getcontext().prec = 28
 
-
+@total_ordering
 class GroupedOffer(object):
 
     def __init__(self, price_decimal):
@@ -48,13 +50,11 @@ class GroupedOffer(object):
         self.amount += amount
         self._timeouts.append(timeout)
 
-    def __cmp__(self, other):
-        if self.price_decimal < other.price_decimal:
-            return -1
-        elif self.price_decimal > other.price_decimal:
-            return 1
-        else:
-            return 0
+    def __eq__(self, other):
+        return self.price_decimal == other.price_decimal
+
+    def __lt__(self, other):
+        return self.price_decimal < other.price_decimal
 
 
 def group_offers(offers, price_group_precision=None):
@@ -71,11 +71,10 @@ def group_offers(offers, price_group_precision=None):
             quantized_offers_by_price[quantized] = grouped_offer
         else:
             grouped_offer.add(offer.amount, offer.timeout)
-    print("I WAS HERE")
     unsorted_list = quantized_offers_by_price.values()
     return sorted(unsorted_list)
 
-
+@total_ordering
 class GroupedTrade(object):
 
     def __init__(self, price_decimal, timestamp_bin, offer_id, type_):
@@ -107,19 +106,11 @@ class GroupedTrade(object):
     def add(self, amount):
         self.amount += amount
 
-    def __cmp__(self, other):
-        # first cmp timestamp, then price
-        if self.timestamp < other.timestamp:
-            return -1
-        elif self.timestamp > other.timestamp:
-            return 1
-        else:
-            if self.price_decimal < other.price_decimal:
-                return -1
-            elif self.price_decimal > other.price_decimal:
-                return 1
-            else:
-                return 0
+    def __eq__(self, other):
+        return (self.timestamp, self.price_decimal) == (other.timestamp, other.price_decimal)
+
+    def __lt__(self, other):
+        return (self.timestamp, self.price_decimal) < (other.timestamp, other.price_decimal)
 
 
 def group_trades(iterable, chunk_size=None, price_group_precision=None,
@@ -223,15 +214,11 @@ class PriceBin(object):
         elif timestmp == self._close_timestamp:
             self._close_prices.append(price)
 
-    def __cmp__(self, other):
-        # only compare timestamp
-        if self.timestamp < other.timestamp:
-            return -1
-        elif self.timestamp > other.timestamp:
-            return 1
-        else:
-            return 0
+    def __eq__(self, other):
+        return self.timestamp == other.timestamp
 
+    def __lt__(self, other):
+        return self.timestamp < other.timestamp
 
 def get_n_recent_trades(trades_list, nof_trades):
     return group_trades(reversed(trades_list), chunk_size=nof_trades)
@@ -258,7 +245,6 @@ def make_price_bins(trades_gen_func, nof_buckets, interval):
 
     assert len(price_bins) == nof_buckets + 1
     unsorted_list = price_bins.values()
-
     sorted_list = sorted(unsorted_list)
     # throw away the first bin again, it was there just to determine the first open price
     return sorted_list[1:]

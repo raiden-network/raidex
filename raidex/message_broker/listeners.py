@@ -21,8 +21,6 @@ class MessageListener(object):
         self.topic = topic
         self.listener = None
 
-
-
     def get(self, *args, **kwargs):
         """Gets the next message or blocks until there is one
 
@@ -46,6 +44,9 @@ class MessageListener(object):
         """Stops listening for new messages"""
         if self.listener is not None:
             self.message_broker.stop_listen(self.listener)
+
+    def _transform(self, message):
+        return message
 
 
 class TakerListener(MessageListener):
@@ -79,6 +80,7 @@ class OfferListener(MessageListener):
 
         ask_token = offer_msg.ask_token
         bid_token = offer_msg.bid_token
+
         type_ = self.market.get_offer_type(ask_token, bid_token)
 
         if type_ is OfferType.BUY:
@@ -87,7 +89,6 @@ class OfferListener(MessageListener):
             base_amount, counter_amount = offer_msg.bid_amount, offer_msg.ask_amount
         else:
             raise AssertionError("unknown market pair")
-
 
         offer = Offer(type_, base_amount, counter_amount, offer_id=offer_msg.offer_id, timeout=offer_msg.timeout,
                       maker_address=message.sender, commitment_amount=commitment_msg.amount)

@@ -12,6 +12,10 @@ def _ms_timestamp_to_dt(timestamp, epoch=datetime(1970, 1, 1)):
     return epoch + timedelta(milliseconds=timestamp)
 
 
+def to_str_repr(timestamp : int):
+    return _ms_timestamp_to_dt(timestamp).strftime("%H:%M:%S")
+
+
 def to_seconds(ms):
     return ms / 1000.
 

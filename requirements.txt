@@ -11,6 +11,7 @@ cffi
 click
 coincurve
 enum34
+eth-keyfile
 eth-keys
 eth-utils
 flask-cors

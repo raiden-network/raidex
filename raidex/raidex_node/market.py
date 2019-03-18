@@ -1,4 +1,4 @@
-from eth_utils import keccak, is_address, decode_hex, encode_hex
+from eth_utils import keccak, decode_hex, is_binary_address, to_checksum_address
 from eth_keys import keys
 from raidex.raidex_node.offer_book import OfferType
 from raidex.utils import pex, make_address
@@ -8,7 +8,7 @@ class TokenPair(object):
 
     def __init__(self, base_token, counter_token):
 
-        if not is_address(base_token) or not is_address(counter_token):
+        if not is_binary_address(base_token) or not is_binary_address(counter_token):
             raise ValueError("base_token and counter_token must be valid addresses")
         self.base_token = base_token
         self.counter_token = counter_token
@@ -38,6 +38,12 @@ class TokenPair(object):
             return OfferType.SELL
         else:
             return None
+
+    def checksum_base_address(self):
+        return to_checksum_address(self.base_token)
+
+    def checksum_counter_address(self):
+        return to_checksum_address(self.counter_token)
 
     def __eq__(self, other):
         return self.base_token == other.base_token and self.counter_token == other.counter_token

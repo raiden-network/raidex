@@ -1,7 +1,8 @@
 import structlog
 from gevent.queue import PriorityQueue
 
-from raidex.raidex_node.trader.trader import TraderClientMock
+from raidex.raidex_node.trader.client import TraderClient
+from raidex.account import Account
 from raidex.signing import Signer
 from raidex.commitment_service.tasks import (
     RefundTask,
@@ -11,6 +12,12 @@ from raidex.commitment_service.tasks import (
     SwapExecutionTask,
     TransferReceivedTask
 )
+
+from eth_utils import to_checksum_address
+
+CS_MOCK_KEYFILE='/home/fred/fred/work/brainbot/raidex/keystore/charlie-cs'
+CS_MOCK_PW_FILE='/home/fred/fred/work/brainbot/raidex/keystore/pw/pw'
+KOVAN_RTT_ADDRESS = '0x92276aD441CA1F3d8942d614a6c3c87592dd30bb'
 
 log = structlog.get_logger('commitment_service')
 log_swaps = structlog.get_logger('commitment_service.asset_swaps')
@@ -50,13 +57,22 @@ class CommitmentService(object):
         TakerCommitmentTask(self.swaps, self.message_broker, self.address).start()
         SwapExecutionTask(self.swaps, self.message_broker, self.address).start()
         TransferReceivedTask(self.swaps, self.trader_client).start()
-        RefundTask(self.trader_client, self.refund_queue, self.fee_rate).start()
+        RefundTask(self.trader_client, self.refund_queue, KOVAN_RTT_ADDRESS, self.fee_rate).start()
         MessageSenderTask(self.message_broker, self.message_queue, self._sign).start()
 
+    @property
+    def checksum_address(self):
+        return to_checksum_address(self.address)
+
     @classmethod
-    def build_from_mock(cls, privkey_seed, message_broker, trader, fee_rate=None):
-        signer = Signer.from_seed(privkey_seed)
+    def build_from_mock(cls, message_broker, fee_rate=None):
+
+        pw = open(CS_MOCK_PW_FILE, 'r').read()
+        if pw != '':
+            pw = pw.splitlines()[0]
+        acc = Account.load(path=CS_MOCK_KEYFILE, password=pw)
+        signer = Signer.from_account(acc)
         message_broker_client = message_broker
-        trader_client = TraderClientMock(signer.address, commitment_balance=0, trader=trader)
+        trader_client = TraderClient(signer.canonical_address, host='localhost', port=5003, api_version='v1', commitment_amount=10)
 
         return cls(signer, message_broker_client, trader_client, fee_rate)

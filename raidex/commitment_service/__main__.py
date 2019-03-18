@@ -8,7 +8,7 @@ from raidex.message_broker.client import MessageBrokerClient
 from raidex.raidex_node.trader.client import TraderClient
 from raidex.signing import Signer
 
-structlog.configure(':DEBUG')
+structlog.configure()
 
 
 def main():
@@ -28,10 +28,8 @@ def main():
 
     args = parser.parse_args()
 
-    signer = Signer.from_seed('test')
-    commitment_service = CommitmentService(signer, MessageBrokerClient(host=args.broker_host, port=args.broker_port),
-                                           TraderClient(signer.address, host=args.trader_host, port=args.trader_port),
-                                           fee_rate=args.fee_rate)
+    message_broker = MessageBrokerClient(host=args.broker_host, port=args.broker_port)
+    commitment_service = CommitmentService.build_from_mock(message_broker, fee_rate=1)
     commitment_service.start()
 
     stop_event.wait()

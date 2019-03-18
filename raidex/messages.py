@@ -10,6 +10,7 @@ from raidex.utils import timestamp
 
 sig65 = Binary.fixed_length(65, allow_empty=True)
 address = Binary.fixed_length(20, allow_empty=True)
+contract_address = Binary.fixed_length(42, allow_empty=True)
 int32 = BigEndianInt(32)
 int256 = BigEndianInt(256)
 hash32 = Binary.fixed_length(32)
@@ -62,9 +63,9 @@ class Signed(RLPHashable):
     # signature = ''
     fields = [('signature', sig65)] + RLPHashable.fields
 
-    # def __init__(self, sender=''):
-    #     assert not sender or isaddress(sender)
-    #     super(Signed, self).__init__(sender=sender)
+    #def __init__(self, sender=''):
+    #    assert not sender or isaddress(sender)
+    #    super(Signed, self).__init__(sender=sender)
 
     def __len__(self):
         return len(rlp.encode(self))
@@ -82,7 +83,7 @@ class Signed(RLPHashable):
 
     @property
     def has_sig(self):
-        if isinstance(self.signature, sig65):
+        if Binary.is_valid_type(self.signature) and sig65.is_valid_length(len(self.signature)):
             return True
         else:
             return False
@@ -454,7 +455,6 @@ def get_cmdid_for_class(klass):
     return cmdid
 
 
-
 class Envelope(object):
     """Class to pack (`Envelope.envelop`) and unpack (`Envelope.open`) rlp messages
     in a broadcastable JSON-envelope. The rlp-data fields will be base64 encoded.
@@ -467,11 +467,11 @@ class Envelope(object):
 
     @staticmethod
     def encode(data):
-        return base64.encodestring(rlp.encode(data))
+        return base64.encodebytes(rlp.encode(data)).decode(encoding="utf-8")
 
     @staticmethod
     def decode(data):
-        return rlp.decode(base64.decodestring(data))
+        return rlp.decode(base64.decodebytes(data.encode(encoding='utf-8')))
 
     @classmethod
     def open(cls, data):

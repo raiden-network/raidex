@@ -32,9 +32,10 @@ class QueueListenerTask(gevent.Greenlet):
 
 
 class RefundTask(QueueListenerTask):
-    def __init__(self, trader_client, refund_queue, fee_rate=None):
+    def __init__(self, trader_client, refund_queue, commitment_token_address, fee_rate=None):
         self.refund_queue = refund_queue
         self.trader_client = trader_client
+        self.commitment_token_address = commitment_token_address
         self.fee_rate = fee_rate
         super(RefundTask, self).__init__(refund_queue)
 
@@ -43,20 +44,24 @@ class RefundTask(QueueListenerTask):
         amount = refund.receipt.amount
         if self.fee_rate is not None and refund.claim_fee is True:
             amount -= amount * self.fee_rate
-        transfer_async_result = self.trader_client.transfer_async(refund.receipt.sender, amount,
+        transfer_async_result = self.trader_client.transfer_async(self.commitment_token_address,
+                                                                  refund.receipt.initiator,
+                                                                  amount,
                                                                   refund.receipt.identifier)
 
         def get_and_requeue(async_result, refund_, queue):
             # FIXME this could block a greenlet forever, leaving the refund in nirvana
             success = async_result.get()
-            if success is True:
+            print(success.json())
+            if success.status_code == 200:
                 log_trader.debug('Refund successful {}'.format(refund_))
             else:
                 queue.put(refund_)
                 log_trader.debug('Refunding failed for {}, retrying'.format(refund_))
 
         # spawn so that we can process the next refunds in the queue
-        gevent.spawn(get_and_requeue, transfer_async_result, refund, self.refund_queue)
+        # gevent.spawn(get_and_requeue, transfer_async_result, refund, self.refund_queue)
+        get_and_requeue(transfer_async_result, refund, self.refund_queue)
 
 
 class MessageSenderTask(QueueListenerTask):
@@ -76,6 +81,7 @@ class MessageSenderTask(QueueListenerTask):
             if success is True:
                 log_messaging.debug('Broadcast successful: {}'.format(msg))
         else:
+
             success = self.message_broker.send(topic=recipient, message=msg)
             if success is True:
                 log_messaging.debug('Sending successful: {} // recipient={}'.format(msg, pex(recipient)))
@@ -141,7 +147,10 @@ class MakerCommitmentTask(ListenerTask):
 
         swap = self.factory.make_swap(offer_id)
         if swap is not None:
+            print(swap.state)
+            print(maker_commitment_msg)
             swap.hand_maker_commitment_msg(maker_commitment_msg)
+            print(swap.state)
 
 
 class SwapExecutionTask(ListenerTask):

@@ -13,11 +13,14 @@ from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.raidex_node.trades import TradesView
 from raidex.raidex_node.commitment_service.client import CommitmentServiceClient
 from raidex.raidex_node.trader.client import TraderClient
-from raidex.raidex_node.trader.trader import TraderClientMock
 from raidex.message_broker.client import MessageBrokerClient
 from raidex.utils import timestamp
+from raidex.utils.address import binary_address
 from raidex.signing import Signer
 from raidex.raidex_node.offer_grouping import group_offers, group_trades_from, make_price_bins, get_n_recent_trades
+from raidex.account import Account
+
+from eth_utils import to_checksum_address
 
 log = structlog.get_logger('node')
 
@@ -57,6 +60,7 @@ class RaidexNode(object):
     def make_offer(self, type_, amount, counter_amount):
         # TODO generate better offer id
         offer = Offer(type_, amount, counter_amount, random.randint(0, 1000000000), timestamp.time_plus(90))
+        log.debug(offer)
         MakerExchangeTask(offer, self.address, self.commitment_service, self.message_broker, self.trader_client).start()
 
     def take_offer(self, offer_id):
@@ -121,11 +125,28 @@ class RaidexNode(object):
         print(self.offer_book)
 
     @classmethod
-    def build_default_from_config(cls, privkey_seed=None, cs_fee_rate=0.01, base_token_addr=None, counter_token_addr=None,
-                                  message_broker_host='127.0.0.1', message_broker_port=5000, raiden_api_endpoint=None, mock_trading_activity=False,
-                                  trader_host='127.0.0.1', trader_port=5001, offer_lifetime=None):
+    def build_default_from_config(cls,
+                                  keyfile=None,
+                                  pw_file=None,
+                                  privkey_seed=None,
+                                  cs_address=None,
+                                  cs_fee_rate=0.01,
+                                  base_token_addr=None,
+                                  counter_token_addr=None,
+                                  message_broker_host='127.0.0.1',
+                                  message_broker_port=5000,
+                                  mock_trading_activity=False,
+                                  trader_host='127.0.0.1',
+                                  trader_port=5001,
+                                  offer_lifetime=None):
 
-        if privkey_seed is None:
+        if keyfile is not None and pw_file is not None:
+            pw = pw_file.read()
+            pw = pw.splitlines()[0]
+            acc = Account.load(file=keyfile, password=pw)
+            signer = Signer.from_account(acc)
+
+        elif privkey_seed is None:
             signer = Signer.random()
         else:
             signer = Signer.from_seed(privkey_seed)
@@ -133,17 +154,11 @@ class RaidexNode(object):
         if base_token_addr is None and counter_token_addr is None:
             token_pair = TokenPair.from_seed('test')
         else:
-            token_pair = TokenPair(base_token_addr, counter_token_addr)
+            token_pair = TokenPair(binary_address(base_token_addr), binary_address(counter_token_addr))
 
-        trader_client = TraderClient(signer.address, host=trader_host, port=trader_port)
+        trader_client = TraderClient(signer.checksum_address, host=trader_host, port=trader_port)
         message_broker = MessageBrokerClient(host=message_broker_host, port=message_broker_port)
 
-        if raiden_api_endpoint is None:
-            pass
-        else:
-            NotImplementedError("Trader based on Raiden can only be mocked at the moment.")
-
-        cs_address = Signer.from_seed('test').address
         commitment_service_client = CommitmentServiceClient(signer, token_pair, trader_client,
                                                             message_broker, cs_address, fee_rate=cs_fee_rate)
 
@@ -157,10 +172,16 @@ class RaidexNode(object):
         return raidex_node
 
     @classmethod
-    def build_from_mocks(cls, message_broker, trader, cs_address, privkey_seed=None, cs_fee_rate=0.01, base_token_addr=None,
+    def build_from_mocks(cls, message_broker, cs_address, keyfile=None, pw_file=None, privkey_seed=None, cs_fee_rate=0.01, base_token_addr=None,
                          counter_token_addr=None, offer_lifetime=None):
 
-        if privkey_seed is None:
+        if keyfile is not None and pw_file is not None:
+            pw = pw_file.read()
+            pw = pw.splitlines()[0]
+            acc = Account.load(file=keyfile, password=pw)
+            signer = Signer.from_account(acc)
+
+        elif privkey_seed is None:
             signer = Signer.random()
         else:
             signer = Signer.from_seed(privkey_seed)
@@ -170,10 +191,11 @@ class RaidexNode(object):
         else:
             token_pair = TokenPair(base_token_addr, counter_token_addr)
 
-        trader_client = TraderClientMock(signer.address, commitment_balance=10e18, trader=trader)
+        trader_client = TraderClient(signer.address, host='localhost', port=5001, api_version='v1' , commitment_amount=10)
 
         commitment_service_client = CommitmentServiceClient(signer, token_pair, trader_client,
                                                             message_broker, cs_address, fee_rate=cs_fee_rate)
+
         raidex_node = cls(signer.address, token_pair, commitment_service_client, message_broker, trader_client)
 
         if offer_lifetime is not None:

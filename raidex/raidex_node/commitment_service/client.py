@@ -1,7 +1,7 @@
 import structlog
 import gevent
 from gevent.event import AsyncResult
-from eth_utils import int_to_big_endian
+from eth_utils import int_to_big_endian, to_checksum_address
 
 from raidex import messages
 from raidex.raidex_node.commitment_service.tasks import CommitmentProofTask, RefundReceivedTask
@@ -10,9 +10,13 @@ from raidex.raidex_node.offer_book import OfferType, Offer
 from raidex.raidex_node.trader.trader import TransferReceivedListener
 from raidex.utils import timestamp, pex
 from raidex.utils.gevent_helpers import make_async
+from raidex.utils.address import binary_address
 
 
 log = structlog.get_logger('node.commitment_service')
+KOVAN_WETH_ADDRESS = '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
+KOVAN_RTT_ADDRESS = '0x92276aD441CA1F3d8942d614a6c3c87592dd30bb'
+
 
 class OfferIdentifierCollision(Exception):
     pass
@@ -31,9 +35,9 @@ class CommitmentServiceClient(object):
 
     def __init__(self, signer, token_pair, trader_client, message_broker, commitment_service_address,
                  fee_rate):
-        self.node_address = signer.address
+        self.node_address = signer.checksum_address
         self.token_pair = token_pair
-        self.commitment_service_address = commitment_service_address
+        self.commitment_service_address = binary_address(commitment_service_address)
         self.fee_rate = fee_rate
         self.trader_client = trader_client
         self.message_broker = message_broker
@@ -48,7 +52,7 @@ class CommitmentServiceClient(object):
                            self.maker_commitments,
                            self.taker_commitments,
                            self.commitment_proofs,
-                           TransferReceivedListener(self.trader_client, sender=self.commitment_service_address)).start()
+                           TransferReceivedListener(self.trader_client, initiator=self.commitment_service_address)).start()
 
         CommitmentProofTask(self.commitment_proofs, CommitmentProofListener(self.message_broker,
                                                                             topic=self.node_address)).start()
@@ -80,13 +84,13 @@ class CommitmentServiceClient(object):
     def _send_message_to_commitment_service(self, message):
         success = self.message_broker.send(topic=self.commitment_service_address, message=message)
         # FIXME in our current model, we don't have any guarantees, that a message arrived at the target
-        # so we can't know for shure if it was successful here
+        # so we can't know for sure if it was successful here
         # TODO this should be raised in the message-broker
         if success is False:
             raise MessageBrokerConnectionError()
 
     def _send_commitment_msg(self, commitment_msg):
-        # type: (messages.TakerCommitment, messages.MakerCommitment) -> AsyncResult
+        # type: ([messages.TakerCommitment, messages.MakerCommitment]) -> AsyncResult
 
         if commitment_msg.signature in self.commitment_proofs:
             raise OfferIdentifierCollision()
@@ -96,8 +100,8 @@ class CommitmentServiceClient(object):
 
         return commitment_proof_async_result
 
-    def _send_transfer(self, offer_id, commitment_amount):
-        return self.trader_client.transfer(self.commitment_service_address, commitment_amount,
+    def _send_transfer(self, token_address, offer_id, commitment_amount):
+        return self.trader_client.transfer(token_address, self.commitment_service_address, commitment_amount,
                                            offer_id)
 
     def create_offer_msg(self, offer):
@@ -128,8 +132,8 @@ class CommitmentServiceClient(object):
             log.debug('Message broker failed to send: {}'.format(commitment_msg))
             return None
 
-        success = self._send_transfer(offer.offer_id, commitment_amount)
-        if success is not True:
+        success = self._send_transfer(KOVAN_RTT_ADDRESS, offer.offer_id, commitment_amount)
+        if not success:
             log.debug(
                 'Trader failed to transfer maker-commitment for offer: pex(id)={}'.format(pex(int_to_big_endian(offer.offer_id))))
             return None
@@ -208,7 +212,7 @@ class CommitmentServiceClient(object):
 
     # TODO this should also wait for the final SwapCompleted from the CS and return that message
     def report_swap_executed(self, offer_id):
-        # type: ((int,long)) -> None
+        # type: (int) -> None
         swap_execution = self._create_swap_execution_msg(offer_id, timestamp.time_int())
         self._send_message_to_commitment_service(swap_execution)
 

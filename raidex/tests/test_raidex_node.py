@@ -48,7 +48,7 @@ def test_offer_book_task(message_broker, commitment_service, token_pair):
     offer_book = OfferBook()
     OfferBookTask(offer_book, token_pair, message_broker).start()
     gevent.sleep(0.001)
-    offer = Offer(OfferType.SELL, 100, 1000, offer_id=123, timeout=timestamp.time_plus(2))
+    offer = Offer(OfferType.SELL, 100, 1000, offer_id=123, timeout=timestamp.time_plus(20))
     proof = commitment_service.maker_commit_async(offer).get()
     message_broker.broadcast(proof)
     gevent.sleep(0.001)

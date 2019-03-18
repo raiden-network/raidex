@@ -5,6 +5,7 @@ from sortedcontainers import SortedDict
 from enum import Enum
 import structlog
 from raidex.utils import pex
+from raidex.utils.timestamp import to_str_repr
 
 from eth_utils import int_to_big_endian
 
@@ -73,8 +74,12 @@ class Offer(object):
         return float(self.counter_amount) / self.base_amount
 
     def __repr__(self):
-        return "Offer<pex(id)={} amount={} price={} type={}>".format(
-                pex(int_to_big_endian(self.offer_id)), self.amount, self.price, self.type)
+        return "Offer<pex(id)={} amount={} price={} type={} timeout={}>".format(
+            pex(int_to_big_endian(self.offer_id)),
+            self.amount,
+            self.price,
+            self.type,
+            to_str_repr(self.timeout))
 
 
 class OfferView(object):

@@ -31,6 +31,8 @@ def encode_hex(data):
 
 
 def pex(data):
+    if isinstance(data, str):
+        return data[:8]
     return encode(data, "hex")[:8]
 
 

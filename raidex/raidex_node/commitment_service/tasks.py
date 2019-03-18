@@ -55,14 +55,13 @@ class RefundReceivedTask(ListenerTask):
 
         # assert internals
         assert receipt.identifier == commitment.offer_id
-        if not receipt.sender == self.commitment_service_address:
+        if not receipt.initiator == self.commitment_service_address:
             log.debug("Received expected refund-id from unexpected sender")
             # do nothing and keep the money
             return
 
         commitment_minus_fee = commitment.amount - commitment.amount * self.fee_rate
         if not float_isclose(receipt.amount, commitment_minus_fee) and not float_isclose(commitment.amount, receipt.amount):
-            print(commitment.amount, receipt.amount)
             log.debug("Received refund that didn't match expected amount")
 
         async_result = self.commitment_proofs.get(commitment.signature)

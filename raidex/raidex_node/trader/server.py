@@ -98,6 +98,28 @@ def internal_error(error):
                       'The server encountered an internal error and was unable to complete your request: ' + str(error))
 
 
+@app.route('api/commitment/<string:address>', methods=['GET'])
+def commit(address):
+    self_address = request.json.get('selfAddress')
+    buy_token_address = request.json.get('buyTokenAddress')
+    buy_token_amount = request.json.get('buyTokenAmount')
+    sell_token_address = request.json.get('sellTokenAddress')
+    sell_token_amount = request.json.get('sellTokenAmount')
+
+    log.debug('commitment: {}, {}, {}, {}'.format(buy_token_address,
+                                                  buy_token_amount,
+                                                  sell_token_address,
+                                                  sell_token_amount))
+
+    success = trader.commit(self_address,
+                            address,
+                            buy_token_address,
+                            buy_token_amount,
+                            sell_token_address,
+                            sell_token_amount)
+
+    return jsonify({'data': success})
+
 def main():
     structlog.configure()
     WSGIServer(('', 5001), app).serve_forever()

@@ -70,6 +70,8 @@ class SwapCommitment(object):
         return self.taker_commitment_msg.sender
 
     def is_maker(self, address):
+        print("initiator: {} maker: {}".format(address, self.maker_address))
+
         return address == self.maker_address
 
     def is_taker(self, address):
@@ -136,3 +138,7 @@ class SwapCommitment(object):
 
     def refund_taker_with_fee(self):
         self.queue_refund(self.taker_transfer_receipt, claim_fee=True)
+
+
+    #def __repr__(self):
+    #    return '<%s(%s)>' % (self.__class__.__name__, )

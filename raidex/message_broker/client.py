@@ -3,17 +3,16 @@ import structlog
 import json
 import requests
 import gevent
-from gevent import monkey; monkey.patch_socket()
+from gevent import monkey
 from gevent.queue import Queue
-
-from eth_utils import encode_hex
-
-
+from raidex.utils.address import encode_topic, decode_topic
 
 from raidex.message_broker.message_broker import Listener
 import raidex.messages as messages
 
+monkey.patch_socket()
 log = structlog.get_logger("TOPIC")
+
 
 class StreamingRequestIterator(object):
 
@@ -105,9 +104,8 @@ class MessageBrokerClient(object):
     def send(self, topic, message):
         # HACK, allow 'broadcast' as non-binary input, everything else should be
         # binary data/ decoded addresses
-        if topic == 'broadcast':
-            return self.broadcast(message)
-        return self._send(encode_hex(topic), message)
+        encoded_topic = encode_topic(topic)
+        return self._send(encoded_topic, message)
 
     def _send(self, topic, message):
         """Sends a message to all listeners of the topic
@@ -117,16 +115,16 @@ class MessageBrokerClient(object):
             message (Union[str, messages.Signed]): the message to send
 
         """
+
         body = {'message': encode(message)}
         result = requests.post('{0}/topics/{1}'.format(self.apiUrl, topic), json=body)
-        return result.json()['data']
+        return result.json()
 
     def listen_on(self, topic, transform=None):
         # HACK, allow 'broadcast' as non-binary input, everything else should be
         # binary data/ decoded addresses
-        if topic == 'broadcast':
-            return self.listen_on_broadcast(transform)
-        log.msg(topic)
+        topic = encode_topic(topic)
+
         return self._listen_on(topic, transform)
 
     def _listen_on(self, topic, transform=None):
@@ -161,20 +159,6 @@ class MessageBrokerClient(object):
 
         """
         self._send('broadcast', message)
-
-    def listen_on_broadcast(self, transform=None):
-        """Starts listening for new messages on broadcast
-
-            Args:
-                transform : A function that filters and transforms the message
-                            should return None if not interested in the message, message will not be returned,
-                            otherwise should return the message in a format as needed
-
-            Returns:
-                Listener: an object gathering all settings of this listener
-
-                """
-        return self._listen_on('broadcast', transform)
 
     def stop_listen(self, listener):
         task = self.listener_task_map.get(listener)

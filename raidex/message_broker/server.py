@@ -24,8 +24,6 @@ nof_listeners = 0
 @app.route('/api/topics/<string:topic>', methods=['GET'])
 def messages_for(topic):
     global nof_listeners
-    if not topic == 'broadcast':
-        topic = decode_hex(topic)
 
     listener = MessageListener(message_broker, topic)
     listener.start()
@@ -42,15 +40,14 @@ def messages_for(topic):
 
     r = Response(generate(), content_type='application/x-json-stream')
     nof_listeners += 1
-    print('Nof-listeners: {}'.format(nof_listeners))
+    print('Nof-listeners: {} new for topic: {}'.format(nof_listeners, topic))
     r.call_on_close(on_close)
     return r
 
 
 @app.route('/api/topics/<string:topic>', methods=['POST'])
 def send_message(topic):
-    if not topic == 'broadcast':
-        topic = decode_hex(topic)
+
     message = request.json.get('message')
     status = message_broker.send(topic, message)
     return jsonify({'data': status})

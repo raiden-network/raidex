@@ -24,7 +24,7 @@ class LimitOrderTask(gevent.Greenlet):
                  offer_size=2 * 10 ** 18,  # for ether
                  offer_lifetime=None):
         if offer_lifetime is None:
-            offer_lifetime = 10
+            offer_lifetime = 30
         self.offer_book = offer_book
         self.trades = trades
         self.type_ = type_

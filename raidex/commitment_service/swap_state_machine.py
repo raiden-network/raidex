@@ -78,7 +78,8 @@ def swap_setup_state_transitions(fsm, auto_spawn_timeout):
                        after=[fsm.refund_unsuccessful_transfer])
     fsm.add_transition('transfer_receipt', 'wait_for_maker', '=',
                        unless=[fsm.sender_is_maker],
-                       after=[fsm.refund_unsuccessful_transfer])
+                       after=[fsm.refund_unsuccessful_transfer]
+                       )
     fsm.add_transition('transfer_receipt',
                        ['wait_for_execution', 'wait_for_taker_execution', 'wait_for_maker_execution',
                          'failed', 'traded', 'uncommitted', 'untraded'],
@@ -118,10 +119,10 @@ def event_get_msg_or_receipt_kwarg(event):
         data = msg
     if receipt and not msg:
         data = receipt
-    if not hasattr(data, 'sender'):
+    if not hasattr(data, 'initiator'):
         # TODO better error
         raise AttributeError()
-    if data.sender is None:
+    if data.initiator is None:
         raise ValueError()
     return data
 
@@ -151,12 +152,13 @@ class SwapStateMachine(Machine):
     def spawn_timeout(self, event):
         maker_commitment_msg = event_get_msg_kwarg(event)
         seconds_to_timeout = timestamp.seconds_to_timeout(maker_commitment_msg.timeout)
+        print("SECONDS TO TIMEOUT: {}".format(seconds_to_timeout))
         gevent.spawn_later(seconds_to_timeout, self.swap.trigger_timeout)
 
     def refund_unsuccessful_transfer(self, event):
         transfer_receipt = event_get_receipt_kwarg(event)
         success = event_get_success(event)
-
+        print(event)
         # refund every receipt that didn't successfully trigger a state change
         if success is False:
             self.swap.queue_refund(transfer_receipt, priority=1, claim_fee=False)
@@ -186,25 +188,25 @@ class SwapStateMachine(Machine):
 
     def accept_taker_commitment_from_receipt(self, event):
         transfer_receipt = event_get_receipt_kwarg(event)
-        taker_commitment = self.taker_commitment_pool[transfer_receipt.sender]
+        taker_commitment = self.taker_commitment_pool[transfer_receipt.initiator]
         self.swap.taker_commitment_msg = taker_commitment
 
     def sender_is_maker(self, event):
         msg_or_receipt = event_get_msg_or_receipt_kwarg(event)
-        return self.swap.is_maker(msg_or_receipt.sender)
+        return self.swap.is_maker(msg_or_receipt.initiator)
 
     def sender_is_taker(self, event):
         msg_or_receipt = event_get_msg_or_receipt_kwarg(event)
-        return self.swap.is_taker(msg_or_receipt.sender)
+        return self.swap.is_taker(msg_or_receipt.initiator)
 
     def sender_sent_taker_commitment(self, event):
         msg_or_receipt = event_get_msg_or_receipt_kwarg(event)
-        return msg_or_receipt.sender in self.taker_commitment_pool
+        return msg_or_receipt.initiator in self.taker_commitment_pool
 
     def queue_commitment(self, event):
         commitment_msg = event_get_msg_kwarg(event)
-        if commitment_msg.sender not in self.taker_commitment_pool:
-            self.taker_commitment_pool[commitment_msg.sender] = commitment_msg
+        if commitment_msg.initiator not in self.taker_commitment_pool:
+            self.taker_commitment_pool[commitment_msg.initiator] = commitment_msg
         else:
             # TODO
             # sent another message... what should we allow here? replace, ignore?

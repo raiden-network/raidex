@@ -19,7 +19,6 @@ class MessageBroker(object):
         # binary data/ decoded addresses
         if topic == 'broadcast':
             return self.broadcast(message)
-        print(topic)
         return self._send(topic, message)
 
     def _send(self, topic, message):
@@ -27,7 +26,7 @@ class MessageBroker(object):
         # DEBUGGING check - provide log output to easily check if an expected listener is not listening
         # this is not always harmful but can help debugging
         if not queues:
-            log.debug('DEBUG-CODE: no listener waiting on topic {}, msg={}'.format(encode_hex(topic), message))
+            log.debug('DEBUG-CODE: no listener waiting on topic {}, msg={}'.format(topic, message))
             # XXX: in the mock implementation we know if someone is listening or not,
             # even if it's a broadcasting scheme but in real life we don't know that
             # TODO: use direct communication without message-broker later on
@@ -53,6 +52,7 @@ class MessageBroker(object):
 
     def _listen_on(self, topic, transform=None):
         message_queue_async = Queue()
+
         listener = Listener(topic, message_queue_async, transform)
         self.listeners[topic].append(listener)
         return listener

@@ -9,6 +9,7 @@ from eth_utils import int_to_big_endian
 from raidex.raidex_node.offer_book import OfferType
 from raidex.raidex_node.listener_tasks import ListenerTask
 from raidex.utils import timestamp, pex
+from raidex.utils.address import binary_address
 from raidex.utils.gevent_helpers import make_async
 
 log = structlog.get_logger('trader.client')
@@ -18,10 +19,10 @@ log_tglobal = structlog.get_logger('trader.global')
 Listener = namedtuple('Listener', 'address event_queue_async transform')
 
 
-class TransferReceivedEvent(object):
+class EventPaymentReceivedSuccess(object):
 
-    def __init__(self, sender, amount, identifier):
-        self.sender = sender
+    def __init__(self, initiator, amount, identifier):
+        self.initiator = initiator
         self.amount = amount
         self.identifier = identifier
 
@@ -30,33 +31,33 @@ class TransferReceivedEvent(object):
         return self.__class__.__name__
 
     def as_dict(self):
-        return dict(amount=self.amount, sender=self.sender, identifier=self.identifier)
+        return dict(amount=self.amount, initiator=self.initiator, identifier=self.identifier)
 
     def __repr__(self):
-        return "{}<sender={}, amount={}, identifier={}>".format(
+        return "{}<initiator={}, amount={}, identifier={}>".format(
             self.__class__.__name__,
-            pex(self.sender),
+            pex(self.initiator),
             self.amount,
-            pex(self.identifier),
+            self.identifier,
         )
 
 
 # TODO factor out, we don't really need the received timestamp,
 class TransferReceipt(object):
 
-    def __init__(self, sender, amount, identifier, received_timestamp):
-        self.sender = sender
+    def __init__(self, initiator, amount, identifier, received_timestamp):
+        self.initiator = binary_address(initiator)
         self.amount = amount
         self.identifier = identifier
         self.timestamp = received_timestamp
 
     def __repr__(self):
-        return "{}<sender={}, amount={}, identifier={}, timestamp={}>".format(
+        return "{}<initiator={}, amount={}, identifier={}, timestamp={}>".format(
             self.__class__.__name__,
-            pex(self.sender),
+            pex(self.initiator),
             self.amount,
             pex(int_to_big_endian(self.identifier)),
-            self.timestamp
+            timestamp.to_str_repr(self.timestamp)
         )
 
 
@@ -87,7 +88,7 @@ class Trader(object):
         return result_async
 
     def transfer(self, self_address, target_address, amount, identifier):
-        transfer_received_event = TransferReceivedEvent(sender=self_address, amount=amount, identifier=identifier)
+        transfer_received_event = EventPaymentReceivedSuccess(initiator=self_address, amount=amount, identifier=identifier)
         # for this mock-implementation:
         # a transfer can only go through when a listener is found
         try:
@@ -221,6 +222,7 @@ class EventListener(object):
     def __init__(self, trader_client):
         self.trader_client = trader_client
         self.listener = None
+        #print("EventListener: {}, {}".format(self, trader_client))
 
     def _transform(self, event):
         """Filters and transforms events
@@ -241,6 +243,7 @@ class EventListener(object):
         can only be called after start()
         For parameters see gevents AsyncResult.get()
         """
+        #print("GET FROM QUEUE: {}".format(self.listener.event_queue_async.__repr__()))
         return self.listener.event_queue_async.get(*args, **kwargs)
 
     def get_once(self):
@@ -254,6 +257,7 @@ class EventListener(object):
         """Starts listening for new events"""
         self.listener = self.trader_client.listen_for_events(self._transform)
 
+
     def stop(self):
         """Stops listening for new events"""
         if self.listener is not None:
@@ -262,17 +266,17 @@ class EventListener(object):
 
 class TransferReceivedListener(EventListener):
 
-    def __init__(self, trader_client, sender=None):
-        self.sender = sender
+    def __init__(self, trader_client, initiator=None):
+        self.initiator = initiator
         super(TransferReceivedListener, self).__init__(trader_client)
 
     def _transform(self, event):
-        if self.sender is not None:
-            if event.sender != self.sender:
+        if self.initiator is not None:
+            if event.initiator != self.initiator:
                 return None
-        if isinstance(event, TransferReceivedEvent):
+        if isinstance(event, EventPaymentReceivedSuccess):
             # transform event into receipt, with additional timestamp
-            receipt = TransferReceipt(event.sender, event.amount, event.identifier, timestamp.time())
+            receipt = TransferReceipt(event.initiator, event.amount, event.identifier, timestamp.time())
             return receipt
         else:
             return None
