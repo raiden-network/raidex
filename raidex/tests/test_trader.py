@@ -2,8 +2,8 @@ import gevent.hub
 import pytest
 
 from eth_utils import keccak
-from raidex.raidex_node.offer_book import OfferType
-from raidex.raidex_node.trader.trader import Trader, TraderClientMock, TransferReceivedListener
+from raidex.raidex_node.order.offer import OfferType
+from raidex.trader_mock.trader import Trader, TraderClientMock, TransferReceivedListener
 
 
 @pytest.fixture()
@@ -33,8 +33,8 @@ def test_atomic_exchange(trader_client1, trader_client2):
 
     assert trader_client1.base_amount == 200
     assert trader_client2.base_amount == 0
-    assert trader_client1.counter_amount == 90
-    assert trader_client2.counter_amount == 110
+    assert trader_client1.quote_amount == 90
+    assert trader_client2.quote_amount == 110
 
 
 def test_false_price_atomic_exchange(trader_client1, trader_client2):

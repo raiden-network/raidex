@@ -1,5 +1,5 @@
 import structlog
-from gevent.queue import PriorityQueue
+from gevent.queue import PriorityQueue, Queue
 
 from raidex.raidex_node.trader.client import TraderClient
 from raidex.account import Account
@@ -49,7 +49,7 @@ class CommitmentService(object):
         self.fee_rate = fee_rate
         self.message_broker = message_broker
         self.refund_queue = PriorityQueue()  # type: (TransferReceipt, substract_fee <bool>)
-        self.message_queue = PriorityQueue()  # type: (messages.Signed, recipient (str) or None)
+        self.message_queue = Queue()  # type: (messages.Signed, recipient (str) or None)
 
     def start(self):
         self.trader_client.start()

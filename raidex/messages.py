@@ -30,6 +30,8 @@ class RLPHashable(rlp.Serializable):
 
     _mutable = True
 
+    priority = 0
+
     fields = [('cmdid', int32)]
 
     @property
@@ -41,6 +43,9 @@ class RLPHashable(rlp.Serializable):
 
     def __hash__(self):
         return big_endian_to_int(self.hash)
+
+    def __lt__(self, other):
+        return self.priority < other.priority
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -131,7 +136,7 @@ class SwapOffer(RLPHashable):
         ('ask_amount', int256),
         ('bid_token', address),
         ('bid_amount', int256),
-        ('offer_id', int256),  # arbitrarily chosen by node, bestcase: randomly chosen
+        ('offer_id', int32),  # arbitrarily chosen by node, bestcase: randomly chosen
         ('timeout', int256),
     ] + RLPHashable.fields
 
@@ -183,7 +188,7 @@ class MakerCommitment(Signed):
     """
 
     fields = [
-        ('offer_id', int256), # FIXME we should reference Swaps with the offer_hash!
+        ('offer_id', int32), # FIXME we should reference Swaps with the offer_hash!
         ('offer_hash', hash32),
         ('timeout', int256),
         ('amount', int256),
@@ -216,7 +221,7 @@ class TakerCommitment(Signed):
     """
 
     fields = [
-        ('offer_id', int256), # FIXME we should reference Swaps with the offer_hash!
+        ('offer_id', int32), # FIXME we should reference Swaps with the offer_hash!
         ('offer_hash', hash32),
         ('timeout', int256),
         ('amount', int256),
@@ -245,7 +250,7 @@ class OfferTaken(Signed):
     """
 
     fields = [
-        ('offer_id', int256),
+        ('offer_id', int32),
     ] + Signed.fields
 
     def __init__(self, offer_id, signature=None, cmdid=None):
@@ -269,11 +274,14 @@ class CommitmentProof(Signed):
 
     fields = [
         ('commitment_sig', sig65),
+        ('secret', hash32),
+        ('secret_hash', hash32),
+        ('offer_id', int32)
     ] + Signed.fields
 
-    def __init__(self, commitment_sig, signature=None, cmdid=None):
+    def __init__(self, commitment_sig, secret, secret_hash, offer_id, signature=None, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
-        super(CommitmentProof, self).__init__(commitment_sig, signature, cmdid)
+        super(CommitmentProof, self).__init__(commitment_sig, secret, secret_hash, offer_id, signature, cmdid)
 
 
 class ProvenOffer(Signed):

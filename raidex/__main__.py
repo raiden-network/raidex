@@ -4,7 +4,7 @@ from gevent.event import Event
 import structlog
 
 from raidex.raidex_node.api.app import APIServer
-from raidex.raidex_node.raidex_node import RaidexNode
+from raidex.app import App
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.commitment_service.node import CommitmentService
 from raidex.raidex_node.bots import LiquidityProvider, RandomWalker, Manipulator
@@ -49,31 +49,31 @@ def main():
     if args.mock_networking is True:
         message_broker = MessageBroker()
         commitment_service = CommitmentService.build_from_mock(message_broker, fee_rate=1)
-        node = RaidexNode.build_from_mocks(message_broker,
-                                           commitment_service.address,
-                                           base_token_addr=KOVAN_WETH_ADDRESS,
-                                           counter_token_addr=args.token_address,
-                                           keyfile=args.keyfile,
-                                           pw_file=args.pwfile,
-                                           offer_lifetime=args.offer_lifetime)
+        raidex_app = App.build_from_mocks(message_broker,
+                                          commitment_service.address,
+                                          base_token_addr=args.token_address,
+                                          quote_token_addr=KOVAN_WETH_ADDRESS,
+                                          keyfile=args.keyfile,
+                                          pw_file=args.pwfile,
+                                          offer_lifetime=args.offer_lifetime)
         commitment_service.start()
     else:
-        node = RaidexNode.build_default_from_config(keyfile=args.keyfile,
-                                                    pw_file=args.pwfile,
-                                                    cs_address=CS_ADDRESS,
-                                                    base_token_addr=KOVAN_WETH_ADDRESS,
-                                                    counter_token_addr=args.token_address,
-                                                    message_broker_host=args.broker_host,
-                                                    message_broker_port=args.broker_port,
-                                                    trader_host=args.trader_host,
-                                                    trader_port=args.trader_port,
-                                                    mock_trading_activity=args.mock,
-                                                    offer_lifetime=args.offer_lifetime)
+        raidex_app = App.build_default_from_config(keyfile=args.keyfile,
+                                                   pw_file=args.pwfile,
+                                                   cs_address=CS_ADDRESS,
+                                                   base_token_addr=args.token_address,
+                                                   quote_token_addr=KOVAN_WETH_ADDRESS,
+                                                   message_broker_host=args.broker_host,
+                                                   message_broker_port=args.broker_port,
+                                                   trader_host=args.trader_host,
+                                                   trader_port=args.trader_port,
+                                                   mock_trading_activity=args.mock,
+                                                   offer_lifetime=args.offer_lifetime)
 
-    node.start()
+    raidex_app.start()
 
     if args.api is True:
-        api = APIServer('', args.api_port, node)
+        api = APIServer('', args.api_port, raidex_app)
         api.start()
 
     bots = args.bots
@@ -81,16 +81,16 @@ def main():
         initial_price = 100.
 
         if 'liquidity' in bots:
-            liquidity_provider = LiquidityProvider(node, initial_price)
+            liquidity_provider = LiquidityProvider(raidex_app, initial_price)
             liquidity_provider.start()
         if 'random' in bots:
             gevent.sleep(5)  # give liquidity provider head start
-            random_walker = RandomWalker(node, initial_price)
+            random_walker = RandomWalker(raidex_app, initial_price)
             random_walker.start()
         if 'maniplulator' in bots:
             if 'random' not in bots:
                 gevent.sleep(5)  # give liquidity provider head start
-            manipulator = Manipulator(node, initial_price)
+            manipulator = Manipulator(raidex_app, initial_price)
             manipulator.start()
 
     stop_event.wait()  # runs forever

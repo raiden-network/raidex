@@ -1,12 +1,11 @@
 import pytest
 import gevent
-from copy import deepcopy, copy
+from copy import deepcopy
 
 from raidex.utils import timestamp
 from raidex import messages
-from raidex.raidex_node.trader.trader import TransferReceipt
-from raidex.commitment_service.swap import SwapCommitment, SwapFactory
-from raidex.commitment_service.swap_state_machine import SWAP_BASE_STATES
+from raidex.trader_mock.trader import TransferReceipt
+from raidex.commitment_service.swap import SwapCommitment
 
 
 def deepcopy_and_sign(rlp_signable, privatekey):

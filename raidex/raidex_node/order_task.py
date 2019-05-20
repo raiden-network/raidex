@@ -1,11 +1,11 @@
-import random
-
+import uuid
 import gevent
 from gevent.event import AsyncResult
 import structlog
 
 from raidex.raidex_node.exchange_task import MakerExchangeTask, TakerExchangeTask
-from raidex.raidex_node.offer_book import OfferType, Offer
+from raidex.raidex_node.offer_book import OfferDeprecated
+from raidex.raidex_node.order.offer import OfferType
 from raidex.utils import timestamp
 
 log = structlog.get_logger('node.order')
@@ -143,8 +143,8 @@ class LimitOrderTask(gevent.Greenlet):
 
     def _make_offer(self, amount):
         # type: (int) -> MakerExchangeTask
-        offer = Offer(self.type_, amount, int(self.price * amount), random.randint(0, 1000000000),
-                      timestamp.time_plus(seconds=self.offer_lifetime))  # TODO generate better offer id
+        offer = OfferDeprecated(self.type_, amount, int(self.price * amount), int(uuid.uuid4().int % (2 ** 64 - 1)),
+                                timestamp.time_plus(seconds=self.offer_lifetime))  # TODO generate better offer id
         task = MakerExchangeTask(offer, self.address, self.commitment_service, self.message_broker, self.trader)
         task.start()
         # TODO: catch OfferIdentifierCollision and recreate offer, if offerid already being processed
@@ -152,7 +152,7 @@ class LimitOrderTask(gevent.Greenlet):
         return task
 
     def _take_offer(self, offer):
-        # type: (Offer) -> TakerExchangeTask
+        # type: (OfferDeprecated) -> TakerExchangeTask
         self.offer_book.remove_offer(offer.offer_id)
         self.trades.add_pending(offer)
         task = TakerExchangeTask(offer, self.commitment_service, self.message_broker, self.trader)

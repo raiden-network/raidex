@@ -10,7 +10,7 @@ class DummyNetwork(object):
 
     def __init__(self):
         self.transports = dict()
-        self.counter = 0
+        self.quote = 0
 
     def register(self, transport, host, port):
         """ Register a new node in the dummy network. """
@@ -21,7 +21,7 @@ class DummyNetwork(object):
         """ Register an attempt to send a packet. This method should be called
         everytime send() is used.
         """
-        self.counter += 1
+        self.quote += 1
         for callback in self.on_send_cbs:
             callback(sender_address, host_port, bytes_)
 

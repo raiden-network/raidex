@@ -5,12 +5,12 @@ from raidex.tests.utils import float_isclose
 
 from raidex.commitment_service.node import CommitmentService
 from raidex.raidex_node.commitment_service.client import CommitmentServiceClient
-from raidex.raidex_node.trader.trader import Trader, TraderClientMock
+from raidex.trader_mock.trader import Trader, TraderClientMock
 from raidex import messages
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.utils import timestamp
 from raidex.raidex_node.raidex_node import RaidexNode
-from raidex.raidex_node.offer_book import Offer, OfferType, generate_random_offer_id
+from raidex.raidex_node.offer_book import OfferDeprecated, OfferType, generate_random_offer_id
 from raidex.signing import Signer
 
 
@@ -62,8 +62,8 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     initial_commitment_service_balance = commitment_service.trader_client.commitment_balance
 
     offer_id = generate_random_offer_id()
-    offer = Offer(OfferType.SELL, 100, 1000, offer_id=offer_id, commitment_amount=commitment_amount,
-                  timeout=timestamp.time_plus(seconds=0, milliseconds=500))
+    offer = OfferDeprecated(OfferType.SELL, 100, 1000, offer_id=offer_id, commitment_amount=commitment_amount,
+                            timeout=timestamp.time_plus(seconds=0, milliseconds=500))
     maker_commit_result = maker_node.commitment_service.maker_commit_async(offer)
     gevent.sleep(0.01)
 

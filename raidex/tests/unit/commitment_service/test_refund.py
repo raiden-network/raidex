@@ -1,6 +1,6 @@
 from gevent.queue import PriorityQueue
 
-from raidex.raidex_node.trader.trader import TransferReceipt
+from raidex.trader_mock.trader import TransferReceipt
 from raidex.commitment_service.refund import Refund
 
 

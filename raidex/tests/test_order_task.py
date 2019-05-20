@@ -2,9 +2,9 @@ import pytest
 
 from raidex.raidex_node.order_task import LimitOrderTask
 from raidex.message_broker.message_broker import MessageBroker
-from raidex.raidex_node.trader.trader import TraderClientMock
+from raidex.trader_mock.trader import TraderClientMock
 from raidex.raidex_node.commitment_service.mock import CommitmentServiceClientMock, NonFailingCommitmentServiceGlobal
-from raidex.raidex_node.offer_book import OfferBook, OfferType, Offer
+from raidex.raidex_node.offer_book import OfferBook, OfferType, OfferDeprecated
 from raidex.raidex_node.trades import TradesView
 from raidex.raidex_node.listener_tasks import OfferBookTask, OfferTakenTask, SwapCompletedTask
 from raidex.utils.gevent_helpers import switch_context
@@ -15,14 +15,14 @@ from gevent import sleep
 
 @pytest.fixture()
 def offers(accounts):
-    return [Offer(OfferType.SELL, 5, 20, offer_id=123, timeout=timestamp.time_plus(1),
-                  maker_address=accounts[1].address),
-            Offer(OfferType.SELL, 2, 5, offer_id=124, timeout=timestamp.time_plus(1),
-                  maker_address=accounts[1].address),
-            Offer(OfferType.BUY, 4, 20, offer_id=125, timeout=timestamp.time_plus(1),
-                  maker_address=accounts[1].address),
-            Offer(OfferType.SELL, 3, 60, offer_id=126, timeout=timestamp.time_plus(1),
-                  maker_address=accounts[1].address)]
+    return [OfferDeprecated(OfferType.SELL, 5, 20, offer_id=123, timeout=timestamp.time_plus(1),
+                            maker_address=accounts[1].address),
+            OfferDeprecated(OfferType.SELL, 2, 5, offer_id=124, timeout=timestamp.time_plus(1),
+                            maker_address=accounts[1].address),
+            OfferDeprecated(OfferType.BUY, 4, 20, offer_id=125, timeout=timestamp.time_plus(1),
+                            maker_address=accounts[1].address),
+            OfferDeprecated(OfferType.SELL, 3, 60, offer_id=126, timeout=timestamp.time_plus(1),
+                            maker_address=accounts[1].address)]
 
 
 @pytest.fixture()
@@ -108,7 +108,7 @@ def test_of_respawn(empty_offer_book, trades, accounts, commitment_service, mess
     switch_context()
     assert order_task.number_open_trades == 5
     empty_offer_book.insert_offer(
-        Offer(OfferType.SELL, 5, 9, 1234, timestamp.time_plus(3), maker_address=accounts[1].address))
+        OfferDeprecated(OfferType.SELL, 5, 9, 1234, timestamp.time_plus(3), maker_address=accounts[1].address))
     sleep(0.5)
     assert order_task.number_open_trades == 4
 

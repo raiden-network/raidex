@@ -1,8 +1,8 @@
 from flask import jsonify, request, abort
 from flask.views import MethodView
 
-from raidex.raidex_node.offer_book import OfferType
-
+from raidex.raidex_node.raidex_node import RaidexNode
+from raidex.raidex_node.handle_api_call import on_api_call
 
 # API-Resources - the json encoding and decoding is handled manually for simplicity and readability
 # Type-checking, encoding/decoding and error-responses are kept very basic
@@ -10,7 +10,7 @@ from raidex.raidex_node.offer_book import OfferType
 
 class Offers(MethodView):
 
-    def __init__(self, raidex_node):
+    def __init__(self, raidex_node: RaidexNode):
         self.raidex_node = raidex_node
 
     def get(self):
@@ -95,26 +95,35 @@ class PriceChartBin(MethodView):
 
 class LimitOrders(MethodView):
 
-    def __init__(self, raidex_node):
+    def __init__(self, raidex_node: RaidexNode):
         self.raidex_node = raidex_node
 
     def post(self):
         kwargs = request.get_json()
 
-        type_ = kwargs['type']
-        if type_ not in ('BUY', 'SELL'):
+        order_type = kwargs['type']
+        if order_type not in ('BUY', 'SELL'):
             abort(400, 'Invalid type')
 
         amount = kwargs['amount']
-        if not isinstance(amount, int) or amount < 1:
+
+        if not isinstance(amount, (float, int)) or amount <= 0:
             abort(400, 'Invalid amount or type: {}'.format(type(amount)))
 
         price = kwargs['price']
-        if not isinstance(price, (float, int)):
+        print(f'amount: {amount} price: {price}')
+        if not isinstance(price, (float, int)) or price <= 0:
             abort(400, 'Invalid price')
         price = float(price)
 
-        order_id = self.raidex_node.limit_order(OfferType[type_], amount, price, user_initiated=True)
+        data = dict()
+        data['event'] = 'NewLimitOrder'
+        data['order_type'] = order_type
+        data['amount'] = amount
+        data['price'] = float(price)
+
+        order_id = on_api_call(self.raidex_node, data)
+
         dict_ = dict(
             data=order_id
         )

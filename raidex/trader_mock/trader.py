@@ -6,7 +6,7 @@ from gevent.queue import Queue
 import structlog
 from eth_utils import int_to_big_endian
 
-from raidex.raidex_node.offer_book import OfferType
+from raidex.raidex_node.order.offer import OfferType
 from raidex.raidex_node.listener_tasks import ListenerTask
 from raidex.utils import timestamp, pex
 from raidex.utils.address import binary_address
@@ -29,6 +29,10 @@ class EventPaymentReceivedSuccess(object):
     @property
     def type(self):
         return self.__class__.__name__
+
+    @property
+    def identifier_tuple(self):
+        return self.initiator, self.identifier
 
     def as_dict(self):
         return dict(amount=self.amount, initiator=self.initiator, identifier=self.identifier)
@@ -56,7 +60,7 @@ class TransferReceipt(object):
             self.__class__.__name__,
             pex(self.initiator),
             self.amount,
-            pex(int_to_big_endian(self.identifier)),
+            self.identifier,
             timestamp.to_str_repr(self.timestamp)
         )
 
@@ -67,17 +71,17 @@ class Trader(object):
         self.expected = {}
         self.listeners = defaultdict(list)  # address -> list(listeners)
 
-    def expect_exchange_async(self, type_, base_amount, counter_amount, self_address, target_address, identifier):
+    def expect_exchange_async(self, type_, base_amount, quote_amount, self_address, target_address, identifier):
         result_async = AsyncResult()
         key = hash(
-            str(type_) + str(base_amount) + str(counter_amount) + str(target_address) + str(self_address) + str(
+            str(type_) + str(base_amount) + str(quote_amount) + str(target_address) + str(self_address) + str(
                 identifier))
         self.expected[key] = (result_async, self)
         return result_async
 
-    def exchange_async(self, type_, base_amount, counter_amount, self_address, target_address, identifier):
+    def exchange_async(self, type_, base_amount, quote_amount, self_address, target_address, identifier):
         result_async = AsyncResult()
-        key = hash(str(type_) + str(base_amount) + str(counter_amount) + str(self_address) + str(target_address) + str(
+        key = hash(str(type_) + str(base_amount) + str(quote_amount) + str(self_address) + str(target_address) + str(
             identifier))
         if key in self.expected:
             self.expected[key][0].set(True)
@@ -144,7 +148,7 @@ class TraderClientMock(object):
         assert isinstance(address, bytes)
         self.address = address
         self.base_amount = 100
-        self.counter_amount = 100
+        self.quote_amount = 100
         self.commitment_balance = commitment_balance
         if trader is not None:
             self.trader = trader
@@ -163,32 +167,32 @@ class TraderClientMock(object):
             self._is_running = True
 
     @make_async
-    def expect_exchange_async(self, type_, base_amount, counter_amount, target_address, identifier):
-        trade_result_async = self.trader.expect_exchange_async(type_, base_amount, counter_amount, self.address,
+    def expect_exchange_async(self, type_, base_amount, quote_amount, target_address, identifier):
+        trade_result_async = self.trader.expect_exchange_async(type_, base_amount, quote_amount, self.address,
                                                                target_address, identifier)
         successful = trade_result_async.get()
         if successful:
-            self.execute_exchange(OfferType.opposite(type_), base_amount, counter_amount)
+            self.execute_exchange(OfferType.opposite(type_), base_amount, quote_amount)
         return successful
 
     @make_async
-    def exchange_async(self, type_, base_amount, counter_amount, target_address, identifier):
+    def exchange_async(self, type_, base_amount, quote_amount, target_address, identifier):
 
-        trade_result_async = self.trader.exchange_async(type_, base_amount, counter_amount, self.address,
+        trade_result_async = self.trader.exchange_async(type_, base_amount, quote_amount, self.address,
                                                         target_address, identifier)
 
         successful = trade_result_async.get()
         if successful:
-            self.execute_exchange(type_, base_amount, counter_amount)
+            self.execute_exchange(type_, base_amount, quote_amount)
         return successful
 
-    def execute_exchange(self, type_, base_amount, counter_amount):
+    def execute_exchange(self, type_, base_amount, quote_amount):
         if type_ == OfferType.SELL:
             self.base_amount -= base_amount
-            self.counter_amount += counter_amount
+            self.quote_amount += quote_amount
         else:
             self.base_amount += base_amount
-            self.counter_amount -= counter_amount
+            self.quote_amount -= quote_amount
 
     def transfer(self, target_address, amount, identifier):
         # type: (str, (int, long), (int, long)) -> bool

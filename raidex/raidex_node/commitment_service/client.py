@@ -1,21 +1,26 @@
 import structlog
 import gevent
 from gevent.event import AsyncResult
-from eth_utils import int_to_big_endian, to_checksum_address
+from eth_utils import int_to_big_endian
 
 from raidex import messages
+from raidex.raidex_node.architecture.event_architecture import dispatch_events, dispatch_state_change
+from raidex.raidex_node.transport.events import BroadcastEvent
+from raidex.raidex_node.architecture.state_change import PaymentFailedStateChange, ProvenOfferStateChange
+from raidex.raidex_node.architecture.event_architecture import Processor
 from raidex.raidex_node.commitment_service.tasks import CommitmentProofTask, RefundReceivedTask
 from raidex.message_broker.listeners import CommitmentProofListener
-from raidex.raidex_node.offer_book import OfferType, Offer
-from raidex.raidex_node.trader.trader import TransferReceivedListener
+from raidex.raidex_node.order.offer import OfferType
+from raidex.trader_mock.trader import TransferReceivedListener
+from raidex.raidex_node.trader.events import TransferEvent
 from raidex.utils import timestamp, pex
 from raidex.utils.gevent_helpers import make_async
 from raidex.utils.address import binary_address
+from raidex.raidex_node.order.offer import Offer
+from raidex.constants import KOVAN_RTT_ADDRESS
 
 
 log = structlog.get_logger('node.commitment_service')
-KOVAN_WETH_ADDRESS = '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
-KOVAN_RTT_ADDRESS = '0x92276aD441CA1F3d8942d614a6c3c87592dd30bb'
 
 
 class OfferIdentifierCollision(Exception):
@@ -26,7 +31,7 @@ class MessageBrokerConnectionError(Exception):
     pass
 
 
-class CommitmentServiceClient(object):
+class CommitmentServiceClient(Processor):
     """
     Interactions concerning the Commitment for Offers (maker) and ProvenOffers (taker).
     Handles the Commitment-Transfers in the Trader and the communication with the CS (Message-Broker)
@@ -45,6 +50,9 @@ class CommitmentServiceClient(object):
         self.commitment_proofs = dict()  # commitment_sig -> (AsyncResult<messages.CommitmentProof, False)>
         self.taker_commitments = dict()  # offer_id -> commitment
         self.maker_commitments = dict()  # offer_id -> commitment
+        self.commitment_amount = 1
+
+        self.state_change_q = None
 
     def start(self):
         RefundReceivedTask(self.commitment_service_address,
@@ -55,19 +63,28 @@ class CommitmentServiceClient(object):
                            TransferReceivedListener(self.trader_client, initiator=self.commitment_service_address)).start()
 
         CommitmentProofTask(self.commitment_proofs, CommitmentProofListener(self.message_broker,
-                                                                            topic=self.node_address)).start()
+                                                                            topic=self.node_address),
+                            self.state_change_q).start()
+
+    def add_event_queue(self, offer_event_queue):
+        self.state_change_q = offer_event_queue
 
     def _create_taker_commitment_msg(self, offer, offer_hash, commitment_amount):
+
+        timeout = offer.timeout_date
+
         if offer.offer_id in self.taker_commitments:
             raise OfferIdentifierCollision("This offer-id is still being processed")
-        commitment_msg = messages.TakerCommitment(offer.offer_id, offer_hash, offer.timeout, commitment_amount)
+        commitment_msg = messages.TakerCommitment(offer.offer_id, offer_hash, timeout, commitment_amount)
         self._sign(commitment_msg)
         return commitment_msg
 
     def _create_maker_commitment_msg(self, offer, offer_hash, commitment_amount):
+
+        timeout = offer.timeout_date
         if offer.offer_id in self.maker_commitments:
             raise OfferIdentifierCollision("This offer-id is still being processed")
-        commitment_msg = messages.MakerCommitment(offer.offer_id, offer_hash, offer.timeout, commitment_amount)
+        commitment_msg = messages.MakerCommitment(offer.offer_id, offer_hash, timeout, commitment_amount)
         self._sign(commitment_msg)
         return commitment_msg
 
@@ -100,24 +117,29 @@ class CommitmentServiceClient(object):
 
         return commitment_proof_async_result
 
-    def _send_transfer(self, token_address, offer_id, commitment_amount):
-        return self.trader_client.transfer(token_address, self.commitment_service_address, commitment_amount,
-                                           offer_id)
+    def _send_transfer(self, offer_id, commitment_amount):
+        dispatch_events([TransferEvent(KOVAN_RTT_ADDRESS,
+                                       self.commitment_service_address,
+                                       commitment_amount,
+                                       offer_id)])
 
     def create_offer_msg(self, offer):
-        # type: (Offer) -> messages.SwapOffer
+        # type: ([Offer, Offer]) -> messages.SwapOffer
+
+        timeout = offer.timeout_date
 
         if offer.type == OfferType.SELL:
-            return messages.SwapOffer(self.token_pair.counter_token, offer.counter_amount, self.token_pair.base_token,
-                                      offer.base_amount, offer.offer_id, offer.timeout)
+            return messages.SwapOffer(self.token_pair.quote_token, offer.quote_amount, self.token_pair.base_token,
+                                      offer.base_amount, offer.offer_id, timeout)
         else:
-            return messages.SwapOffer(self.token_pair.base_token, offer.base_amount, self.token_pair.counter_token,
-                                      offer.counter_amount, offer.offer_id, offer.timeout)
+            return messages.SwapOffer(self.token_pair.base_token, offer.base_amount, self.token_pair.quote_token,
+                                      offer.quote_amount, offer.offer_id, timeout)
 
     def maker_commit(self, offer):
         # type: (Offer) -> (messages.ProvenOffer, None)
 
-        commitment_amount = offer.commitment_amount
+        timeout = offer.timeout_date
+        commitment_amount = self.commitment_amount
         offer_msg = self.create_offer_msg(offer)
         try:
             commitment_msg = self._create_maker_commitment_msg(offer, offer_msg.hash, commitment_amount)
@@ -132,13 +154,16 @@ class CommitmentServiceClient(object):
             log.debug('Message broker failed to send: {}'.format(commitment_msg))
             return None
 
-        success = self._send_transfer(KOVAN_RTT_ADDRESS, offer.offer_id, commitment_amount)
-        if not success:
+        success = 200
+        self._send_transfer(offer.offer_id, commitment_amount)
+        if success != 200:
             log.debug(
                 'Trader failed to transfer maker-commitment for offer: pex(id)={}'.format(pex(int_to_big_endian(offer.offer_id))))
+
+            dispatch_state_change(PaymentFailedStateChange(offer.offer_id, success))
             return None
 
-        seconds_to_timeout = timestamp.seconds_to_timeout(offer.timeout)
+        seconds_to_timeout = timestamp.seconds_to_timeout(timeout)
         try:
             commitment_proof_msg = commitment_proof_async_result.get(timeout=seconds_to_timeout)
         except gevent.Timeout:
@@ -154,6 +179,8 @@ class CommitmentServiceClient(object):
         assert isinstance(commitment_proof_msg, messages.CommitmentProof)
         assert commitment_proof_msg.sender == self.commitment_service_address
         proven_offer_msg = self._create_proven_offer_msg(offer_msg, commitment_msg, commitment_proof_msg)
+        dispatch_state_change(ProvenOfferStateChange(proven_offer_msg))
+        dispatch_events([BroadcastEvent(proven_offer_msg)])
         return proven_offer_msg
 
     @make_async
@@ -163,11 +190,12 @@ class CommitmentServiceClient(object):
     def taker_commit(self, offer):
         # type: (Offer) -> (messages.ProvenCommitment, None)
 
-        assert offer.commitment_amount is not None
+        assert self.commitment_amount is not None
         offer_msg = self.create_offer_msg(offer)
+        timeout = offer.timeout_date
 
         try:
-            commitment_msg = self._create_taker_commitment_msg(offer, offer_msg.hash, offer.commitment_amount)
+            commitment_msg = self._create_taker_commitment_msg(offer, offer_msg.hash, self.commitment_amount)
         except OfferIdentifierCollision:
             return None
         self.taker_commitments[offer.offer_id] = commitment_msg
@@ -181,13 +209,15 @@ class CommitmentServiceClient(object):
 
         self.commitment_proofs[commitment_msg.signature] = commitment_proof_async_result
 
-        success = self._send_transfer(offer.offer_id, offer.commitment_amount)
-        if success is not True:
+        self._send_transfer(offer.offer_id, self.commitment_amount)
+        success = 200
+
+        if not success:
             log.debug(
-                'Trader failed to transfer taker-commitment for offer: pex(id)={}'.format(pex(offer.offer_id)))
+                'Trader failed to transfer taker-commitment for offer: pex(id)={}'.format(offer.offer_id))
             return None
 
-        seconds_to_timeout = timestamp.seconds_to_timeout(offer.timeout)
+        seconds_to_timeout = timestamp.seconds_to_timeout(timeout)
         try:
             commitment_proof_msg = commitment_proof_async_result.get(timeout=seconds_to_timeout)
         except gevent.Timeout:
@@ -204,6 +234,9 @@ class CommitmentServiceClient(object):
         assert commitment_proof_msg.sender == self.commitment_service_address
         proven_commitment = messages.ProvenCommitment(commitment_msg, commitment_proof_msg)
         self._sign(proven_commitment)
+        proven_offer_msg = self._create_proven_offer_msg(offer_msg, commitment_msg, commitment_proof_msg)
+        dispatch_state_change(ProvenOfferStateChange(proven_offer_msg))
+
         return proven_commitment
 
     @make_async

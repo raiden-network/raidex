@@ -89,7 +89,7 @@ def test_maker_commitments(assets, accounts):
     maker = accounts[0]
     commitment_service = accounts[1]
 
-    commitment_msg = MakerCommitment(offer.offer_id, offer.hash, offer.timeout, 42)
+    commitment_msg = MakerCommitment(offer.offer_id, offer.hash, offer.timeout_date, 42)
     commitment_msg.sign(maker.privatekey)
     assert_serialization(commitment_msg)
     assert_envelope_serialization(commitment_msg)
@@ -108,7 +108,7 @@ def test_maker_commitments(assets, accounts):
     # FIXME check if those are neccessary tests
     assert proven_offer_msg.sender == commitment_msg.sender
     assert proven_offer_msg.commitment_proof.commitment_sig == proven_offer_msg.commitment.signature
-    assert proven_offer_msg.commitment.timeout == proven_offer_msg.offer.timeout
+    assert proven_offer_msg.commitment.timeout == proven_offer_msg.offer.timeout_date
 
 
 def test_taker_commitments(assets, accounts):
@@ -116,7 +116,7 @@ def test_taker_commitments(assets, accounts):
     maker = accounts[0]
     commitment_service = accounts[1]
 
-    commitment_msg = TakerCommitment(offer.offer_id, offer.hash, offer.timeout, 42)
+    commitment_msg = TakerCommitment(offer.offer_id, offer.hash, offer.timeout_date, 42)
     commitment_msg.sign(maker.privatekey)
     assert_serialization(commitment_msg)
     assert_envelope_serialization(commitment_msg)

@@ -24,7 +24,7 @@ class MakerExchangeTask(gevent.Greenlet):
         gevent.Greenlet.__init__(self)
         
     def _run(self):
-        seconds_to_timeout = timestamp.seconds_to_timeout(self.offer.timeout)
+        seconds_to_timeout = timestamp.seconds_to_timeout(self.offer.timeout_date)
         if seconds_to_timeout <= 0:
             return False
         timeout = gevent.Timeout(seconds_to_timeout)
@@ -42,8 +42,16 @@ class MakerExchangeTask(gevent.Greenlet):
                 log.debug('taker address: {}'.format(encode_hex(taker_address)))
 
                 log.debug('Found taker, execute swap of {}'.format(pex(int_to_big_endian(self.offer.offer_id))))
-                status = self.trader.exchange_async(self.offer.type, self.offer.base_amount, self.offer.counter_amount,
-                                                    taker_address, self.offer.offer_id).get()
+                secret = proven_offer.commitment_proof.secret
+                secret_hash = proven_offer.commitment_proof.secret_hash
+                status = self.trader.exchange_async(self.offer.type,
+                                                    self.offer.base_amount,
+                                                    self.offer.quote_amount,
+                                                    taker_address,
+                                                    self.offer.offer_id,
+                                                    secret=secret,
+                                                    secret_hash=secret_hash).get()
+
                 if status:
                     log.debug('Swap of {} done'.format(pex(int_to_big_endian(self.offer.offer_id))))
                     self.commitment_service.report_swap_executed(self.offer.offer_id)
@@ -79,7 +87,7 @@ class TakerExchangeTask(gevent.Greenlet):
         gevent.Greenlet.__init__(self)
 
     def _run(self):
-        seconds_to_timeout = timestamp.seconds_to_timeout(self.offer.timeout)
+        seconds_to_timeout = timestamp.seconds_to_timeout(self.offer.timeout_date)
         if seconds_to_timeout <= 0:
             return False
         timeout = gevent.Timeout(seconds_to_timeout)
@@ -89,9 +97,17 @@ class TakerExchangeTask(gevent.Greenlet):
             if proven_commitment is None:
                 log.debug('No proven commitment received for {}'.format(pex(int_to_big_endian(self.offer.offer_id))))
                 return False
-            status_async = self.trader.expect_exchange_async(self.offer.type, self.offer.base_amount,
-                                                             self.offer.counter_amount, self.offer.maker_address,
-                                                             self.offer.offer_id)
+
+            secret = proven_commitment.commitment_proof.secret
+            secret_hash = proven_commitment.commitment_proof.secret_hash
+
+            status_async = self.trader.expect_exchange_async(self.offer.type,
+                                                             self.offer.base_amount,
+                                                             self.offer.quote_amount,
+                                                             self.offer.maker_address,
+                                                             self.offer.offer_id,
+                                                             secret=secret,
+                                                             secret_hash=secret_hash)
             switch_context()  # give async function chance to execute
             log.debug('Send proven-commitment of {} to maker'.format(pex(int_to_big_endian(self.offer.offer_id))))
             self.message_broker.send(self.offer.maker_address, proven_commitment)

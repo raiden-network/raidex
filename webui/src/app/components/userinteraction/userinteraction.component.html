@@ -12,30 +12,42 @@
     <form class="interaction-form">
       <div *ngIf="(selectedType === 'BUY')">
         <mat-form-field class="full-width">
-          <span class="suffix" matSuffix>ETH</span>
+          <span class="suffix" matSuffix>RTT</span>
           <input matInput type="number" id="amount" name="amount"
                  [(ngModel)]="buyOrder.amount" placeholder="Amount">
         </mat-form-field>
         <mat-form-field class="full-width">
-          <span class="suffix" matSuffix>USD</span>
+          <span class="suffix" matSuffix>WETH</span>
           <input matInput type="number" id="price" name="price"
                  [(ngModel)]="buyOrder.price" placeholder="Price">
         </mat-form-field>
+        <div class="full-width">
+          <span class="suffix" matSuffix>total amount to spend</span>
+          <p class="suffix">{{buyOrder.totalAmount}}
+            <span class="suffix" matSuffix>WETH</span>
+          </p>
+        </div>
         <button type="submit" class="btn btn-success col-md-12" (click)="submitOrder('BUY')">
           PLACE BUY ORDER
         </button>
       </div>
       <div *ngIf="(selectedType === 'SELL')">
         <mat-form-field class="full-width">
-          <span class="suffix" matSuffix>ETH</span>
+          <span class="suffix" matSuffix>RTT</span>
           <input matInput type="number" id="amount" name="amount"
                  [(ngModel)]="sellOrder.amount" placeholder="Amount">
         </mat-form-field>
         <mat-form-field class="full-width">
-          <span class="suffix" matSuffix>USD</span>
+          <span class="suffix" matSuffix>WETH</span>
           <input matInput type="number" id="price" name="price"
                  [(ngModel)]="sellOrder.price" placeholder="Price">
         </mat-form-field>
+        <div class="full-width">
+          <span class="suffix" matSuffix>total amount to receive</span>
+          <p class="suffix">{{sellOrder.totalAmount}}
+            <span class="suffix" matSuffix>WETH</span>
+          </p>
+        </div>
         <button type="submit" class="btn btn-danger col-md-12" (click)="submitOrder('SELL')">
           PLACE SELL ORDER
         </button>

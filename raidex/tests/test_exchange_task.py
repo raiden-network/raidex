@@ -3,15 +3,15 @@ from raidex.utils import timestamp
 from raidex.raidex_node.commitment_service.mock import CommitmentServiceClientMock, NonFailingCommitmentServiceGlobal
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.raidex_node.exchange_task import MakerExchangeTask, TakerExchangeTask
-from raidex.raidex_node.offer_book import Offer, OfferType
-from raidex.raidex_node.trader.trader import TraderClientMock
+from raidex.raidex_node.offer_book import OfferDeprecated, OfferType
+from raidex.trader_mock.trader import TraderClientMock
 from raidex.signing import Signer
 
 
 @pytest.fixture()
 def offers():
-    return [Offer(OfferType.BUY, 100, 1000, offer_id=123, timeout=timestamp.time_plus(1)),
-            Offer(OfferType.BUY, 200, 2000, offer_id=124, timeout=timestamp.time_plus(1))]
+    return [OfferDeprecated(OfferType.BUY, 100, 1000, offer_id=123, timeout=timestamp.time_plus(1)),
+            OfferDeprecated(OfferType.BUY, 200, 2000, offer_id=124, timeout=timestamp.time_plus(1))]
 
 
 @pytest.fixture()

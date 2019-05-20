@@ -27,4 +27,8 @@ export class Order {
     get status(): String {
         return this.canceled ? 'canceling' : 'open';
     }
+
+    get totalAmount(): String {
+        return String(Number(this.amount) * Number(this.price))
+    }
 }

@@ -6,8 +6,8 @@ from raidex.utils import pex
 
 from raidex.commitment_service.swap import SwapFactory
 from raidex.raidex_node.listener_tasks import ListenerTask
-from raidex.raidex_node.trader.trader import TransferReceipt
-from raidex.raidex_node.trader.trader import TransferReceivedListener
+from raidex.trader_mock.trader import TransferReceipt
+from raidex.trader_mock.trader import TransferReceivedListener
 from raidex.message_broker.listeners import TakerCommitmentListener, MakerCommitmentListener, SwapExecutionListener
 
 log = structlog.get_logger('commitment_service')
@@ -52,7 +52,7 @@ class RefundTask(QueueListenerTask):
         def get_and_requeue(async_result, refund_, queue):
             # FIXME this could block a greenlet forever, leaving the refund in nirvana
             success = async_result.get()
-            print(success.json())
+
             if success.status_code == 200:
                 log_trader.debug('Refund successful {}'.format(refund_))
             else:
@@ -103,6 +103,8 @@ class TransferReceivedTask(ListenerTask):
         offer_id = transfer_receipt.identifier
         swap = self.swaps.get(offer_id)
 
+        log_trader.debug(str(transfer_receipt))
+
         if swap is not None:
             swap.hand_transfer_receipt(transfer_receipt)
         else:
@@ -146,11 +148,13 @@ class MakerCommitmentTask(ListenerTask):
         offer_id = maker_commitment_msg.offer_id
 
         swap = self.factory.make_swap(offer_id)
+
+        log_messaging.debug(str(maker_commitment_msg))
+        log_messaging.debug("Offer ID: {}".format(offer_id))
+
         if swap is not None:
-            print(swap.state)
-            print(maker_commitment_msg)
             swap.hand_maker_commitment_msg(maker_commitment_msg)
-            print(swap.state)
+
 
 
 class SwapExecutionTask(ListenerTask):

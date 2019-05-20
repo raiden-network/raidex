@@ -24,5 +24,5 @@ def not_found(error):
 
 def internal_error(error):
     return make_error_response(500,
-                               'The server encountered an internal error and was unable to complete your request: '
+                               'The server enquoteed an internal error and was unable to complete your request: '
                                + str(error))

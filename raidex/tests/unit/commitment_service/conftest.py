@@ -8,7 +8,7 @@ from raidex.utils import timestamp
 from raidex.commitment_service.swap import SwapFactory
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.signing import Signer
-from raidex.raidex_node.trader.trader import (
+from raidex.trader_mock.trader import (
     TraderClientMock,
     Trader,
 )

@@ -22,6 +22,7 @@ def binary_address(address_repr):
          as argument. Got: {0}".format(repr(address_repr))
     )
 
+
 def encode_topic(topic):
 
     try:

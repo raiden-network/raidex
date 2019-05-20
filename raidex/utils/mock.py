@@ -17,7 +17,7 @@ from eth_keys import keys
 
 
 from raidex import messages
-from raidex.raidex_node.offer_book import Offer, OfferType
+from raidex.raidex_node.offer_book import OfferDeprecated, OfferType
 from raidex.utils import make_privkey_address, timestamp
 
 ETH = denoms.ether
@@ -121,17 +121,17 @@ def gen_offer(magic_number, market_price=10.0, max_amount=1000 * ETH, max_deviat
             price *= factor
 
     base_amount = random.randint(1, max_amount)
-    counter_amount = int(base_amount * float(price))
+    quote_amount = int(base_amount * float(price))
 
     assert type_ in (OfferType.BUY, OfferType.SELL)
-    offer = Offer(type_,
-                  base_amount,
-                  counter_amount,
-                  # reuse random privkey generation for random offer-ids:
-                  big_endian_to_int(make_privkey_address()[0]),
-                  # timeout int 10-100 seconds
-                  timestamp.time_plus(random.randint(10, 100))
-                  )
+    offer = OfferDeprecated(type_,
+                            base_amount,
+                            quote_amount,
+                            # reuse random privkey generation for random offer-ids:
+                            big_endian_to_int(make_privkey_address()[0]),
+                            # timeout int 10-100 seconds
+                            timestamp.time_plus(random.randint(10, 100))
+                            )
     return offer
 
 
@@ -213,5 +213,5 @@ class MockExchangeTask(gevent.Greenlet):
 
         # spawn later randomly, but before timeout
         swap_completed = commitment_service_client.create_swap_completed(offer.offer_id)
-        wait = int(round(offer.timeout - (random.random() * (offer.timeout - 100))))
+        wait = int(round(offer.timeout_date - (random.random() * (offer.timeout_date - 100))))
         gevent.spawn_later(timestamp.to_seconds(wait), self.message_broker.broadcast, swap_completed)

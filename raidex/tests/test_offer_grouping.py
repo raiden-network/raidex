@@ -3,7 +3,7 @@ from collections import namedtuple
 from raidex.raidex_node.offer_grouping import group_offers, group_trades_from
 from raidex.utils import timestamp
 from raidex.raidex_node.trades import Trade
-from raidex.raidex_node.offer_book import OfferType
+from raidex.raidex_node.order.offer import OfferType
 
 Offer = namedtuple("Offer", "amount price timeout type offer_id")
 

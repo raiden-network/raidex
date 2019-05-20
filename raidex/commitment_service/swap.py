@@ -1,5 +1,7 @@
+from eth_utils import keccak
+
 from raidex import messages
-from raidex.utils import timestamp
+from raidex.utils import timestamp, random_secret
 from raidex.commitment_service.refund import Refund
 from raidex.commitment_service.swap_state_machine import SwapStateMachine
 
@@ -51,6 +53,9 @@ class SwapCommitment(object):
         self.taker_transfer_receipt = None
         self.terminated_state = None
 
+        self.secret = random_secret()
+        self.secret_hash = keccak(self.secret)
+
         self._state_machine = SwapStateMachine(self, auto_spawn_timeout)
 
     @property
@@ -70,8 +75,6 @@ class SwapCommitment(object):
         return self.taker_commitment_msg.sender
 
     def is_maker(self, address):
-        print("initiator: {} maker: {}".format(address, self.maker_address))
-
         return address == self.maker_address
 
     def is_taker(self, address):
@@ -112,11 +115,11 @@ class SwapCommitment(object):
         self.queue_send(swap_completed_message, None)
 
     def send_maker_commitment_proof(self):
-        commitment_proof_msg = messages.CommitmentProof(self.maker_commitment_msg.signature)
+        commitment_proof_msg = messages.CommitmentProof(self.maker_commitment_msg.signature, self.secret, self.secret_hash, self.offer_id)
         self.queue_send(commitment_proof_msg, self.maker_address)
 
     def send_taker_commitment_proof(self):
-        commitment_proof_msg = messages.CommitmentProof(self.taker_commitment_msg.signature)
+        commitment_proof_msg = messages.CommitmentProof(self.taker_commitment_msg.signature, self.secret, self.secret_hash, self.offer_id)
         self.queue_send(commitment_proof_msg, self.taker_address)
 
     def punish_maker(self):

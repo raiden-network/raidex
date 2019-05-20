@@ -119,11 +119,9 @@ def event_get_msg_or_receipt_kwarg(event):
         data = msg
     if receipt and not msg:
         data = receipt
-    if not hasattr(data, 'initiator'):
+    if not hasattr(data, 'initiator') and not hasattr(data, 'sender'):
         # TODO better error
         raise AttributeError()
-    if data.initiator is None:
-        raise ValueError()
     return data
 
 
@@ -158,7 +156,6 @@ class SwapStateMachine(Machine):
     def refund_unsuccessful_transfer(self, event):
         transfer_receipt = event_get_receipt_kwarg(event)
         success = event_get_success(event)
-        print(event)
         # refund every receipt that didn't successfully trigger a state change
         if success is False:
             self.swap.queue_refund(transfer_receipt, priority=1, claim_fee=False)
@@ -193,11 +190,15 @@ class SwapStateMachine(Machine):
 
     def sender_is_maker(self, event):
         msg_or_receipt = event_get_msg_or_receipt_kwarg(event)
-        return self.swap.is_maker(msg_or_receipt.initiator)
+        if hasattr(msg_or_receipt, 'initiator'):
+            return self.swap.is_maker(msg_or_receipt.initiator)
+        return self.swap.is_maker(msg_or_receipt.sender)
 
     def sender_is_taker(self, event):
         msg_or_receipt = event_get_msg_or_receipt_kwarg(event)
-        return self.swap.is_taker(msg_or_receipt.initiator)
+        if hasattr(msg_or_receipt, 'initiator'):
+            return self.swap.is_taker(msg_or_receipt.initiator)
+        return self.swap.is_taker(msg_or_receipt.sender)
 
     def sender_sent_taker_commitment(self, event):
         msg_or_receipt = event_get_msg_or_receipt_kwarg(event)
@@ -205,8 +206,8 @@ class SwapStateMachine(Machine):
 
     def queue_commitment(self, event):
         commitment_msg = event_get_msg_kwarg(event)
-        if commitment_msg.initiator not in self.taker_commitment_pool:
-            self.taker_commitment_pool[commitment_msg.initiator] = commitment_msg
+        if commitment_msg.sender not in self.taker_commitment_pool:
+            self.taker_commitment_pool[commitment_msg.sender] = commitment_msg
         else:
             # TODO
             # sent another message... what should we allow here? replace, ignore?

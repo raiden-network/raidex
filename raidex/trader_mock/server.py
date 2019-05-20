@@ -4,8 +4,8 @@ import structlog
 from flask import Flask, jsonify, request, Response
 from gevent.pywsgi import WSGIServer
 
-from raidex.raidex_node.offer_book import OfferType
-from raidex.raidex_node.trader.trader import Trader, EventListener, TransferReceivedEvent
+from raidex.raidex_node.order.offer import OfferType
+from raidex.trader_mock.trader import Trader
 
 log = structlog.get_logger('trader.server')
 
@@ -18,13 +18,13 @@ trader = Trader()
 def expect():
     type_ = OfferType(request.json.get('type'))
     base_amount = request.json.get('baseAmount')
-    counter_amount = request.json.get('counterAmount')
+    quote_amount = request.json.get('quoteAmount')
     self_address = request.json.get('selfAddress')
     target_address = request.json.get('targetAddress')
     identifier = request.json.get('identifier')
-    log.debug('expect trade: ', type_=type_, base_amount=base_amount, counter_amount=counter_amount,
+    log.debug('expect trade: ', type_=type_, base_amount=base_amount, quote_amount=quote_amount,
               self_address=self_address, target_address=target_address, identifier=identifier)
-    success_async = trader.expect_exchange_async(type_, base_amount, counter_amount, self_address, target_address,
+    success_async = trader.expect_exchange_async(type_, base_amount, quote_amount, self_address, target_address,
                                                  identifier)
     success = success_async.get()
     return jsonify({'data': success})
@@ -34,13 +34,13 @@ def expect():
 def exchange():
     type_ = OfferType(request.json.get('type'))
     base_amount = request.json.get('baseAmount')
-    counter_amount = request.json.get('counterAmount')
+    quote_amount = request.json.get('quoteAmount')
     self_address = request.json.get('selfAddress')
     target_address = request.json.get('targetAddress')
     identifier = request.json.get('identifier')
-    log.debug('execute trade: ', type_=type_, base_amount=base_amount, counter_amount=counter_amount,
+    log.debug('execute trade: ', type_=type_, base_amount=base_amount, quote_amount=quote_amount,
               self_address=self_address, target_address=target_address, identifier=identifier)
-    success_async = trader.exchange_async(type_, base_amount, counter_amount, self_address, target_address, identifier)
+    success_async = trader.exchange_async(type_, base_amount, quote_amount, self_address, target_address, identifier)
     success = success_async.get()
     return jsonify({'data': success})
 
@@ -95,7 +95,7 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     return make_error(500,
-                      'The server encountered an internal error and was unable to complete your request: ' + str(error))
+                      'The server enquoteed an internal error and was unable to complete your request: ' + str(error))
 
 
 @app.route('api/commitment/<string:address>', methods=['GET'])

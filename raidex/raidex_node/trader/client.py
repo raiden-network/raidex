@@ -9,35 +9,39 @@ from polling import poll
 
 import requests
 from eth_utils import encode_hex
-
-from raidex.utils.address import encode_address, binary_address
-
-from raidex.raidex_node.offer_book import OfferType
-from raidex.raidex_node.trader.trader import (
+from raidex.raidex_node.trader.events import TraderEvent
+from raidex.utils.address import encode_address
+from raidex.raidex_node.trader.handle_events import handle_event
+from raidex.raidex_node.matching.match import Match
+from raidex.raidex_node.market import TokenPair
+from raidex.raidex_node.order.offer import OfferType
+from raidex.trader_mock.trader import (
     Listener,
     EventPaymentReceivedSuccess,
     BalanceUpdateTask
 )
 from raidex.utils.gevent_helpers import make_async
+from raidex.raidex_node.architecture.event_architecture import Processor
 import structlog
 
 log = structlog.get_logger('trader client')
 
 
-class TraderClient(object):
+class TraderClient(Processor):
     """Handles the actual token swap. A client/server mock for now. Later will use a raiden node"""
 
-    def __init__(self, address, host='localhost', port=5001, api_version='v1' , commitment_amount=10):
+    def __init__(self, address, host='localhost', port=5001, market: TokenPair = None, api_version='v1' , commitment_amount=10):
+        super(TraderClient, self).__init__(TraderEvent)
         self.address = address
+        self.market = market
         self.port = port
         self.api_version = api_version
         self.base_amount = 100
-        self.counter_amount = 100
+        self.quote_amount = 100
         self.commitment_balance = commitment_amount
         self._is_running = False
         self.apiUrl = 'http://{}:{}/api/{}'.format(host, port, api_version)
         self.events = {}
-
 
     @property
     def is_running(self):
@@ -49,13 +53,13 @@ class TraderClient(object):
             self._is_running = True
 
     @make_async
-    def expect_exchange_async(self, base_address, base_amount, counter_amount, target_address, identifier):
+    def expect_exchange_async(self, type_, base_amount, quote_amount, target_address, identifier, secret=None, secret_hash=None):
         """Expect a token swap
 
         Args:
             type_ (OfferType): of the swap related to the market
             base_amount (int): amount of base units to swap
-            counter_amount: amount of counter unit to swap
+            quote_amount: amount of quote unit to swap
             target_address: (str)
             identifier: The identifier of this token swap
 
@@ -63,27 +67,19 @@ class TraderClient(object):
             AsyncResult: bool: indicates if the swap was successful
 
         """
-#        body = {'type': type_.value, 'baseAmount': base_amounself, self_address, target_address, amount, identifiert, 'counterAmount': counter_amount,
-#                'selfAddress': encode_hex(self.address), 'targetAddress': encode_hex(target_address),
-#                'identifier': identifier}
-#
-#        result = requests.post('{}/expect'.format(self.apiUrl), json=body)
-#        success = result.json()['data']
-#        if success:
-#            self._execute_exchange(OfferType.opposite(type_), base_amount, counter_amount)
-#        return success
-
-        self.transfer()
+        if type_ == OfferType.BUY:
+            return self.transfer(self.market.checksum_base_address, target_address, base_amount, identifier, secret, secret_hash)
+        return self.transfer(self.market.checksum_quote_address, target_address, quote_amount, identifier, secret, secret_hash)
 
 
     @make_async
-    def exchange_async(self, type_, base_amount, counter_amount, target_address, identifier):
+    def exchange_async(self, type_, base_amount, quote_amount, target_address, identifier, secret=None, secret_hash=None):
         """Executes a token swap
 
            Args:
                type_ (OfferType): of the swap related to the market
                base_amount (int): amount of base units to swap
-               counter_amount: amount of counter unit to swap
+               quote_amount: amount of quote unit to swap
                target_address: (str)
                identifier: The identifier of this token swap
 
@@ -92,31 +88,36 @@ class TraderClient(object):
 
            """
 
-        body = {'type': type_.value, 'baseAmount': base_amount, 'counterAmount': counter_amount,
-                'selfAddress': encode_address(self.address), 'targetAddress': encode_address(target_address),
-                'identifier': identifier}
+#        body = {'type': type_.value, 'baseAmount': base_amount, 'quoteAmount': quote_amount,
+#                'selfAddress': encode_address(self.address), 'targetAddress': encode_address(target_address),
+#                'identifier': identifier}
+#
+#        result = requests.post('{}/exchange'.format(self.apiUrl), json=body)
+#        success = result.json()['data']
+#        if success:
+#            self._execute_exchange(type_, base_amount, quote_amount)
+#        return success
+        if type_ == OfferType.BUY:
+            return self.transfer(self.market.checksum_quote_address, target_address, quote_amount, identifier, secret, secret_hash)
+        return self.transfer(self.market.checksum_base_address, target_address, base_amount, identifier, secret, secret_hash)
 
-        result = requests.post('{}/exchange'.format(self.apiUrl), json=body)
-        success = result.json()['data']
-        if success:
-            self._execute_exchange(type_, base_amount, counter_amount)
-        return success
+    @make_async
+    def initiate_exchange(self, match: Match):
+        target = match.target
+        amount = match.get_send_amount()
+        identifier = match.offer.offer_id
+        token = match.get_token_from_market(self.market)
+        secret = match.get_secret()
+        secret_hash = match.get_secret_hash()
 
-    def _execute_exchange(self, type_, base_amount, counter_amount):
-        if type_ is OfferType.SELL:
-            self.base_amount -= base_amount
-            self.counter_amount += counter_amount
-        elif type_ is OfferType.BUY:
-            self.base_amount += base_amount
-            self.counter_amount -= counter_amount
-        else:
-            raise ValueError('Unknown OfferType')
+        return self.transfer(token, target, amount, identifier, secret, secret_hash)
+
 
     @make_async
     def transfer_async(self, token_address, target_address, amount, identifier):
         return self.transfer(token_address, target_address, amount, identifier)
 
-    def transfer(self, token_address, target_address, amount, identifier):
+    def transfer(self, token_address, target_address, amount, identifier, secret=None, secret_hash=None):
         """Makes a transfer, used for the commitments
 
            Args:
@@ -133,12 +134,19 @@ class TraderClient(object):
         encoded_token = encode_address(token_address)
         encoded_target = encode_address(target_address)
 
-        body = {'amount': amount, 'identifier': identifier}
+        body = {'amount': int(amount), 'identifier': identifier}
+
+        if secret is not None:
+            body['secret'] = encode_hex(secret)
+            log.debug(f'Secret given: {body["secret"]}')
+        if secret is not None:
+            body['secret_hash'] = encode_hex(secret_hash)
+            log.debug(f'Secret Hash given: {body["secret_hash"]}')
+
         result = requests.post('{}/payments/{}/{}'.format(self.apiUrl, encoded_token, encoded_target), json=body)
 
-        # print("ADDRESS: {}, AMOUNT: {}, IDENTIFIER: {}".format(target_address, amount, identifier))
+        log.debug(f'TOKEN: {encoded_token}, ADDRESS: {encoded_target}, AMOUNT: {amount}, IDENTIFIER: {identifier}')
 
-        success = result.json()
         if result.status_code == 200:
             self.commitment_balance -= amount
         return result
@@ -172,15 +180,21 @@ class TraderClient(object):
                     raw_data = json.loads(decoded_line)
 
                     for e in raw_data:
-                        if 'identifier' in e and e['identifier'] not in events:
-                            event = encode(e, e['event'])
+                        event = encode(e, e['event'])
+                        if event is None:
+                            continue
 
-                            if transform is not None and event is not None:
-                                event = transform(event)
-                                events[e['identifier']] = event
-                            if event is not None:
-                                event_queue_async.put(event)
-                                print(event)
+                        event_id = event.identifier_tuple
+
+                        if event_id in events:
+                            continue
+
+                        transformed_event = transform(event)
+                        events[event_id] = transformed_event
+
+                        if transformed_event is not None:
+                            event_queue_async.put(transformed_event)
+
         Greenlet.spawn(poll, target=request_events, args=(events,), step=2, poll_forever=True)
 
         return listener
@@ -196,5 +210,4 @@ def encode(event, type_):
         return EventPaymentReceivedSuccess(event['initiator'], event['amount'], event['identifier'])
     #raise Exception('encoding error: unknown-event-type')
     return None
-
 

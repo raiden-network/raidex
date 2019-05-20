@@ -6,13 +6,15 @@ from raidex.raidex_node.listener_tasks import ListenerTask
 from raidex.tests.utils import float_isclose
 from eth_utils import int_to_big_endian
 
+from raidex.raidex_node.architecture.state_change import CommitmentProofStateChange
 
 log = structlog.get_logger('node.commitment_service.tasks')
 
 
 class CommitmentProofTask(ListenerTask):
-    def __init__(self, commitment_proofs_dict, commitment_proof_listener):
+    def __init__(self, commitment_proofs_dict, commitment_proof_listener, state_change_q):
         self.commitment_proofs = commitment_proofs_dict
+        self.state_change_q = state_change_q
         super(CommitmentProofTask, self).__init__(commitment_proof_listener)
 
     def process(self, data):
@@ -23,6 +25,8 @@ class CommitmentProofTask(ListenerTask):
         async_result = self.commitment_proofs.get(commitment_proof.commitment_sig)
         if async_result:
             async_result.set(commitment_proof)
+            commitment_event = CommitmentProofStateChange(commitment_proof.commitment_sig, commitment_proof)
+            self.state_change_q.put(commitment_event)
         else:
             # we should be waiting on the commitment-proof!
             # assume non-malicious actors:

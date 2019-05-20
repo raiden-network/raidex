@@ -16,7 +16,7 @@ export class RaidexService {
 
     }
 
-    api = 'http://127.0.0.1:50001/api/v01';
+    api = '/raidex/api/v01';
 
     private static handleError(error: Response | any) {
         let errMsg: string;
@@ -41,8 +41,8 @@ export class RaidexService {
                     return data.map((elem) => {
                             return new Trade(
                                 elem.timestamp,
-                                format.formatCurrency(elem.amount, 18, 1),
-                                format.formatCurrency(elem.price, 2, 4),
+                                format.formatCurrency(elem.amount, 3, 1),
+                                format.formatCurrency(elem.price, 18-3, 4),
                                 elem.type,
                             );
                         }
@@ -65,10 +65,10 @@ export class RaidexService {
                                 return new PriceBin(
                                     elem.timestamp,
                                     format.formatCurrency(elem.amount),
-                                    format.formatCurrency(elem.open, 2),
-                                    format.formatCurrency(elem.close, 2),
-                                    format.formatCurrency(elem.max, 2),
-                                    format.formatCurrency(elem.min, 2),
+                                    format.formatCurrency(elem.open, 18-3),
+                                    format.formatCurrency(elem.close, 18-3),
+                                    format.formatCurrency(elem.max, 18-3),
+                                    format.formatCurrency(elem.min, 18-3),
                                 );
                             }
                         );
@@ -86,13 +86,13 @@ export class RaidexService {
                     return {
                         buys: buys.map((elem) =>
                             new Offer(
-                                format.formatCurrency(elem.amount),
-                                format.formatCurrency(elem.price, 2)
+                                format.formatCurrency(elem.amount,3),
+                                format.formatCurrency(elem.price, 18-3)
                             )),
                         sells: sells.map((elem) =>
                             new Offer(
-                                format.formatCurrency(elem.amount),
-                                format.formatCurrency(elem.price, 2)
+                                format.formatCurrency(elem.amount,3),
+                                format.formatCurrency(elem.price, 18-3)
                             ))
                     };
                 }))),
@@ -102,8 +102,9 @@ export class RaidexService {
     public submitLimitOrder(limitOrder: Order): Observable<number> {
         const data = {
             'type': limitOrder.type,
-            'amount': format.parseCurrency(limitOrder.amount),
-            'price': format.parseCurrency(limitOrder.price, 2)
+            'amount': format.parseCurrency(limitOrder.amount, 3),
+            'base_token': '0x92276aD441CA1F3d8942d614a6c3c87592dd30bb',
+            'price': format.parseCurrency(limitOrder.price, 18-3)
         };
         const options = new HttpHeaders().set('Content-Type', 'application/json');
         return this.http.post<ApiResponse<number>>(`${this.api}/markets/dummy/orders/limit`, data, {headers: options}).pipe(
@@ -118,10 +119,10 @@ export class RaidexService {
                     const data = response.data;
                     return data.map((elem) => new Order(
                         elem.type,
-                        format.formatCurrency(elem.amount),
-                        format.formatCurrency(elem.price, 2),
+                        format.formatCurrency(elem.amount, 3),
+                        format.formatCurrency(elem.price, 18-3),
                         elem.order_id,
-                        format.formatCurrency(elem.filledAmount),
+                        format.formatCurrency(elem.filledAmount, 3),
                         elem.canceled
                     ));
                 }))),
