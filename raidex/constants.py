@@ -5,6 +5,11 @@ EMPTY_SECRET = bytes(32)
 EMPTY_SECRET_KECCAK = keccak(EMPTY_SECRET)
 
 DEFAULT_OFFER_LIFETIME = 60
+# seconds until timeout  external offer is seen as valid
+OFFER_THRESHOLD_TIME = 10
+
+
+RAIDEN_POLL_INTERVAL = 0.75
 
 MATCHING_ALGORITHM = match_limit
 

@@ -60,7 +60,7 @@ class TakerListener(MessageListener):
     def _transform(self, message):
         if isinstance(message,
                       messages.ProvenCommitment) and message.commitment.offer_id == self.offer.offer_id:  # TODO check more
-            return message.sender
+            return message
         else:
             return None
 

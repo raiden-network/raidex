@@ -7,15 +7,17 @@ from raidex.raidex_node.order.offer import Offer
 ENTER_UNPROVED = Offer.on_enter_unproved.__name__
 ENTER_PUBLISHED = Offer.on_enter_published.__name__
 ENTER_PROVED = Offer.set_proof.__name__
+ENTER_WAIT_FOR_REFUND = Offer.initiate_refund.__name__
 
 OFFER_STATES = [
-    'created',
+    State('created'),
     State('unproved', on_enter=[ENTER_UNPROVED]),
     State('proved', on_enter=[ENTER_PROVED]),
     State('published', on_enter=[ENTER_PUBLISHED]),
-    'pending',
-    'swap_successful',
-    'cancelled',
+    State('exchanging'),
+    State('wait_for_refund', on_enter=[ENTER_WAIT_FOR_REFUND]),
+    State('completed'),
+    State('cancelled'),
 ]
 TRANSITIONS = [
 
@@ -35,8 +37,23 @@ TRANSITIONS = [
      'source': 'proved',
      'dest': 'published'},
     {'trigger': 'found_match',
+     'source': 'published',
+     'dest': 'exchanging'},
+    {'trigger': 'found_match',
      'source': 'proved',
-     'dest': 'pending'},
+     'dest': 'exchanging'},
+    {'trigger': 'timeout',
+     'source': 'exchanging',
+     'dest': 'exchanging'},
+    {'trigger': 'timeout',
+     'source': 'completed',
+     'dest': 'completed'},
+    {'trigger': 'received_inbound',
+     'source': 'exchanging',
+     'dest': 'wait_for_refund'},
+    {'trigger': 'received_inbound',
+     'source': 'wait_for_refund',
+     'dest': 'completed'},
 ]
 
 

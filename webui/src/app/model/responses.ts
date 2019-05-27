@@ -15,5 +15,6 @@ export interface OrderResponse {
     readonly price: string;
     readonly order_id: number;
     readonly filledAmount: string;
+    readonly open: Boolean;
     readonly canceled: Boolean;
 }

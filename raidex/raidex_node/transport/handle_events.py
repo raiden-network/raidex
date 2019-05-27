@@ -1,7 +1,10 @@
 from raidex.raidex_node.transport.events import *
 
 
-def handle_event(message_broker_client, event):
+def handle_event(transport, event):
 
     if isinstance(event, (SendMessageEvent, BroadcastEvent)):
-        message_broker_client.send(event.topic, event.message)
+        transport.send_message(event.topic, event.message)
+
+    if isinstance(event, SendProvenCommitmentEvent):
+        transport.proven_offer(event.target, event.offer, event.offer.proof)

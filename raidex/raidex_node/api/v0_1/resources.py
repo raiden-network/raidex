@@ -122,7 +122,7 @@ class LimitOrders(MethodView):
         data['amount'] = amount
         data['price'] = float(price)
 
-        order_id = on_api_call(self.raidex_node, data)
+        order_id = on_api_call(data)
 
         dict_ = dict(
             data=order_id
@@ -137,8 +137,9 @@ class LimitOrders(MethodView):
                     amount=order.amount,
                     price=order.price,
                     order_id=order.order_id,
-                    type=order.type_.name,
+                    type=order.order_type.name,
                     filledAmount=order.amount_traded,
+                    open=order.open,
                     canceled=order.canceled
                 ) for order in orders
             ]

@@ -11,7 +11,6 @@ import requests
 from eth_utils import encode_hex
 from raidex.raidex_node.trader.events import TraderEvent
 from raidex.utils.address import encode_address
-from raidex.raidex_node.trader.handle_events import handle_event
 from raidex.raidex_node.matching.match import Match
 from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.order.offer import OfferType
@@ -36,12 +35,9 @@ class TraderClient(Processor):
         self.market = market
         self.port = port
         self.api_version = api_version
-        self.base_amount = 100
-        self.quote_amount = 100
+        self.apiUrl = 'http://{}:{}/api/{}'.format(host, port, api_version)
         self.commitment_balance = commitment_amount
         self._is_running = False
-        self.apiUrl = 'http://{}:{}/api/{}'.format(host, port, api_version)
-        self.events = {}
 
     @property
     def is_running(self):
@@ -49,7 +45,7 @@ class TraderClient(Processor):
 
     def start(self):
         if not self.is_running:
-            BalanceUpdateTask(self).start()
+            #BalanceUpdateTask(self).start()
             self._is_running = True
 
     @make_async
@@ -195,7 +191,7 @@ class TraderClient(Processor):
                         if transformed_event is not None:
                             event_queue_async.put(transformed_event)
 
-        Greenlet.spawn(poll, target=request_events, args=(events,), step=2, poll_forever=True)
+        Greenlet.spawn(poll, target=request_events, args=(events,), step=0.75, poll_forever=True)
 
         return listener
 
@@ -208,6 +204,6 @@ class TraderClient(Processor):
 def encode(event, type_):
     if type_ == 'EventPaymentReceivedSuccess':
         return EventPaymentReceivedSuccess(event['initiator'], event['amount'], event['identifier'])
-    #raise Exception('encoding error: unknown-event-type')
+    # raise Exception('encoding error: unknown-event-type')
     return None
 

@@ -13,8 +13,8 @@ export class UserInteractionComponent implements OnInit {
 
     @Input() public market: any;
 
-    public buyOrder = new Order('BUY', '0', '0', 0, '0', false);
-    public sellOrder = new Order('SELL', '0', '0', 0, '0', false);
+    public buyOrder = new Order('BUY', '0', '0', 0, '0', true, false);
+    public sellOrder = new Order('SELL', '0', '0', 0, '0', true, false);
     public tempBuyId: number;
     public tempSellId: number;
     public orderArray: Order[];

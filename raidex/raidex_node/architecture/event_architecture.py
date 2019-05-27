@@ -10,25 +10,25 @@ class Processor:
 
 class Consumer(Greenlet):
     __slots__ = [
-        'consumer',
+        'processor',
         'queue',
         'on_event'
     ]
 
-    def __init__(self, queue: Queue, consumer: Processor, on_event):
+    def __init__(self, queue: Queue, processor: Processor, on_event):
         Greenlet.__init__(self)
         self.queue = queue
-        self.consumer = consumer
+        self.processor = processor
         self.on_event = on_event
 
     def _run(self):
         while True:
             event = self.queue.get()
-            print(f'EVENT: {event}, {self.__name__}')
-            self.on_event(self.consumer, event)
+            print(f'EVENT: {event.__class__.__name__}, {self.processor.__class__.__name__}')
+            self.on_event(self.processor, event)
 
     def get_types(self):
-        return self.consumer.event_types
+        return self.processor.event_types
 
 
 class Dispatch:
@@ -53,7 +53,7 @@ def dispatch_events(events):
     _dispatch(event_dispatch, events)
 
 
-def dispatch_state_change(state_changes):
+def dispatch_state_changes(state_changes):
     _dispatch(state_change_dispatch, state_changes)
 
 

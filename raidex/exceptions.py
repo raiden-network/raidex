@@ -12,3 +12,6 @@ class UnknownCommitmentService(RaidexException):
 
 class UntradableAssetPair(RaidexException):
     pass
+
+class OfferTimedOutException(RaidexException):
+    pass

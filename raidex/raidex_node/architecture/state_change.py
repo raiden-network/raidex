@@ -1,6 +1,23 @@
+from raidex.raidex_node.offer_book import OfferBookEntry
+
+class EventIterator:
+
+    def __init__(self, event):
+        self.event = event
+        self.iterated = False
+
+    def __next__(self):
+        if not self.iterated:
+            self.iterated = True
+            return self.event
+        else:
+            raise StopIteration
+
 
 class StateChange:
-    pass
+
+    def __iter__(self):
+        return EventIterator(self)
 
 
 class NewLimitOrderStateChange(StateChange):
@@ -35,22 +52,32 @@ class CommitmentProofStateChange(OfferStateChange):
         self.commitment_proof = commitment_proof
 
 
-class ProvenOfferStateChange:
+class ProvenCommitmentStateChange(StateChange):
+
+    def __init__(self, commitment, commitment_proof):
+        self.commitment = commitment
+        self.commitment_proof = commitment_proof
+
+
+class ProvenOfferStateChange(StateChange):
 
     def __init__(self, proven_offer_message):
         self.proven_offer_message = proven_offer_message
 
 
-class OfferPublishedStateChange:
+class OfferPublishedStateChange(StateChange):
 
-    def __init__(self, offer):
-        self.offer = offer
+    def __init__(self, offer_entry: OfferBookEntry):
+        self.offer_entry = offer_entry
 
 
-class PaymentFailedStateChange:
+class PaymentFailedStateChange(StateChange):
 
     def __init__(self, offer_id, response):
         self.offer_id = offer_id
         self.response = response
 
 
+class TransferReceivedStateChange(StateChange):
+    def __init__(self, raiden_event):
+        self.raiden_event = raiden_event

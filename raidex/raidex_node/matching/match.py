@@ -1,9 +1,10 @@
 
 from raidex.raidex_node.architecture.event_architecture import dispatch_events
-
 from raidex.raidex_node.order.offer import Offer, TraderRole
 from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.trader.events import SwapInitEvent
+from raidex.raidex_node.trader.listener.events import ExpectInboundEvent
+from datetime import datetime
 
 
 class Match:
@@ -22,6 +23,7 @@ class Match:
         self.offer = offer
         self.trader_role = trader_role
         self.target_data = Match.TargetData(commitment, commitment_proof)
+        self.match_time = datetime.utcnow()
 
     def is_maker(self):
         if self.trader_role == TraderRole.MAKER:
@@ -45,6 +47,13 @@ class Match:
         self.offer.found_match()
         self.on_enter_exchanging()
 
+    def received_inbound(self, raiden_event):
+        self.offer.received_inbound(raiden_event)
+        self.completed()
+
+    def completed(self):
+        print(datetime.utcnow() - self.match_time)
+
     @property
     def target(self):
         return self.target_data.commitment.sender
@@ -56,14 +65,14 @@ class Match:
         return self.target_data.commitment_proof.secret_hash
 
     def on_enter_exchanging(self):
-        dispatch_events([SwapInitEvent(self)])
+        dispatch_events([SwapInitEvent(self), ExpectInboundEvent(self.target, self.offer.offer_id)])
 
 
 class MatchFactory:
 
     @staticmethod
-    def maker_match(offer_entry):
-        Match(offer_entry.offer, TraderRole.MAKER)
+    def maker_match(offer, commitment, commitment_proof):
+        return Match(offer, TraderRole.MAKER, commitment, commitment_proof)
 
     @staticmethod
     def taker_match(offer, offer_entry):

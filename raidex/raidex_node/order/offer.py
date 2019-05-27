@@ -8,7 +8,7 @@ from raidex.raidex_node.architecture.event_architecture import dispatch_events
 from raidex.utils import pex
 from raidex.utils.timestamp import to_str_repr, time_plus
 from raidex.utils.random import create_random_32_bytes_id
-from raidex.raidex_node.commitment_service.events import CommitEvent, CommitmentProvedEvent
+from raidex.raidex_node.commitment_service.events import CommitEvent, CommitmentProvedEvent, ReceivedInboundEvent
 
 
 class TraderRole(Enum):
@@ -54,6 +54,18 @@ class Offer(BasicOffer):
         self.trader_role = trader_role
         self.proof = None
 
+    @property
+    def buy_amount(self):
+        if self.is_buy():
+            return self.base_amount
+        return self.quote_amount
+
+    @property
+    def sell_amount(self):
+        if self.is_buy():
+            return self.quote_amount
+        return self.base_amount
+
     def is_maker(self):
         if self.trader_role == TraderRole.MAKER:
             return True
@@ -82,13 +94,15 @@ class Offer(BasicOffer):
     def on_enter_published(self):
         dispatch_events([CommitmentProvedEvent(offer=self)])
 
+    def initiate_refund(self, raiden_event):
+        dispatch_events([ReceivedInboundEvent(offer=self, raiden_event=raiden_event)])
+
     def log_state(self, *args):
         if hasattr(self, 'state'):
             print(f'State Changed to: {self.state}')
 
 
 class OfferFactory:
-
 
     @staticmethod
     def create_offer(offer_type, base_amount, quote_amount, offer_lifetime, trader_role):

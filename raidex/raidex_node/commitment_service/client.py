@@ -4,8 +4,9 @@ from gevent.event import AsyncResult
 from eth_utils import int_to_big_endian
 
 from raidex import messages
-from raidex.raidex_node.architecture.event_architecture import dispatch_events, dispatch_state_change
+from raidex.raidex_node.architecture.event_architecture import dispatch_events, dispatch_state_changes
 from raidex.raidex_node.transport.events import BroadcastEvent
+from raidex.raidex_node.commitment_service.events import CommitmentServiceEvent
 from raidex.raidex_node.architecture.state_change import PaymentFailedStateChange, ProvenOfferStateChange
 from raidex.raidex_node.architecture.event_architecture import Processor
 from raidex.raidex_node.commitment_service.tasks import CommitmentProofTask, RefundReceivedTask
@@ -13,6 +14,7 @@ from raidex.message_broker.listeners import CommitmentProofListener
 from raidex.raidex_node.order.offer import OfferType
 from raidex.trader_mock.trader import TransferReceivedListener
 from raidex.raidex_node.trader.events import TransferEvent
+from raidex.raidex_node.trader.listener.events import ExpectInboundEvent
 from raidex.utils import timestamp, pex
 from raidex.utils.gevent_helpers import make_async
 from raidex.utils.address import binary_address
@@ -40,6 +42,7 @@ class CommitmentServiceClient(Processor):
 
     def __init__(self, signer, token_pair, trader_client, message_broker, commitment_service_address,
                  fee_rate):
+        super(CommitmentServiceClient, self).__init__(CommitmentServiceEvent)
         self.node_address = signer.checksum_address
         self.token_pair = token_pair
         self.commitment_service_address = binary_address(commitment_service_address)
@@ -52,8 +55,6 @@ class CommitmentServiceClient(Processor):
         self.maker_commitments = dict()  # offer_id -> commitment
         self.commitment_amount = 1
 
-        self.state_change_q = None
-
     def start(self):
         RefundReceivedTask(self.commitment_service_address,
                            self.fee_rate,
@@ -63,11 +64,7 @@ class CommitmentServiceClient(Processor):
                            TransferReceivedListener(self.trader_client, initiator=self.commitment_service_address)).start()
 
         CommitmentProofTask(self.commitment_proofs, CommitmentProofListener(self.message_broker,
-                                                                            topic=self.node_address),
-                            self.state_change_q).start()
-
-    def add_event_queue(self, offer_event_queue):
-        self.state_change_q = offer_event_queue
+                                                                            topic=self.node_address)).start()
 
     def _create_taker_commitment_msg(self, offer, offer_hash, commitment_amount):
 
@@ -160,7 +157,7 @@ class CommitmentServiceClient(Processor):
             log.debug(
                 'Trader failed to transfer maker-commitment for offer: pex(id)={}'.format(pex(int_to_big_endian(offer.offer_id))))
 
-            dispatch_state_change(PaymentFailedStateChange(offer.offer_id, success))
+            dispatch_state_changes(PaymentFailedStateChange(offer.offer_id, success))
             return None
 
         seconds_to_timeout = timestamp.seconds_to_timeout(timeout)
@@ -179,7 +176,7 @@ class CommitmentServiceClient(Processor):
         assert isinstance(commitment_proof_msg, messages.CommitmentProof)
         assert commitment_proof_msg.sender == self.commitment_service_address
         proven_offer_msg = self._create_proven_offer_msg(offer_msg, commitment_msg, commitment_proof_msg)
-        dispatch_state_change(ProvenOfferStateChange(proven_offer_msg))
+        dispatch_state_changes(ProvenOfferStateChange(proven_offer_msg))
         dispatch_events([BroadcastEvent(proven_offer_msg)])
         return proven_offer_msg
 
@@ -235,7 +232,7 @@ class CommitmentServiceClient(Processor):
         proven_commitment = messages.ProvenCommitment(commitment_msg, commitment_proof_msg)
         self._sign(proven_commitment)
         proven_offer_msg = self._create_proven_offer_msg(offer_msg, commitment_msg, commitment_proof_msg)
-        dispatch_state_change(ProvenOfferStateChange(proven_offer_msg))
+        dispatch_state_changes(ProvenOfferStateChange(proven_offer_msg))
 
         return proven_commitment
 
@@ -248,6 +245,7 @@ class CommitmentServiceClient(Processor):
         # type: (int) -> None
         swap_execution = self._create_swap_execution_msg(offer_id, timestamp.time_int())
         self._send_message_to_commitment_service(swap_execution)
+        dispatch_events([ExpectInboundEvent(self.commitment_service_address, offer_id)])
 
     def create_taken(self, offer_id):
         # leave until the code using this method is changed

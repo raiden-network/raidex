@@ -284,6 +284,17 @@ class CommitmentProof(Signed):
         super(CommitmentProof, self).__init__(commitment_sig, secret, secret_hash, offer_id, signature, cmdid)
 
 
+class CancellationProof(Signed):
+
+    fields = [
+        ('commitment_proof', CommitmentProof)
+    ] + Signed.fields
+
+    def __init__(self, commitment_sig, secret, secret_hash, offer_id, signature=None, cmdid=None):
+        cmdid = get_cmdid_for_class(self.__class__)
+        super(CommitmentProof, self).__init__(commitment_sig, secret, secret_hash, offer_id, signature, cmdid)
+
+
 class ProvenOffer(Signed):
     """A `ProvenOffer` is published by a market maker and pushed to one ore more broadcast services.
     A taker should recover the commitment service address from the `commitment_proof` and commit to it, if
@@ -428,6 +439,7 @@ class SwapCompleted(SwapExecution):
         cmdid = get_cmdid_for_class(self.__class__)
         super(SwapCompleted, self).__init__(offer_id, timestamp, signature, cmdid)
 
+
 msg_types_map = dict(
         offer=SwapOffer,
         proven_offer=ProvenOffer,
@@ -439,6 +451,7 @@ msg_types_map = dict(
         swap_executed=SwapExecution,
         swap_completed=SwapCompleted,
         offer_taken=OfferTaken,
+        cancellation_proof=CancellationProof
         )
 
 types_msg_map = {value: key for key, value in msg_types_map.items()}
@@ -454,6 +467,7 @@ msg_cmdid_map = dict(
         swap_executed=8,
         swap_completed=9,
         offer_taken=10,
+        cancellation_proof=11
         )
 
 

@@ -117,12 +117,14 @@ export class RaidexService {
             mergeMap(() => this.http.get<ApiResponse<Array<OrderResponse>>>(`${this.api}/markets/dummy/orders/limit`).pipe(
                 map((response) => {
                     const data = response.data;
+
                     return data.map((elem) => new Order(
                         elem.type,
                         format.formatCurrency(elem.amount, 3),
                         format.formatCurrency(elem.price, 18-3),
                         elem.order_id,
                         format.formatCurrency(elem.filledAmount, 3),
+                        elem.open,
                         elem.canceled
                     ));
                 }))),

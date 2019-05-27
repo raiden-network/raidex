@@ -3,14 +3,14 @@ import structlog
 import json
 import requests
 import gevent
-from gevent import monkey, Greenlet
+from gevent import monkey
 from gevent.queue import Queue
 from raidex.utils.address import encode_topic
 
 from raidex.message_broker.message_broker import Listener
 import raidex.messages as messages
-from raidex.raidex_node.transport.handle_events import handle_event
-from raidex.raidex_node.architecture.event_architecture import Processor, Consumer
+from raidex.raidex_node.transport.events import TransportEvent
+from raidex.raidex_node.architecture.event_architecture import Processor
 
 monkey.patch_socket()
 log = structlog.get_logger("TOPIC")
@@ -93,7 +93,7 @@ class StreamingRequestTask(gevent.Greenlet):
             self.response_iter = None
 
 
-class MessageBrokerClient(Processor):
+class MessageBrokerClient:
     """Handles the communication with other nodes"""
 
     def __init__(self, host='localhost', port=5000, address=''):
@@ -171,27 +171,6 @@ class MessageBrokerClient(Processor):
         del self.listener_task_map[listener]
         if not task.has_listeners:
             task.stop()
-
-
-class MessageBrokerClient(Consumer):
-    __slots__ = [
-        'message_broker_client',
-        'event_queue'
-    ]
-
-    def __init__(self, event_queue: Queue, message_broker_client: MessageBrokerClient):
-        Greenlet.__init__(self)
-        self.event_queue = event_queue
-        self.message_broker = message_broker_client
-
-    def _run(self):
-        while True:
-            event = self.event_queue.get()
-            print(f'EVENT: {event}, {self.__class__}')
-            self.on_event(event)
-
-    def on_event(self, event):
-        handle_event(self.message_broker, event)
 
 
 def encode(message):

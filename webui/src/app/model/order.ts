@@ -7,6 +7,7 @@ export class Order {
         public price: string,
         public id: number,
         public filledAmount: string,
+        public open: Boolean,
         public canceled: Boolean
     ) {
     }
@@ -25,7 +26,7 @@ export class Order {
     }
 
     get status(): String {
-        return this.canceled ? 'canceling' : 'open';
+        return this.canceled ? 'canceled' : this.open ? 'open' : 'closed';
     }
 
     get totalAmount(): String {

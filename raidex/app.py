@@ -1,25 +1,31 @@
-from gevent import Greenlet
+
 
 from raidex.account import Account
 from raidex.signing import Signer
 from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.commitment_service.client import CommitmentServiceClient
-from raidex.raidex_node.commitment_service.events import CommitmentServiceEvent
+from raidex.raidex_node.commitment_service.handle_events import handle_event as cs_handle_event
 from raidex.raidex_node.trader.client import TraderClient
-from raidex.raidex_node.trader.events import TraderEvent
+from raidex.raidex_node.trader.handle_events import handle_event as trader_handle_event
 from raidex.raidex_node.transport.client import MessageBrokerClient
-from raidex.raidex_node.transport.events import TransportEvent
+from raidex.raidex_node.transport.transport import Transport
+from raidex.raidex_node.transport.handle_events import handle_event as transport_handle_event
 from raidex.utils.address import binary_address
 from raidex.raidex_node.raidex_node import RaidexNode
+from raidex.raidex_node.trader.listener.handle_events import handle_event as raiden_listener_handle_event
+from raidex.raidex_node.trader.listener.raiden_listener import RaidenListener
 from raidex.raidex_node.architecture.event_architecture import event_dispatch, state_change_dispatch
 from raidex.raidex_node.handle_state_change import handle_state_change
+from raidex.raidex_node.trader.listener.listen_for_events import raiden_poll
 
 
-class App(Greenlet):
+class App:
 
     def __init__(self, trader, cs_client, transport, market, raidex_node):
 
         self.trader = trader
+        self.raiden_listener = RaidenListener(trader)
+        self.raiden_poll = raiden_poll(trader)
         self.cs_client = cs_client
         self.transport = transport
         self.market = market
@@ -29,17 +35,20 @@ class App(Greenlet):
         self._setup_state_change_handling()
 
     def _setup_event_handling(self):
-        event_dispatch.connect_consumer(self.trader, TraderEvent)
-        event_dispatch.connect_consumer(self.cs_client, CommitmentServiceEvent)
-        event_dispatch.connect_consumer(self.transport, TransportEvent)
+        event_dispatch.connect_consumer(self.trader, trader_handle_event)
+        event_dispatch.connect_consumer(self.cs_client, cs_handle_event)
+        event_dispatch.connect_consumer(self.transport, transport_handle_event)
+        event_dispatch.connect_consumer(self.raiden_listener, raiden_listener_handle_event)
 
     def _setup_state_change_handling(self):
         state_change_dispatch.connect_consumer(self.raidex_node, handle_state_change)
 
-    def _run(self):
+    def start(self):
         self.raidex_node.start()
         # start task for updating the balance of the trader:
         self.trader.start()
+        self.raiden_poll.start()
+        print("after raiden listener start")
         # start the tasks for the commitment-service-client
         self.cs_client.start()
         event_dispatch.start_consumer_tasks()
@@ -82,6 +91,8 @@ class App(Greenlet):
         message_broker = MessageBrokerClient(host=message_broker_host, port=message_broker_port,
                                              address=signer.checksum_address)
 
+        transport = Transport(message_broker, token_pair, signer)
+
         commitment_service_client = CommitmentServiceClient(signer, token_pair, trader_client,
                                                             message_broker, cs_address, fee_rate=cs_fee_rate)
 
@@ -93,7 +104,7 @@ class App(Greenlet):
         if offer_lifetime is not None:
             raidex_node.default_offer_lifetime = offer_lifetime
 
-        app = App(trader_client, commitment_service_client, message_broker, token_pair, raidex_node)
+        app = App(trader_client, commitment_service_client, transport, token_pair, raidex_node)
         return app
 
     @classmethod

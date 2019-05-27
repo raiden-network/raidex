@@ -73,7 +73,7 @@ def main():
     raidex_app.start()
 
     if args.api is True:
-        api = APIServer('', args.api_port, raidex_app)
+        api = APIServer('', args.api_port, raidex_app.raidex_node)
         api.start()
 
     bots = args.bots

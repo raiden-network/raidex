@@ -11,6 +11,7 @@ class LimitOrder:
         'amount',
         'price',
         'lifetime',
+        'corresponding_offers'
     ]
 
     def __init__(self, order_id, order_type: OfferType, amount: int, price: int, lifetime: int = DEFAULT_OFFER_LIFETIME):
@@ -19,6 +20,7 @@ class LimitOrder:
         self.amount = amount
         self.price = price
         self.lifetime = lifetime
+        self.corresponding_offers = dict()
 
     @classmethod
     def from_dict(cls, data):
@@ -44,4 +46,43 @@ class LimitOrder:
             data['lifetime']
         )
         return obj
+
+    def add_offer(self, offer):
+        self.corresponding_offers[offer.offer_id] = offer
+        offer.initiating()
+
+    def cancel_order(self):
+
+        for offer in self.corresponding_offers.values():
+            offer.cancel()
+
+    @property
+    def open(self):
+        for offer in self.corresponding_offers.values():
+            if offer.state == 'published':
+                return True
+        return False
+
+    @property
+    def completed(self):
+        for offer in self.corresponding_offers.values():
+            if offer.state != 'completed':
+                return False
+        return True
+
+    @property
+    def canceled(self):
+        for offer in self.corresponding_offers.values():
+            if offer.state == 'cancelled':
+                return True
+        return False
+
+    @property
+    def amount_traded(self):
+        amount_traded = 0
+
+        for offer in self.corresponding_offers.values():
+            if offer.state == 'completed':
+                amount_traded += offer.base_amount
+        return amount_traded
 

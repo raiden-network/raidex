@@ -2,7 +2,6 @@ from collections import namedtuple, defaultdict
 from eth_utils import encode_hex
 import structlog
 from gevent.queue import Queue
-from raidex.utils import pex
 
 log = structlog.get_logger('message_broker.global')
 

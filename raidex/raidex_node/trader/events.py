@@ -16,3 +16,5 @@ class SwapInitEvent(TraderEvent):
     def __init__(self, match):
         self.match = match
 
+
+
