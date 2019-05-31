@@ -122,7 +122,7 @@ class LimitOrders(MethodView):
         data['amount'] = amount
         data['price'] = float(price)
 
-        order_id = on_api_call(data)
+        order_id = on_api_call(self.raidex_node, data)
 
         dict_ = dict(
             data=order_id
@@ -147,7 +147,18 @@ class LimitOrders(MethodView):
         return jsonify(dict_)
 
     def delete(self, order_id):
-        self.raidex_node.cancel_limit_order(order_id)
+
+        data = dict()
+        data['event'] = 'CancelLimitOrder'
+        data['order_id'] = order_id
+
+        try:
+            order_id = on_api_call(self.raidex_node, data)
+
+        except:
+            abort(400, 'Order not cancelable anymore')
+            print("CancelOrder failed")
+
         dict_ = dict(
             data=order_id
         )

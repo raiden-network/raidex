@@ -24,8 +24,24 @@ class DataManager:
     def get_open_orders(self):
         return filter(lambda x: x.open, self.orders.values())
 
+    def cancel_order(self, order_id):
+
+        order = self.orders[order_id]
+        open_offers = order.get_open_offers()
+
+        print(open_offers)
+        for offer in open_offers:
+            offer.timeout()
+            self.timeout_handler.clean_up_timeout(offer)
+
+    def timeout_offer(self, offer):
+
+        offer.timeout()
+        self.timeout_handler.clean_up_timeout(offer.offer_id)
+
     def process_order(self, order: LimitOrder):
         self.orders[order.order_id] = order
+        print(f"added order {order.order_id}")
         matching_offer_entries, amount_left = self.matching_engine.match_new_order(order)
 
         for offer_entry in matching_offer_entries:

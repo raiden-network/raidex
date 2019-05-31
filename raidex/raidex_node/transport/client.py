@@ -127,7 +127,6 @@ class MessageBrokerClient:
         # HACK, allow 'broadcast' as non-binary input, everything else should be
         # binary data/ decoded addresses
         topic = encode_topic(topic)
-
         return self._listen_on(topic, transform)
 
     def _listen_on(self, topic, transform=None):

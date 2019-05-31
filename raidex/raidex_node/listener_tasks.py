@@ -54,7 +54,6 @@ class OfferBookTask(ListenerTask):
         dispatch_state_changes(OfferPublishedStateChange(offer_entry))
 
 
-
 class SwapCompletedTask(ListenerTask):
     def __init__(self, trades, message_broker):
         self.trades = trades

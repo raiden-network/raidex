@@ -11,7 +11,7 @@ class LimitOrder:
         'amount',
         'price',
         'lifetime',
-        'corresponding_offers'
+        'corresponding_offers',
     ]
 
     def __init__(self, order_id, order_type: OfferType, amount: int, price: int, lifetime: int = DEFAULT_OFFER_LIFETIME):
@@ -51,29 +51,38 @@ class LimitOrder:
         self.corresponding_offers[offer.offer_id] = offer
         offer.initiating()
 
-    def cancel_order(self):
+    def get_open_offers(self):
+
+        open_offers = list()
 
         for offer in self.corresponding_offers.values():
-            offer.cancel()
+            if offer.status == 'open':
+                open_offers.append(offer)
+
+        return open_offers
 
     @property
     def open(self):
         for offer in self.corresponding_offers.values():
-            if offer.state == 'published':
+            if offer.status == 'open':
                 return True
         return False
 
     @property
     def completed(self):
+
+        if self.open:
+            return False
+
         for offer in self.corresponding_offers.values():
-            if offer.state != 'completed':
-                return False
-        return True
+            if offer.status == 'completed':
+                return True
+        return False
 
     @property
     def canceled(self):
         for offer in self.corresponding_offers.values():
-            if offer.state == 'cancelled':
+            if offer.status == 'canceled':
                 return True
         return False
 

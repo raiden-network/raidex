@@ -20,14 +20,16 @@ class TimeoutHandler:
     def __init__(self):
         self.timeout_greenlets = dict()
 
-    def create_new_timeout(self, offer_id, threshold=0):
+    def create_new_timeout(self, offer, threshold=0):
+
+        offer_id = offer.offer_id
 
         if self._has_greenlet(offer_id) and not self._is_still_alive(offer_id):
             return False
 
         self.clean_up_timeout(offer_id)
-        timeout_greenlet = future_timeout(offer_id.offer_id, offer_id.timeout_date, threshold)
-        self.timeout_greenlets[offer_id.offer_id] = timeout_greenlet
+        timeout_greenlet = future_timeout(offer_id, offer.timeout_date, threshold)
+        self.timeout_greenlets[offer_id] = timeout_greenlet
         return True
 
     def _has_greenlet(self, offer_id):
@@ -37,7 +39,7 @@ class TimeoutHandler:
 
     def _is_still_alive(self, offer_id):
 
-        if offer_id in self.timeout_greenlets and not self.timeout_greenlets[offer_id]:
+        if offer_id in self.timeout_greenlets and not self.timeout_greenlets[offer_id].dead:
             return True
         return False
 

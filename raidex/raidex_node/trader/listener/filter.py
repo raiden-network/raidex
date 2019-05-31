@@ -18,10 +18,6 @@ class TransferReceivedFilter(RaidenEventFilter):
         self.identifier = identifier
 
     def _filter(self, event):
-
-        print(f'{self.initiator} , {event.initiator}')
-        print(f'{self.identifier} , {event.identifier}')
-
         if not isinstance(event, PaymentReceivedEvent):
             return False
         if event.initiator != self.initiator:

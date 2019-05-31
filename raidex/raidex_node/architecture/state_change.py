@@ -1,5 +1,6 @@
 from raidex.raidex_node.offer_book import OfferBookEntry
 
+
 class EventIterator:
 
     def __init__(self, event):
@@ -26,6 +27,13 @@ class NewLimitOrderStateChange(StateChange):
         self.data = data
 
 
+class CancelLimitOrderStateChange(StateChange):
+
+    def __init__(self, data):
+        self.data = data
+
+
+
 class OfferStateChange(StateChange):
 
     def __init__(self, offer_id):
@@ -50,6 +58,13 @@ class CommitmentProofStateChange(OfferStateChange):
         super(CommitmentProofStateChange, self).__init__(commitment_proof.offer_id)
         self.commitment_signature = commitment_signature
         self.commitment_proof = commitment_proof
+
+
+class CancellationProofStateChange(OfferStateChange):
+
+    def __init__(self, cancellation_proof):
+        super(CancellationProofStateChange, self).__init__(cancellation_proof.offer_id)
+        self.cancellation_proof = cancellation_proof
 
 
 class ProvenCommitmentStateChange(StateChange):

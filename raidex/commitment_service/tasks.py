@@ -8,7 +8,12 @@ from raidex.commitment_service.swap import SwapFactory
 from raidex.raidex_node.listener_tasks import ListenerTask
 from raidex.trader_mock.trader import TransferReceipt
 from raidex.trader_mock.trader import TransferReceivedListener
-from raidex.message_broker.listeners import TakerCommitmentListener, MakerCommitmentListener, SwapExecutionListener
+from raidex.message_broker.listeners import (
+    TakerCommitmentListener,
+    MakerCommitmentListener,
+    SwapExecutionListener,
+    CancellationListener,
+)
 
 log = structlog.get_logger('commitment_service')
 log_swaps = structlog.get_logger('commitment_service.asset_swaps')
@@ -113,6 +118,27 @@ class TransferReceivedTask(ListenerTask):
             pass
 
 
+class CancellationRequestTask(ListenerTask):
+
+    def __init__(self, swaps, message_broker, self_address):
+        self.swaps = swaps
+        super(CancellationRequestTask, self).__init__(CancellationListener(message_broker, topic=self_address))
+
+    def process(self, data):
+        cancellation_request = data
+        if not hasattr(cancellation_request, 'offer_id'):
+            raise ValueError()
+        if not isinstance(cancellation_request, messages.Cancellation):
+            raise ValueError()
+        offer_id = cancellation_request.offer_id
+
+        print("received cancellation request")
+        swap = self.swaps.get(offer_id)
+
+        if swap is not None:
+            swap.hand_cancellation_msg()
+
+
 class TakerCommitmentTask(ListenerTask):
 
     def __init__(self, swaps, message_broker, self_address):
@@ -154,7 +180,6 @@ class MakerCommitmentTask(ListenerTask):
 
         if swap is not None:
             swap.hand_maker_commitment_msg(maker_commitment_msg)
-
 
 
 class SwapExecutionTask(ListenerTask):

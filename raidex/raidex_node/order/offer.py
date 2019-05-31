@@ -8,7 +8,7 @@ from raidex.raidex_node.architecture.event_architecture import dispatch_events
 from raidex.utils import pex
 from raidex.utils.timestamp import to_str_repr, time_plus
 from raidex.utils.random import create_random_32_bytes_id
-from raidex.raidex_node.commitment_service.events import CommitEvent, CommitmentProvedEvent, ReceivedInboundEvent
+from raidex.raidex_node.commitment_service.events import CommitEvent, CommitmentProvedEvent, ReceivedInboundEvent, CancellationRequestEvent
 
 
 class TraderRole(Enum):
@@ -97,9 +97,14 @@ class Offer(BasicOffer):
     def initiate_refund(self, raiden_event):
         dispatch_events([ReceivedInboundEvent(offer=self, raiden_event=raiden_event)])
 
+    def on_enter_cancellation(self):
+        dispatch_events([CancellationRequestEvent(offer=self)])
+
     def log_state(self, *args):
         if hasattr(self, 'state'):
-            print(f'State Changed to: {self.state}')
+            print(f'Offer {self.offer_id} - State Changed to: {self.state}')
+        if hasattr(self, 'status'):
+            print(f'Status: {self.status}')
 
 
 class OfferFactory:

@@ -23,3 +23,10 @@ class SendProvenCommitmentEvent(TransportEvent):
         self.target = target
         self.offer = offer
 
+
+class CancellationEvent(TransportEvent):
+
+    def __init__(self, target, offer_id):
+        self.target = target
+        self.offer_id = offer_id
+

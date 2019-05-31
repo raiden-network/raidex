@@ -17,6 +17,8 @@ def handle_event(commitment_service: CommitmentServiceClient, event):
         spawn(wait_for_taker, event, commitment_service.message_broker)
     if isinstance(event, ReceivedInboundEvent):
         commitment_service.report_swap_executed(event.offer.offer_id)
+    if isinstance(event, CancellationRequestEvent):
+        commitment_service.request_cancellation(event.offer)
 
 
 def wait_for_taker(event, message_broker):

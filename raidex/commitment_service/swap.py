@@ -47,6 +47,7 @@ class SwapCommitment(object):
         self.offer_id = offer_id
         self.maker_commitment_msg = None
         self.taker_commitment_msg = None
+        self.maker_commitment_proof = None
         self.maker_swap_execution_msg = None
         self.taker_swap_execution_msg = None
         self.maker_transfer_receipt = None
@@ -116,6 +117,7 @@ class SwapCommitment(object):
 
     def send_maker_commitment_proof(self):
         commitment_proof_msg = messages.CommitmentProof(self.maker_commitment_msg.signature, self.secret, self.secret_hash, self.offer_id)
+        self.maker_commitment_proof = commitment_proof_msg
         self.queue_send(commitment_proof_msg, self.maker_address)
 
     def send_taker_commitment_proof(self):
@@ -135,6 +137,9 @@ class SwapCommitment(object):
     def refund_maker(self):
         # This has to go through!
         self.queue_refund(self.maker_transfer_receipt)
+        print(f'{type(self.offer_id)}, {self.offer_id}')
+        cancellation_proof_msg = messages.CancellationProof(self.offer_id, self.maker_commitment_proof)
+        self.queue_send(cancellation_proof_msg, self.maker_address)
 
     def refund_maker_with_fee(self):
         self.queue_refund(self.maker_transfer_receipt, claim_fee=True)
@@ -142,6 +147,8 @@ class SwapCommitment(object):
     def refund_taker_with_fee(self):
         self.queue_refund(self.taker_transfer_receipt, claim_fee=True)
 
+    def hand_cancellation_msg(self):
+        self._state_machine.timeout()
 
     #def __repr__(self):
     #    return '<%s(%s)>' % (self.__class__.__name__, )

@@ -11,7 +11,7 @@ from raidex.commitment_service.tasks import (
     MessageSenderTask,
     TransferReceivedTask,
     MakerCommitmentTask,
-    TakerCommitmentTask,
+    CancellationRequestTask,
     SwapExecutionTask
 )
 from raidex.utils import timestamp
@@ -113,7 +113,7 @@ def test_taker_commitment_task(mocker, swaps, factory, taker_commitment_msg_sign
     swap = factory.make_swap(offer_id)
     assert len(swaps) == 1
 
-    taker_commitment_task = TakerCommitmentTask(swaps, message_broker, commitment_service_address)
+    taker_commitment_task = CancellationRequestTask(swaps, message_broker, commitment_service_address)
     taker_commitment_task.start()
     switch_context()
 

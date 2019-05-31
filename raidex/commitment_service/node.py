@@ -9,8 +9,9 @@ from raidex.commitment_service.tasks import (
     MessageSenderTask,
     MakerCommitmentTask,
     TakerCommitmentTask,
+    CancellationRequestTask,
     SwapExecutionTask,
-    TransferReceivedTask
+    TransferReceivedTask,
 )
 
 from eth_utils import to_checksum_address
@@ -55,6 +56,7 @@ class CommitmentService(object):
         self.trader_client.start()
         MakerCommitmentTask(self.swaps, self.refund_queue, self.message_queue, self.message_broker, self.address).start()
         TakerCommitmentTask(self.swaps, self.message_broker, self.address).start()
+        CancellationRequestTask(self.swaps, self.message_broker, self.address).start()
         SwapExecutionTask(self.swaps, self.message_broker, self.address).start()
         TransferReceivedTask(self.swaps, self.trader_client).start()
         RefundTask(self.trader_client, self.refund_queue, KOVAN_RTT_ADDRESS, self.fee_rate).start()

@@ -113,7 +113,7 @@ export class RaidexService {
     }
 
     public getLimitOrders() {
-        return timer(0, 1000).pipe(
+        return timer(0, 500).pipe(
             mergeMap(() => this.http.get<ApiResponse<Array<OrderResponse>>>(`${this.api}/markets/dummy/orders/limit`).pipe(
                 map((response) => {
                     const data = response.data;

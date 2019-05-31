@@ -5,7 +5,7 @@ from eth_utils import int_to_big_endian
 
 from raidex import messages
 from raidex.raidex_node.architecture.event_architecture import dispatch_events, dispatch_state_changes
-from raidex.raidex_node.transport.events import BroadcastEvent
+from raidex.raidex_node.transport.events import BroadcastEvent, CancellationEvent
 from raidex.raidex_node.commitment_service.events import CommitmentServiceEvent
 from raidex.raidex_node.architecture.state_change import PaymentFailedStateChange, ProvenOfferStateChange
 from raidex.raidex_node.architecture.event_architecture import Processor
@@ -176,7 +176,6 @@ class CommitmentServiceClient(Processor):
         assert isinstance(commitment_proof_msg, messages.CommitmentProof)
         assert commitment_proof_msg.sender == self.commitment_service_address
         proven_offer_msg = self._create_proven_offer_msg(offer_msg, commitment_msg, commitment_proof_msg)
-        dispatch_state_changes(ProvenOfferStateChange(proven_offer_msg))
         dispatch_events([BroadcastEvent(proven_offer_msg)])
         return proven_offer_msg
 
@@ -246,6 +245,10 @@ class CommitmentServiceClient(Processor):
         swap_execution = self._create_swap_execution_msg(offer_id, timestamp.time_int())
         self._send_message_to_commitment_service(swap_execution)
         dispatch_events([ExpectInboundEvent(self.commitment_service_address, offer_id)])
+
+    def request_cancellation(self, offer):
+        cancellation_request_event = CancellationEvent(self.commitment_service_address, offer.offer_id)
+        dispatch_events([cancellation_request_event])
 
     def create_taken(self, offer_id):
         # leave until the code using this method is changed

@@ -39,7 +39,9 @@ class MessageListener(object):
 
     def start(self):
         """Starts listening for new messages"""
+
         self.listener = self.message_broker.listen_on(self.topic, self._transform)
+        print(f"LISTEN ON TOPIC: {self.topic} , {self.__class__.__name__}")
 
     def stop(self):
         """Stops listening for new messages"""
@@ -60,6 +62,20 @@ class TakerListener(MessageListener):
     def _transform(self, message):
         if isinstance(message,
                       messages.ProvenCommitment) and message.commitment.offer_id == self.offer.offer_id:  # TODO check more
+            return message
+        else:
+            return None
+
+
+class CancellationListener(MessageListener):
+
+    def __init__(self, offer, message_broker):
+        self.offer = offer
+        MessageListener.__init__(self, message_broker, message_broker.address)
+
+    def _transform(self, message):
+        if isinstance(message,
+                      messages.CancellationProof):  # TODO check more
             return message
         else:
             return None
@@ -125,6 +141,13 @@ class TakerCommitmentListener(MessageListener):
             return None
         return message
 
+class CancellationListener(MessageListener):
+
+    def _transform(self, message):
+        if not isinstance(message, messages.Cancellation):
+            return None
+        return message
+
 
 class MakerCommitmentListener(MessageListener):
 
@@ -146,6 +169,6 @@ class SwapCompletedListener(MessageListener):
 class CommitmentProofListener(MessageListener):
 
     def _transform(self, message):
-        if not isinstance(message, messages.CommitmentProof):
+        if not isinstance(message, (messages.CommitmentProof, messages.CancellationProof)):
             return None
         return message

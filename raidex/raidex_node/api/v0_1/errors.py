@@ -22,6 +22,8 @@ def not_found(error):
     return make_error_response(404, 'The resource was not found on the server: ' + str(error))
 
 
+
+
 def internal_error(error):
     return make_error_response(500,
                                'The server enquoteed an internal error and was unable to complete your request: '

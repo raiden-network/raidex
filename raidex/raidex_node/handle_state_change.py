@@ -6,7 +6,6 @@ from raidex.raidex_node.architecture.event_architecture import dispatch_events
 from raidex.raidex_node.transport.events import SendProvenCommitmentEvent
 from raidex.raidex_node.matching.match import MatchFactory
 from raidex.raidex_node.architecture.data_manager import DataManager
-from raidex.utils.greenlet_helper import future_timeout
 from raidex.constants import OFFER_THRESHOLD_TIME
 
 
@@ -23,6 +22,8 @@ def handle_state_change(raidex_node, state_change):
         handle_offer_timeout(data_manager, state_change)
     if isinstance(state_change, NewLimitOrderStateChange):
         handle_new_limit_order(data_manager, state_change)
+    if isinstance(state_change, CancelLimitOrderStateChange):
+        handle_cancel_limit_order(data_manager, state_change)
     if isinstance(state_change, OfferPublishedStateChange):
         handle_offer_published(data_manager, state_change)
     if isinstance(state_change, ProvenCommitmentStateChange):
@@ -39,6 +40,8 @@ def handle_offer_state_change(data_manager: DataManager, state_change: OfferStat
     if isinstance(state_change, PaymentFailedStateChange):
         offer.payment_failed()
         logger.info(f'Offer Payment Failed: {offer.offer_id}')
+    if isinstance(state_change, CancellationProofStateChange):
+        handle_cancellation_proof(offer, state_change)
 
 
 def handle_offer_timeout(data_manager: DataManager, state_change: OfferTimeoutStateChange):
@@ -55,6 +58,11 @@ def handle_offer_timeout(data_manager: DataManager, state_change: OfferTimeoutSt
 def handle_new_limit_order(data_manager: DataManager, state_change: NewLimitOrderStateChange):
     new_order = LimitOrder.from_dict(state_change.data)
     data_manager.process_order(new_order)
+
+
+def handle_cancel_limit_order(data_manager: DataManager, state_change: CancelLimitOrderStateChange):
+    order_id = state_change.data['order_id']
+    data_manager.cancel_order(order_id)
 
 
 def handle_offer_published(data_manager: DataManager, event: OfferPublishedStateChange):
@@ -83,6 +91,12 @@ def handle_commitment_proof(data_manager: DataManager, offer, state_change: Comm
     logger.info(f'Received Commitment Proof: {offer.offer_id}')
 
 
+def handle_cancellation_proof(offer, state_change: CancellationProofStateChange):
+    cancellation_proof = state_change.cancellation_proof
+
+    offer.receive_cancellation_proof(cancellation_proof)
+
+
 def handle_proven_commitment(data_manager: DataManager, state_change: ProvenCommitmentStateChange):
 
     offer_id = state_change.commitment.offer_id
@@ -99,7 +113,10 @@ def handle_transfer_received(data_manager: DataManager, state_change: TransferRe
 
     match = data_manager.matches[offer_id]
     match.received_inbound(state_change.raiden_event)
-    # TODO This is wrong here timeout handling scheme not finished yet
-    data_manager.timeout_handler.clean_up_timeout(offer_id)
+
+    if match.offer.state == 'completed':
+        data_manager.timeout_handler.clean_up_timeout(offer_id)
+        from raidex.raidex_node.order import fsm_offer
+        fsm_offer.remove_model(match.offer)
 
 

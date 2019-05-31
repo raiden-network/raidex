@@ -49,6 +49,14 @@ class Transport(Processor):
                                             offer.quote_amount,
                                             offer.offer_id, timeout)
 
+    def _create_cancellation_msg(self, offer_id):
+        return message_format.Cancellation(offer_id)
+
+    def cancellation(self, target, offer_id):
+        message = self._create_cancellation_msg(offer_id)
+        self._sign(message)
+        self._send_message(target, message)
+
     def send_message(self, target, message):
         self._send_message(target, message)
 

@@ -284,15 +284,27 @@ class CommitmentProof(Signed):
         super(CommitmentProof, self).__init__(commitment_sig, secret, secret_hash, offer_id, signature, cmdid)
 
 
+class Cancellation(Signed):
+
+    fields = [
+        ('offer_id', int32),
+    ] + Signed.fields
+
+    def __init__(self, offer_id, signature=None, cmdid=None):
+        cmdid = get_cmdid_for_class(self.__class__)
+        super(Cancellation, self).__init__(offer_id, signature, cmdid)
+
+
 class CancellationProof(Signed):
 
     fields = [
-        ('commitment_proof', CommitmentProof)
+        ('offer_id', int32),
+        ('cancellation_proof', CommitmentProof)
     ] + Signed.fields
 
-    def __init__(self, commitment_sig, secret, secret_hash, offer_id, signature=None, cmdid=None):
+    def __init__(self, offer_id, cancellation_proof, signature=None, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
-        super(CommitmentProof, self).__init__(commitment_sig, secret, secret_hash, offer_id, signature, cmdid)
+        super(CancellationProof, self).__init__(offer_id, cancellation_proof, signature, cmdid)
 
 
 class ProvenOffer(Signed):
@@ -451,6 +463,7 @@ msg_types_map = dict(
         swap_executed=SwapExecution,
         swap_completed=SwapCompleted,
         offer_taken=OfferTaken,
+        cancellation=Cancellation,
         cancellation_proof=CancellationProof
         )
 
@@ -467,7 +480,8 @@ msg_cmdid_map = dict(
         swap_executed=8,
         swap_completed=9,
         offer_taken=10,
-        cancellation_proof=11
+        cancellation=11,
+        cancellation_proof=12
         )
 
 

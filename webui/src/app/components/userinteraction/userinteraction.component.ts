@@ -44,12 +44,17 @@ export class UserInteractionComponent implements OnInit {
                 this.showMessage(type);
             },
         );
+
+        console.log(this.tempBuyId)
     }
 
     public getOrders() {
         this.raidexService.getLimitOrders().subscribe(
             (limitOrders) => {
-                this.orderArray = <Order[]>limitOrders;
+                this.orderArray = <Order[]>limitOrders.filter(order => {
+
+                    return order.open;
+                });
             },
         );
     }

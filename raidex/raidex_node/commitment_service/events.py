@@ -1,19 +1,21 @@
 class CommitmentServiceEvent:
-    pass
+    def __init__(self, offer):
+        self.offer = offer
 
 
 class CommitEvent(CommitmentServiceEvent):
-
-    def __init__(self, offer):
-        self.offer = offer
+    pass
 
 
 class CommitmentProvedEvent(CommitmentServiceEvent):
-    def __init__(self, offer):
-        self.offer = offer
+    pass
 
 
 class ReceivedInboundEvent(CommitmentServiceEvent):
     def __init__(self, offer, raiden_event):
-        self.offer = offer
+        super(ReceivedInboundEvent, self).__init__(offer)
         self.raiden_event = raiden_event
+
+
+class CancellationRequestEvent(CommitmentServiceEvent):
+    pass

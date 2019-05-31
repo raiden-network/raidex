@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { RaidexService } from '../../services/raidex.service';
 import { Trade } from '../../model/trade';
+import { Order } from '../../model/order'
 
 @Component({
     selector: 'rex-trades-table',
@@ -9,7 +10,8 @@ import { Trade } from '../../model/trade';
 })
 export class TradesTableComponent implements OnInit {
 
-    public trades: Trade[] = [];
+
+    public orders: Order[] = [];
     private raidexSubscription: Subscription;
     private observe_window = 30;
 
@@ -17,13 +19,17 @@ export class TradesTableComponent implements OnInit {
     }
 
     public ngOnInit(): void {
-        this.getTrades();
+        this.getOrders();
     }
 
-    public getTrades(): void {
-        this.raidexSubscription = this.raidexService.getNewTrades(this.observe_window).subscribe(
-            (trades) => {
-                this.trades = trades;
+    public getOrders() {
+        this.raidexService.getLimitOrders().subscribe(
+            (limitOrders) => {
+                this.orders = <Order[]>limitOrders.filter(order => {
+
+                    return ! order.canceled && ! order.open;
+
+                });
             },
         );
     }

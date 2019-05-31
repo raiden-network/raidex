@@ -8,7 +8,7 @@ export class Order {
         public id: number,
         public filledAmount: string,
         public open: Boolean,
-        public canceled: Boolean
+        public canceled: Boolean,
     ) {
     }
 
