@@ -21,8 +21,8 @@ def message_broker():
 
 
 @pytest.fixture()
-def commitment_service(token_pair, message_broker):
-    return CommitmentServiceClientMock(Signer.random(), token_pair, message_broker)
+def commitment_service(market, message_broker):
+    return CommitmentServiceClientMock(Signer.random(), market, message_broker)
 
 
 def test_market_from_asset_pair():
@@ -58,9 +58,9 @@ def test_offer_comparison():
     assert list(offers.values()) == [offer2, offer4, offer3, offer1]
 
 
-def test_offer_book_task(message_broker, commitment_service, token_pair):
+def test_offer_book_task(message_broker, commitment_service, market):
     offer_book = OfferBook()
-    OfferBookTask(offer_book, token_pair, message_broker).start()
+    OfferBookTask(offer_book, market, message_broker).start()
     gevent.sleep(0.001)
     offer = OfferDeprecated(OfferType.SELL, 100, 1000, offer_id=123, timeout=timestamp.time_plus(2))
     proof = commitment_service.maker_commit_async(offer).get()

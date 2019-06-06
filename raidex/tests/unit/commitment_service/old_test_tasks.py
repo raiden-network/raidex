@@ -10,7 +10,7 @@ from raidex.commitment_service.tasks import (
     RefundTask,
     MessageSenderTask,
     TransferReceivedTask,
-    MakerCommitmentTask,
+    CommitmentTask,
     CancellationRequestTask,
     SwapExecutionTask
 )
@@ -61,8 +61,8 @@ def test_maker_commitment_task(mocker, swaps, factory, maker_commitment_msg_sign
 
     hand_maker_commitment_func_mock = mocker.patch.object(SwapCommitment, 'hand_maker_commitment_msg', autospect=True)
 
-    maker_commitment_task = MakerCommitmentTask(factory.swaps, factory.refund_queue, factory.message_queue,
-                                                message_broker, commitment_service_address)
+    maker_commitment_task = CommitmentTask(factory.swaps, factory.refund_queue, factory.message_queue,
+                                           message_broker, commitment_service_address)
     maker_commitment_task.start()
     switch_context()
 
@@ -87,8 +87,8 @@ def test_maker_commitment_task_fail(mocker, swaps, factory, maker_commitment_msg
     existing_swap = factory.make_swap(offer_id)
     assert len(swaps) == 1
 
-    maker_commitment_task = MakerCommitmentTask(factory.swaps, factory.refund_queue, factory.message_queue,
-                                                message_broker, commitment_service_address)
+    maker_commitment_task = CommitmentTask(factory.swaps, factory.refund_queue, factory.message_queue,
+                                           message_broker, commitment_service_address)
     maker_commitment_task.start()
 
     # try to send a commitment at the existing offer_id

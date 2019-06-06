@@ -97,7 +97,7 @@ def taker_commitment_msg():
     seconds_to_timeout = 0.1
     timeout = timestamp.time_plus(seconds_to_timeout)
     offer_id = 123
-    taker_commitment_msg = messages.TakerCommitment(offer_id=offer_id, offer_hash=keccak(offer_id),
+    taker_commitment_msg = messages.Commitment(offer_id=offer_id, offer_hash=keccak(offer_id),
                                                     timeout=timeout, amount=5)
     return taker_commitment_msg
 

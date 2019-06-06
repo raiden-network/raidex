@@ -32,17 +32,17 @@ def commitment_service(message_broker, trader):
 
 
 @pytest.fixture()
-def raidex_nodes(token_pair, trader, accounts, message_broker, commitment_service):
+def raidex_nodes(market, trader, accounts, message_broker, commitment_service):
     nodes = []
 
     for account in accounts:
         signer = Signer(account.privatekey)
         trader_client = TraderClientMock(signer.address, commitment_balance=10, trader=trader)
-        commitment_service_client = CommitmentServiceClient(signer, token_pair, trader_client,
+        commitment_service_client = CommitmentServiceClient(signer, market, trader_client,
                                                             message_broker, commitment_service.address,
                                                             fee_rate=commitment_service.fee_rate)
 
-        node = RaidexNode(signer.address, token_pair, commitment_service_client, message_broker, trader_client)
+        node = RaidexNode(signer.address, market, commitment_service_client, message_broker, trader_client)
         nodes.append(node)
     return nodes
 
@@ -99,8 +99,8 @@ def test_node_to_commitment_service_integration(raidex_nodes, commitment_service
     assert taker_proven_commitment.commitment_proof.sender == commitment_service.address
     assert taker_proven_commitment.sender == taker_node.address
 
-    maker_node.commitment_service.report_swap_executed(offer.offer_id)
-    taker_node.commitment_service.report_swap_executed(offer.offer_id)
+    maker_node.commitment_service.received_inbound_from_swap(offer.offer_id)
+    taker_node.commitment_service.received_inbound_from_swap(offer.offer_id)
 
     gevent.sleep(0.01)
 
