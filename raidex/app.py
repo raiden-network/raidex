@@ -1,7 +1,6 @@
-
-
 from raidex.account import Account
 from raidex.signing import Signer
+from raidex.utils.address import binary_address
 from raidex.raidex_node.market import TokenPair
 from raidex.raidex_node.commitment_service.client import CommitmentServiceClient
 from raidex.raidex_node.commitment_service.handle_events import handle_event as cs_handle_event
@@ -10,7 +9,6 @@ from raidex.raidex_node.trader.handle_events import handle_event as trader_handl
 from raidex.raidex_node.transport.client import MessageBrokerClient
 from raidex.raidex_node.transport.transport import Transport
 from raidex.raidex_node.transport.handle_events import handle_event as transport_handle_event
-from raidex.utils.address import binary_address
 from raidex.raidex_node.raidex_node import RaidexNode
 from raidex.raidex_node.trader.listener.handle_events import handle_event as raiden_listener_handle_event
 from raidex.raidex_node.trader.listener.raiden_listener import RaidenListener
@@ -48,9 +46,6 @@ class App:
         # start task for updating the balance of the trader:
         self.trader.start()
         self.raiden_poll.start()
-        print("after raiden listener start")
-        # start the tasks for the commitment-service-client
-        self.cs_client.start()
         event_dispatch.start_consumer_tasks()
         state_change_dispatch.start_consumer_tasks()
 
@@ -81,22 +76,18 @@ class App:
         else:
             signer = Signer.from_seed(privkey_seed)
 
-        if base_token_addr is None and quote_token_addr is None:
-            token_pair = TokenPair.from_seed('test')
-        else:
-            token_pair = TokenPair(base_token=binary_address(base_token_addr), base_decimal=3,
-                                   quote_token=binary_address(quote_token_addr), quote_decimal=18)
+        token_pair = TokenPair(base_token=binary_address(base_token_addr), base_decimal=3,
+                               quote_token=binary_address(quote_token_addr), quote_decimal=18)
 
         trader_client = TraderClient(signer.checksum_address, host=trader_host, port=trader_port, market=token_pair)
         message_broker = MessageBrokerClient(host=message_broker_host, port=message_broker_port,
                                              address=signer.checksum_address)
 
-        transport = Transport(message_broker, token_pair, signer)
+        transport = Transport(message_broker, signer)
 
-        commitment_service_client = CommitmentServiceClient(signer, token_pair, trader_client,
-                                                            message_broker, cs_address, fee_rate=cs_fee_rate)
+        commitment_service_client = CommitmentServiceClient(signer, token_pair, message_broker, cs_address, fee_rate=cs_fee_rate)
 
-        raidex_node = RaidexNode(signer.address, token_pair, commitment_service_client, message_broker, trader_client)
+        raidex_node = RaidexNode(signer.address, token_pair, message_broker, trader_client)
 
         # if mock_trading_activity is True:
         #    raise NotImplementedError('Trading Mocking disabled a the moment')
@@ -123,18 +114,14 @@ class App:
         else:
             signer = Signer.from_seed(privkey_seed)
 
-        if base_token_addr is None and quote_token_addr is None:
-            token_pair = TokenPair.from_seed('test')
-        else:
-            token_pair = TokenPair(base_token_addr, quote_token_addr)
+        token_pair = TokenPair(base_token_addr, quote_token_addr)
 
         trader_client = TraderClient(signer.address, host='localhost', port=5001, api_version='v1',
                                      commitment_amount=10)
 
-        commitment_service_client = CommitmentServiceClient(signer, token_pair, trader_client,
-                                                            message_broker, cs_address, fee_rate=cs_fee_rate)
+        commitment_service_client = CommitmentServiceClient(signer, token_pair, message_broker, cs_address, fee_rate=cs_fee_rate)
 
-        raidex_node = RaidexNode(signer.address, token_pair, commitment_service_client, message_broker, trader_client)
+        raidex_node = RaidexNode(signer.address, token_pair, message_broker, trader_client)
 
         if offer_lifetime is not None:
             raidex_node.default_offer_lifetime = offer_lifetime

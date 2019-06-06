@@ -30,7 +30,7 @@ def encode_topic(topic):
             return to_checksum_address(topic)
         if isinstance(topic, str) or is_checksum_address(topic):
             return topic
-
+        raise TypeError
     except:
         raise TypeError(
             "encode_topic requires address representation either in 0x prefixed String or valid bytes format \

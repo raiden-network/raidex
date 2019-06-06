@@ -61,7 +61,7 @@ class TakerListener(MessageListener):
 
     def _transform(self, message):
         if isinstance(message,
-                      messages.ProvenCommitment) and message.commitment.offer_id == self.offer.offer_id:  # TODO check more
+                      messages.ProvenOffer) and message.offer.offer_id == self.offer.offer_id:  # TODO check more
             return message
         else:
             return None
@@ -111,10 +111,9 @@ class OfferListener(MessageListener):
                            quote_amount=quote_amount,
                            timeout_date=offer_msg.timeout)
 
-        commitment = message.commitment
         commitment_proof = message.commitment_proof
-
-        return OfferBookEntry(offer, commitment, commitment_proof)
+        initiator = message.sender
+        return OfferBookEntry(offer, initiator, commitment_proof)
 
 
 class OfferTakenListener(MessageListener):
@@ -137,7 +136,7 @@ class SwapExecutionListener(MessageListener):
 class TakerCommitmentListener(MessageListener):
 
     def _transform(self, message):
-        if not isinstance(message, messages.TakerCommitment):
+        if not isinstance(message, messages.Commitment):
             return None
         return message
 
@@ -149,10 +148,10 @@ class CancellationListener(MessageListener):
         return message
 
 
-class MakerCommitmentListener(MessageListener):
+class CommitmentListener(MessageListener):
 
     def _transform(self, message):
-        if not isinstance(message, messages.MakerCommitment):
+        if not isinstance(message, messages.Commitment):
             return None
         return message
 

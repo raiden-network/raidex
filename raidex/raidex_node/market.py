@@ -1,7 +1,6 @@
-from eth_utils import keccak, decode_hex, is_binary_address, to_checksum_address
-from eth_keys import keys
+from eth_utils import is_binary_address, to_checksum_address
 from raidex.raidex_node.order.offer import OfferType
-from raidex.utils import pex, make_address
+from raidex.utils import pex
 
 
 class TokenPair(object):
@@ -14,27 +13,6 @@ class TokenPair(object):
         self.base_decimal = base_decimal
         self.quote_token = quote_token
         self.quote_decimal = quote_decimal
-
-    @classmethod
-    def random(cls):
-        base_token = make_address()
-        quote_token = make_address()
-        return cls(base_token, quote_token)
-
-    @classmethod
-    def from_seed(cls, seed):
-        private_key_base = keys.PrivateKey(keccak(text=seed))
-        private_key_quote = keys.PrivateKey(keccak(text=(seed+seed)))
-        public_key_base = private_key_base.public_key
-        public_key_quote = private_key_quote.public_key
-
-        return cls(decode_hex(public_key_base.to_address()), decode_hex(public_key_quote.to_address()))
-
-    def opposite(self):
-        return TokenPair(base_token=self.quote_token,
-                         base_decimal=self.quote_decimal,
-                         quote_token=self.base_token,
-                         quote_decimal=self.base_decimal)
 
     def get_offer_type(self, ask_token, bid_token):
         if ask_token == self.base_token and bid_token == self.quote_token:

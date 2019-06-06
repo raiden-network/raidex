@@ -11,13 +11,13 @@ class Match:
 
     class TargetData:
 
-        def __init__(self, commitment, commitment_proof):
-            self.commitment = commitment
+        def __init__(self, target, commitment_proof):
+            self.target = target
             self.commitment_proof = commitment_proof
 
         @property
         def address(self):
-            return self.commitment.sender
+            return self.target
 
     def __init__(self, offer: Offer, trader_role: TraderRole, commitment, commitment_proof):
         self.offer = offer
@@ -56,7 +56,7 @@ class Match:
 
     @property
     def target(self):
-        return self.target_data.commitment.sender
+        return self.target_data.address
 
     def get_secret(self):
         return self.target_data.commitment_proof.secret
@@ -71,9 +71,9 @@ class Match:
 class MatchFactory:
 
     @staticmethod
-    def maker_match(offer, commitment, commitment_proof):
-        return Match(offer, TraderRole.MAKER, commitment, commitment_proof)
+    def maker_match(offer, target, commitment_proof):
+        return Match(offer, TraderRole.MAKER, target, commitment_proof)
 
     @staticmethod
     def taker_match(offer, offer_entry):
-        return Match(offer, TraderRole.TAKER, offer_entry.commitment, offer_entry.commitment_proof)
+        return Match(offer, TraderRole.TAKER, offer_entry.initiator, offer_entry.commitment_proof)

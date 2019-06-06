@@ -3,7 +3,7 @@ import structlog
 from raidex.raidex_node.architecture.state_change import *
 from raidex.raidex_node.order.limit_order import LimitOrder
 from raidex.raidex_node.architecture.event_architecture import dispatch_events
-from raidex.raidex_node.transport.events import SendProvenCommitmentEvent
+from raidex.raidex_node.transport.events import SendProvenOfferEvent
 from raidex.raidex_node.matching.match import MatchFactory
 from raidex.raidex_node.architecture.data_manager import DataManager
 from raidex.constants import OFFER_THRESHOLD_TIME
@@ -26,8 +26,8 @@ def handle_state_change(raidex_node, state_change):
         handle_cancel_limit_order(data_manager, state_change)
     if isinstance(state_change, OfferPublishedStateChange):
         handle_offer_published(data_manager, state_change)
-    if isinstance(state_change, ProvenCommitmentStateChange):
-        handle_proven_commitment(data_manager, state_change)
+    if isinstance(state_change, TakerCallStateChange):
+        handle_taker_call(data_manager, state_change)
     if isinstance(state_change, TransferReceivedStateChange):
         handle_transfer_received(data_manager, state_change)
 
@@ -79,14 +79,16 @@ def handle_offer_published(data_manager: DataManager, event: OfferPublishedState
 
 def handle_commitment_proof(data_manager: DataManager, offer, state_change: CommitmentProofStateChange):
     commitment_proof = state_change.commitment_proof
-    commitment_signature = state_change.commitment_signature
 
     offer.receive_commitment_proof(commitment_proof)
+    message_target = None
 
     if offer.offer_id in data_manager.matches:
         match = data_manager.matches[offer.offer_id]
         match.matched()
-        dispatch_events([SendProvenCommitmentEvent(match.target, offer)])
+        message_target = match.target
+
+    dispatch_events([SendProvenOfferEvent(offer, data_manager.market, message_target)])
 
     logger.info(f'Received Commitment Proof: {offer.offer_id}')
 
@@ -97,12 +99,12 @@ def handle_cancellation_proof(offer, state_change: CancellationProofStateChange)
     offer.receive_cancellation_proof(cancellation_proof)
 
 
-def handle_proven_commitment(data_manager: DataManager, state_change: ProvenCommitmentStateChange):
+def handle_taker_call(data_manager: DataManager, state_change: TakerCallStateChange):
 
-    offer_id = state_change.commitment.offer_id
+    offer_id = state_change.offer_id
     offer = data_manager.offer_manager.get_offer(offer_id)
 
-    match = MatchFactory.maker_match(offer, state_change.commitment, state_change.commitment_proof)
+    match = MatchFactory.maker_match(offer, state_change.initiator, state_change.commitment_proof)
     data_manager.matches[offer_id] = match
     match.matched()
 
@@ -118,5 +120,3 @@ def handle_transfer_received(data_manager: DataManager, state_change: TransferRe
         data_manager.timeout_handler.clean_up_timeout(offer_id)
         from raidex.raidex_node.order import fsm_offer
         fsm_offer.remove_model(match.offer)
-
-

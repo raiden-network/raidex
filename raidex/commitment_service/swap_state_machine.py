@@ -138,7 +138,7 @@ class SwapStateMachine(Machine):
     def __init__(self, swap, auto_spawn_timeout=True):
         # TODO evaluate if queued_transition is better
         super(SwapStateMachine, self).__init__(self, states=SWAP_BASE_STATES, initial=SWAP_INITIAL_STATE,
-                                               send_event=True, ignore_invalid_triggers=True)
+                                               send_event=True)
         self.taker_commitment_pool = dict()
         self.swap = swap
 

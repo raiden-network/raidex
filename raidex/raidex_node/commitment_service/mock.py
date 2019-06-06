@@ -147,7 +147,7 @@ class CommitmentServiceClientMock(object):
             result.set(None)
             return result
         offer_msg = self.create_offer_msg(offer)
-        commitment_msg = messages.MakerCommitment(offer.offer_id, offer_msg.hash, offer.timeout_date, 42)
+        commitment_msg = messages.Commitment(offer.offer_id, offer_msg.hash, offer.timeout_date, 42)
         self._sign(commitment_msg)
 
         commitment_proof_msg = messages.CommitmentProof(commitment_msg.signature)
@@ -198,7 +198,7 @@ class CommitmentServiceClientMock(object):
 
     def report_swap_executed(self, offer_id):
         # type: (int) -> None
-        success = self._commitment_service_global.report_swap_executed(self, offer_id)
+        success = self._commitment_service_global.received_inbound_from_swap(self, offer_id)
         if success is True and self._commitment_service_global.swap_is_completed(offer_id):
             swap_completed_msg = self.create_swap_completed(offer_id)
             self.message_broker.broadcast(swap_completed_msg)

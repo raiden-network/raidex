@@ -33,7 +33,6 @@ class CancelLimitOrderStateChange(StateChange):
         self.data = data
 
 
-
 class OfferStateChange(StateChange):
 
     def __init__(self, offer_id):
@@ -67,17 +66,12 @@ class CancellationProofStateChange(OfferStateChange):
         self.cancellation_proof = cancellation_proof
 
 
-class ProvenCommitmentStateChange(StateChange):
+class TakerCallStateChange(StateChange):
 
-    def __init__(self, commitment, commitment_proof):
-        self.commitment = commitment
+    def __init__(self, offer_id, initiator, commitment_proof):
+        self.offer_id = offer_id
+        self.initiator = initiator
         self.commitment_proof = commitment_proof
-
-
-class ProvenOfferStateChange(StateChange):
-
-    def __init__(self, proven_offer_message):
-        self.proven_offer_message = proven_offer_message
 
 
 class OfferPublishedStateChange(StateChange):

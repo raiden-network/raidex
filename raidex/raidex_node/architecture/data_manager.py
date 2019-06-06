@@ -13,9 +13,10 @@ logger = structlog.get_logger('StateChangeHandler')
 
 class DataManager:
 
-    def __init__(self, offer_book):
+    def __init__(self, offer_book, market):
 
         self.offer_manager = OfferManager()
+        self.market = market
         self.matching_engine = MatchingEngine(offer_book, MATCHING_ALGORITHM)
         self.orders = dict()
         self.matches = dict()

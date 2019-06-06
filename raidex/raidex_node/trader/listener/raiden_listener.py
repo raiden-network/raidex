@@ -12,11 +12,12 @@ class RaidenListener(Processor):
 
     def new_raiden_event(self, event):
         state_changes = list()
-        for filter in self.event_filters:
-            state_change = filter.process(event)
+        copied_list = self.event_filters.copy()
+        for event_filter in copied_list:
+            state_change = event_filter.process(event)
             if state_change is not None:
                 state_changes.append(state_change)
-                self.event_filters.remove(filter)
+                self.event_filters.remove(event_filter)
 
         dispatch_state_changes(state_changes)
 

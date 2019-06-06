@@ -1,6 +1,7 @@
 from gevent import spawn_later, kill
 
 from raidex.raidex_node.architecture.state_change import OfferTimeoutStateChange
+from raidex.exceptions import AlreadyTimedOutException
 from raidex.utils.timestamp import seconds_to_timeout
 from raidex.raidex_node.architecture.event_architecture import dispatch_state_changes
 
@@ -25,7 +26,7 @@ class TimeoutHandler:
         offer_id = offer.offer_id
 
         if self._has_greenlet(offer_id) and not self._is_still_alive(offer_id):
-            return False
+            raise AlreadyTimedOutException()
 
         self.clean_up_timeout(offer_id)
         timeout_greenlet = future_timeout(offer_id, offer.timeout_date, threshold)

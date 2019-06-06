@@ -9,8 +9,6 @@ from raidex.utils.address import encode_topic
 
 from raidex.message_broker.message_broker import Listener
 import raidex.messages as messages
-from raidex.raidex_node.transport.events import TransportEvent
-from raidex.raidex_node.architecture.event_architecture import Processor
 
 monkey.patch_socket()
 log = structlog.get_logger("TOPIC")

@@ -7,8 +7,7 @@ from raidex.signing import Signer
 from raidex.commitment_service.tasks import (
     RefundTask,
     MessageSenderTask,
-    MakerCommitmentTask,
-    TakerCommitmentTask,
+    CommitmentTask,
     CancellationRequestTask,
     SwapExecutionTask,
     TransferReceivedTask,
@@ -54,8 +53,7 @@ class CommitmentService(object):
 
     def start(self):
         self.trader_client.start()
-        MakerCommitmentTask(self.swaps, self.refund_queue, self.message_queue, self.message_broker, self.address).start()
-        TakerCommitmentTask(self.swaps, self.message_broker, self.address).start()
+        CommitmentTask(self.swaps, self.refund_queue, self.message_queue, self.message_broker, self.address).start()
         CancellationRequestTask(self.swaps, self.message_broker, self.address).start()
         SwapExecutionTask(self.swaps, self.message_broker, self.address).start()
         TransferReceivedTask(self.swaps, self.trader_client).start()

@@ -25,7 +25,7 @@ class LimitOrder:
     @classmethod
     def from_dict(cls, data):
 
-        if 'order_id' not in data:
+        if 'order_id' not in data or data['order_id'] is None:
             order_id = create_random_32_bytes_id()
         else:
             order_id = data['order_id']

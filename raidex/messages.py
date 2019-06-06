@@ -1,12 +1,14 @@
 import json
 import base64
 
+from copy import deepcopy
 import rlp
 from rlp.sedes import BigEndianInt, Binary
 from eth_utils import (keccak, big_endian_to_int, int_to_big_endian, encode_hex, decode_hex)
 from eth_keys import keys
 from raidex.utils import pex
 from raidex.utils import timestamp
+
 
 sig65 = Binary.fixed_length(65, allow_empty=True)
 address = Binary.fixed_length(20, allow_empty=True)
@@ -76,6 +78,12 @@ class Signed(RLPHashable):
         return len(rlp.encode(self))
 
     @property
+    def hash(self):
+        if self.signature is None:
+            return self._hash_without_signature
+        return super(Signed, self).hash
+
+    @property
     def _hash_without_signature(self):
         return keccak(rlp.encode(self, self.__class__.exclude(['signature'])))
 
@@ -98,13 +106,17 @@ class Signed(RLPHashable):
         if not self._sender:
             if not self.signature:
                 raise SignatureMissingError()
-            signature_obj = keys.Signature(signature_bytes=self.signature)
+            if isinstance(self.signature, bytes):
+                signature_obj = keys.Signature(signature_bytes=self.signature)
+            else:
+                signature_obj = self.signature
             pub = signature_obj.recover_public_key_from_msg(self._hash_without_signature)
             self._sender = decode_hex(pub.to_address())
         return self._sender
 
     @classmethod
-    def deserialize(cls, serial, exclude=None, **kwargs):
+    def deserialize(cls, serial, exclude=[], **kwargs):
+
         obj = super(Signed, cls).deserialize(serial, exclude, **kwargs)
         if not obj.has_sig:
             obj.__dict__['_mutable'] = False  # TODO checkme if this is good/valid?
@@ -165,27 +177,7 @@ class SwapOffer(RLPHashable):
             pex(h),
         )
 
-
-class MakerCommitment(Signed):
-    """A `Commitment` announces the commitment service, that a maker or taker wants to engage in the
-    offer with the `offer_id`. `offer_hash`, `timeout` should match the later published `Offer`; the
-    `amount` is the amount of tokens that will be sent via `raiden` in a following transfer.
-
-    Process note: the raiden transfer to fulfill the commitment should use the `offer_id` as an identifier.
-
-    Data:
-        offer_id = offer_id
-        offer_hash = keccak(offer)
-        timeout = int256 <unix timestamp (ms) for the end of the offers validity>
-        amount = int256 <value of tokens in the commitment-service's commitment currency>
-
-    Broadcast:
-        {
-            "msg": "commitment",
-            "version": 1,
-            "data": rlp([offer_id, offer_hash, timeout, amount])
-        }
-    """
+class Commitment(Signed):
 
     fields = [
         ('offer_id', int32), # FIXME we should reference Swaps with the offer_hash!
@@ -196,40 +188,7 @@ class MakerCommitment(Signed):
 
     def __init__(self, offer_id, offer_hash, timeout, amount, signature=None, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
-        super(MakerCommitment, self).__init__(offer_id, offer_hash, timeout, amount, signature, cmdid)
-
-
-class TakerCommitment(Signed):
-    """A `Commitment` announces the commitment service, that a maker or taker wants to engage in the
-    offer with the `offer_id`. `offer_hash`, `timeout` should match the later published `Offer`; the
-    `amount` is the amount of tokens that will be sent via `raiden` in a following transfer.
-
-    Process note: the raiden transfer to fulfill the commitment should use the `offer_id` as an identifier.
-
-    Data:
-        offer_id = offer_id
-        offer_hash = keccak(offer)
-        timeout = int256 <unix timestamp (ms) for the end of the offers validity>
-        amount = int256 <value of tokens in the commitment-service's commitment currency>
-
-    Broadcast:
-        {
-            "msg": "commitment",
-            "version": 1,
-            "data": rlp([offer_id, offer_hash, timeout, amount])
-        }
-    """
-
-    fields = [
-        ('offer_id', int32), # FIXME we should reference Swaps with the offer_hash!
-        ('offer_hash', hash32),
-        ('timeout', int256),
-        ('amount', int256),
-    ] + Signed.fields
-
-    def __init__(self, offer_id, offer_hash, timeout, amount, signature=None, cmdid=None):
-        cmdid = get_cmdid_for_class(self.__class__)
-        super(TakerCommitment, self).__init__(offer_id, offer_hash, timeout, amount, signature, cmdid)
+        super(Commitment, self).__init__(offer_id, offer_hash, timeout, amount, signature, cmdid)
 
 
 class OfferTaken(Signed):
@@ -329,13 +288,12 @@ class ProvenOffer(Signed):
     """
     fields = [
         ('offer', SwapOffer),
-        ('commitment', MakerCommitment),
         ('commitment_proof', CommitmentProof),
     ] + Signed.fields
 
-    def __init__(self, offer, commitment, commitment_proof, signature=None, cmdid=None):
+    def __init__(self, offer, commitment_proof, signature=None, cmdid=None):
         cmdid = get_cmdid_for_class(self.__class__)
-        super(ProvenOffer, self).__init__(offer, commitment, commitment_proof, signature, cmdid)
+        super(ProvenOffer, self).__init__(offer, commitment_proof, signature, cmdid)
 
 
 class ProvenCommitment(Signed):
@@ -355,7 +313,7 @@ class ProvenCommitment(Signed):
         }
     """
     fields = [
-        ('commitment', TakerCommitment),
+        ('commitment', Commitment),
         ('commitment_proof', CommitmentProof),
     ] + Signed.fields
 
@@ -456,8 +414,7 @@ msg_types_map = dict(
         offer=SwapOffer,
         proven_offer=ProvenOffer,
         proven_commitment=ProvenCommitment,
-        taker_commitment=TakerCommitment,
-        maker_commitment=MakerCommitment,
+        commitment=Commitment,
         commitment_proof=CommitmentProof,
         commitment_service=CommitmentServiceAdvertisement,
         swap_executed=SwapExecution,
@@ -473,15 +430,14 @@ msg_cmdid_map = dict(
         offer=1,
         proven_offer=2,
         proven_commitment=3,
-        taker_commitment=4,
-        maker_commitment=5,
-        commitment_proof=6,
-        commitment_service=7,
-        swap_executed=8,
-        swap_completed=9,
-        offer_taken=10,
-        cancellation=11,
-        cancellation_proof=12
+        commitment=4,
+        commitment_proof=5,
+        commitment_service=6,
+        swap_executed=7,
+        swap_completed=8,
+        offer_taken=9,
+        cancellation=10,
+        cancellation_proof=11
         )
 
 

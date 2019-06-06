@@ -6,7 +6,7 @@ from raidex.account import Account
 
 
 def generate_random_privkey():
-    return keccak(''.join(random.choice(string.printable) for _ in range(20)))
+    return keccak(text=''.join(random.choice(string.printable) for _ in range(20)))
 
 
 class Signer(object):

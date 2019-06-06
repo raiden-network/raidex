@@ -5,7 +5,7 @@ import structlog
 from raidex.raidex_node.architecture.event_architecture import Processor
 from raidex.raidex_node.architecture.state_change import StateChange
 from raidex.raidex_node.offer_book import OfferBook
-from raidex.raidex_node.listener_tasks import OfferBookTask, OfferTakenTask, SwapCompletedTask
+from raidex.raidex_node.listener_tasks import OfferBookTask
 from raidex.raidex_node.trades import TradesView
 from raidex.raidex_node.offer_grouping import group_offers, group_trades_from, make_price_bins, get_n_recent_trades
 from raidex.raidex_node.architecture.data_manager import DataManager
@@ -16,12 +16,11 @@ log = structlog.get_logger('node')
 
 class RaidexNode(Processor):
 
-    def __init__(self, address, token_pair, commitment_service, message_broker, trader_client):
+    def __init__(self, address, token_pair, message_broker, trader_client):
         super(RaidexNode, self).__init__(StateChange)
         self.token_pair = token_pair
         self.address = address
         self.message_broker = message_broker
-        self.commitment_service = commitment_service
         self.trader_client = trader_client
         self.offer_book = OfferBook()
         # don't make this accessible in the constructor args for now, set attribute instead if needed
@@ -34,7 +33,7 @@ class RaidexNode(Processor):
         self._max_open_orders = 0
 
         self._get_trades = self._trades_view.trades
-        self.data_manager = DataManager(self.offer_book)
+        self.data_manager = DataManager(self.offer_book, token_pair)
 
     def start(self):
         log.info('Starting raidex node')

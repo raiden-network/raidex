@@ -95,12 +95,15 @@ class SwapCommitment(object):
         self._state_machine.timeout()
 
     def hand_swap_execution_msg(self, message):
+        print("hand swap execution message")
         self._state_machine.swap_execution_msg(msg=message)
 
     def hand_maker_commitment_msg(self, message):
+        print("hand_maker_commitment")
         self._state_machine.maker_commitment_msg(msg=message)
 
     def hand_taker_commitment_msg(self, message):
+        print("hand_taker_commitment")
         self._state_machine.taker_commitment_msg(msg=message)
 
     def hand_transfer_receipt(self, transfer_receipt):
@@ -142,9 +145,11 @@ class SwapCommitment(object):
         self.queue_send(cancellation_proof_msg, self.maker_address)
 
     def refund_maker_with_fee(self):
+        print("refund maker")
         self.queue_refund(self.maker_transfer_receipt, claim_fee=True)
 
     def refund_taker_with_fee(self):
+        print("refund taker")
         self.queue_refund(self.taker_transfer_receipt, claim_fee=True)
 
     def hand_cancellation_msg(self):

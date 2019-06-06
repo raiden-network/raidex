@@ -46,6 +46,21 @@ class BasicOffer:
             self.type,
             to_str_repr(self.timeout_date))
 
+    def __eq__(self, other):
+        if not isinstance(other, BasicOffer):
+            return False
+        if not self.offer_id == other.offer_id:
+            return False
+        if not self.type == other.type:
+            return False
+        if not self.base_amount == other.base_amount:
+            return False
+        if not self.quote_amount == other.quote_amount:
+            return False
+        if not self.timeout_date == other.timeout_date:
+            return False
+        return True
+
 
 class Offer(BasicOffer):
 
@@ -80,7 +95,7 @@ class Offer(BasicOffer):
         return not self.is_buy()
 
     @property
-    def is_proved(self):
+    def has_proof(self):
         if self.proof:
             return True
         return False

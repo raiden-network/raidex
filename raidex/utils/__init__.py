@@ -1,5 +1,5 @@
 import string
-import random
+import random as random_module
 import os
 
 from codecs import encode
@@ -15,11 +15,11 @@ DEFAULT_RAIDEX_PORT = DEFAULT_RAIDEN_PORT + 1
 
 
 def make_address():
-    return bytes(''.join(random.choice(string.printable) for _ in range(20)))
+    return bytes(''.join(random_module.choice(string.printable) for _ in range(20)), 'utf-8')
 
 
 def make_privkey_address():
-    private_key = keccak(text=''.join(random.choice(string.printable) for _ in range(20)))
+    private_key = keccak(text=''.join(random_module.choice(string.printable) for _ in range(20)))
     address = keys.PrivateKey(private_key).public_key.to_bytes()
     return private_key, address
 
@@ -45,6 +45,7 @@ def random_secret():
         secret = os.urandom(32)
         if secret != EMPTY_SECRET:
             return secret
+
 
 def get_market_from_asset_pair(asset_pair):
     """

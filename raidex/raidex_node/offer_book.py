@@ -75,9 +75,9 @@ class OfferDeprecated(object):
 
 class OfferBookEntry:
 
-    def __init__(self, offer, commitment, commitment_proof):
+    def __init__(self, offer, initiator, commitment_proof):
         self.offer = offer
-        self.commitment = commitment
+        self.initiator = initiator
         self.commitment_proof = commitment_proof
 
     @property
