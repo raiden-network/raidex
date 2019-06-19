@@ -7,7 +7,7 @@
       alt='' 
       src="https://user-images.githubusercontent.com/35398162/59664605-a7aecb00-91b1-11e9-9d61-44adaf4db0a2.jpeg" /></a>
   <br/>
-   raidEX POC - A Decentralized Token Exchange on Raiden
+   raidEX POC - A Decentralized Token Exchange Proof of Concept on Raiden
   <br/>
 </h2>
 
@@ -39,29 +39,6 @@ The mentioned performance restrictions are overcome by off-chain state technolog
 
 ## Table of Contents
 
-
-## About The Project
-
-// TODO - Adapt
-
-The [Raiden Network](https://raiden.network/) is an off-chain scaling solution, enabling near-instant, low-fee and scalable payments. It’s complementary to the Ethereum blockchain and works with any ERC20 compatible token.
-
-The Raiden client code is available [here](https://github.com/raiden-network/raiden) and has been [released for mainnet](https://medium.com/raiden-network/red-eyes-mainnet-release-announcement-d48235bbef3c) with a limited alpha release of the Raiden Network in December 2018.
-
-<center>
-<img 
-      width='750px' 
-      alt='' 
-      src="https://user-images.githubusercontent.com/35398162/58000403-f9900280-7ad8-11e9-9af3-f0c5817689ab.png" />
-</center>
-
-The goal of the Raiden Light Client SDK is to provide an easy-to-use framework, which can be integrated by any JavaScript developer. The SDK will simplify the process of embedding and using the Raiden Network for token transfers in decentralized applications
-
-With the SDK we want to make your life as a dApp dev easier:
-
-* You should be able to interact with the Raiden Network easily with your dApp.
-* We want to help you to enable your users to make token transfers using their consumer wallets like imToken or Metamask.
-* It should be possible to send tokens using low end devices, which would not be capable of running a full Raiden node.
 
 ## Architecture
 
