@@ -4,26 +4,23 @@ Welcome! This guide serves as the guideline to contributing to the Raidex
 codebase. It's here to help you understand what development practises we use here
 and what are the requirements for a Pull Request to be opened against Raidex
 
-- [Contributing](#contributing)
-  * [Creating an Issue](#creating-an-issue)
-    + [For Feature Requests](#for-feature-requests)
-    + [For Bugs](#for-bugs)
-  * [Creating a Pull Request](#creating-a-pull-request)
-    + [Prepare](#prepare)
-      - [Installation](#installation)
-      - [Test set-up](#test-set-up)
-    + [Implement](#implement)
-      - [Coding Style](#coding-style)
-      - [Writing a test](#writing-a-test)
-      - [Documentation](#documentation)
-      - [Commiting Rules](#commiting-rules)
-      - [Opening a pull request](#opening-a-pull-request)
-      - [Integrating Pull Requests](#integrating-pull-requests)
-
-# Contributing
-
 There are two ways you can contribute to the development. You can either open
 an Issue or if you have programming abilities open a Pull Request.
+
+- [Creating an Issue](#creating-an-issue)
+  * [For Feature Requests](#for-feature-requests)
+  * [For Bugs](#for-bugs)
+- [Creating a Pull Request](#creating-a-pull-request)
+  * [Prepare](#prepare)
+    + [Installation](#installation)
+    + [Test set-up](#test-set-up)
+  * [Implement](#implement)
+    + [Coding Style](#coding-style)
+    + [Writing a test](#writing-a-test)
+    + [Documentation](#documentation)
+    + [Commiting Rules](#commiting-rules)
+    + [Opening a pull request](#opening-a-pull-request)
+    + [Integrating Pull Requests](#integrating-pull-requests)
 
 ## Creating an Issue
 
