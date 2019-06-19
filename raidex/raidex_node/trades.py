@@ -3,7 +3,7 @@ from collections import namedtuple
 from sortedcontainers import SortedDict
 import structlog
 
-from .offer_book import Offer
+from raidex.raidex_node.order.offer import BasicOffer
 
 
 log = structlog.get_logger('node.trades')
@@ -35,7 +35,7 @@ class TradesView(object):
 
         del self.pending_offer_by_id[offer_id]
 
-        assert isinstance(offer, Offer)
+        assert isinstance(offer, BasicOffer)
         trade = Trade(offer, completed_timestamp)
 
         self._trades[(trade.timestamp, offer.offer_id)] = trade

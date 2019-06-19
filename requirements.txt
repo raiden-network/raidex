@@ -23,6 +23,7 @@ jinja2
 markupsafe
 more-itertools
 pluggy
+polling
 py
 pycparser
 pytest-mock

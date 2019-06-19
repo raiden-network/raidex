@@ -13,6 +13,7 @@ getcontext().rounding = decimal.ROUND_FLOOR
 # getcontext().Emin = 0
 getcontext().prec = 28
 
+
 @total_ordering
 class GroupedOffer(object):
 
@@ -67,10 +68,10 @@ def group_offers(offers, price_group_precision=None):
         grouped_offer = quantized_offers_by_price.get(quantized)
         if grouped_offer is None:
             grouped_offer = GroupedOffer(quantized)
-            grouped_offer.add(offer.amount, offer.timeout)
+            grouped_offer.add(offer.base_amount, offer.timeout_date)
             quantized_offers_by_price[quantized] = grouped_offer
         else:
-            grouped_offer.add(offer.amount, offer.timeout)
+            grouped_offer.add(offer.base_amount, offer.timeout_date)
     unsorted_list = quantized_offers_by_price.values()
     return sorted(unsorted_list)
 
@@ -132,11 +133,11 @@ def group_trades(iterable, chunk_size=None, price_group_precision=None,
 
         if grouped_offer is None:
             grouped_offer = GroupedTrade(quantized_price, trade_bucket_time_int, trade.offer.offer_id, trade.offer.type)
-            grouped_offer.add(trade.offer.amount)
+            grouped_offer.add(trade.offer.base_amount)
 
             quantized_offers_by_price_time_type[(float(quantized_price), trade_bucket_time_int, trade.offer.type)] = grouped_offer
         else:
-            grouped_offer.add(trade.offer.amount)
+            grouped_offer.add(trade.offer.base_amount)
 
         if chunk_size is not None:
                 if len(quantized_offers_by_price_time_type) == chunk_size + 1:
@@ -203,12 +204,12 @@ class PriceBin(object):
 
     def add(self, timestmp, amount, price):
         # Trades should be added in strictly increasing timestamp order!
-        if price < self._min_price or self._min_price is None:
+        if self._min_price is None or price < self._min_price:
             self._min_price = price
-        if price > self._max_price or self._max_price is None:
+        if self._max_price is None or price > self._max_price:
             self._max_price = price
         self.amount += amount
-        if timestmp > self._close_timestamp or self._close_timestamp is None:
+        if self._close_timestamp is None or timestmp > self._close_timestamp:
             self._close_timestamp = timestmp
             self._close_prices = [price]
         elif timestmp == self._close_timestamp:
@@ -219,6 +220,7 @@ class PriceBin(object):
 
     def __lt__(self, other):
         return self.timestamp < other.timestamp
+
 
 def get_n_recent_trades(trades_list, nof_trades):
     return group_trades(reversed(trades_list), chunk_size=nof_trades)
@@ -240,7 +242,7 @@ def make_price_bins(trades_gen_func, nof_buckets, interval):
         price_bins[from_time] = price_bin
         for trade in trades_gen_func(from_timestamp=from_time, to_timestamp=to_time):
             quantized_price = Decimal(trade.offer.price).quantize(Decimal(10) ** -price_group_precision)
-            price_bin.add(trade.timestamp, trade.offer.amount, quantized_price)
+            price_bin.add(trade.timestamp, trade.offer.base_amount, quantized_price)
         last_close_price = price_bin.close_price
 
     assert len(price_bins) == nof_buckets + 1

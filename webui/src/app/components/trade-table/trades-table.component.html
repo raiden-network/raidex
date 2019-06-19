@@ -1,12 +1,12 @@
-<p-dataTable [value]="trades" [rows]="20" scrollable="true" scrollHeight="700px"
+<p-dataTable [value]="orders" [rows]="20" scrollable="true" scrollHeight="700px"
              styleClass="borderless">
   <p-header>Trade History</p-header>
-  <p-column field="timestamp" header="Time" [sortable]="true"
+  <!-- p-column field="timestamp" header="Time" [sortable]="true"
             [style]="{'font-size': '11px', 'text-align': 'center'}">
     <ng-template let-col let-data="rowData" pTemplate type="body">
       <span>{{data.timestamp | date: 'HH:mm:ss'}}</span>
     </ng-template>
-  </p-column>
+  </p-column -->
   <p-column field="type" header="Type" styleClass="text-center"
             [style]="{'width': '50px','font-size': '11px', 'text-align': 'center'}">
     <ng-template let-col let-data="rowData" pTemplate type="body">

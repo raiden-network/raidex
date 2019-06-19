@@ -4,9 +4,7 @@ from gevent.event import Event
 import structlog
 
 from raidex.commitment_service.node import CommitmentService
-from raidex.message_broker.client import MessageBrokerClient
-from raidex.raidex_node.trader.client import TraderClient
-from raidex.signing import Signer
+from raidex.raidex_node.transport.client import MessageBrokerClient
 
 structlog.configure()
 
@@ -29,7 +27,7 @@ def main():
     args = parser.parse_args()
 
     message_broker = MessageBrokerClient(host=args.broker_host, port=args.broker_port)
-    commitment_service = CommitmentService.build_from_mock(message_broker, fee_rate=1)
+    commitment_service = CommitmentService.build_from_mock(message_broker, fee_rate=0)
     commitment_service.start()
 
     stop_event.wait()

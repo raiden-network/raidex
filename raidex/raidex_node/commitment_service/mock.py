@@ -1,8 +1,8 @@
 from gevent.event import AsyncResult
 from raidex import messages
 from raidex.signing import Signer
-
-from raidex.raidex_node.offer_book import OfferType, Offer
+from raidex.raidex_node.offer_book import OfferDeprecated
+from raidex.raidex_node.order.offer import OfferType
 from raidex.utils import timestamp
 
 
@@ -140,14 +140,14 @@ class CommitmentServiceClientMock(object):
         self.message_broker = message_broker
 
     def maker_commit_async(self, offer):
-        # type: (Offer) -> AsyncResult
+        # type: (OfferDeprecated) -> AsyncResult
         result = AsyncResult()
         success = self._commitment_service_global.make_offer(self, offer.offer_id)
         if success is False:
             result.set(None)
             return result
         offer_msg = self.create_offer_msg(offer)
-        commitment_msg = messages.MakerCommitment(offer.offer_id, offer_msg.hash, offer.timeout, 42)
+        commitment_msg = messages.Commitment(offer.offer_id, offer_msg.hash, offer.timeout_date, 42)
         self._sign(commitment_msg)
 
         commitment_proof_msg = messages.CommitmentProof(commitment_msg.signature)
@@ -158,14 +158,14 @@ class CommitmentServiceClientMock(object):
         return result
 
     def taker_commit_async(self, offer):
-        # type: (Offer) -> AsyncResult
+        # type: (OfferDeprecated) -> AsyncResult
         result = AsyncResult()
         success = self._commitment_service_global.try_take_offer(self, offer.offer_id)
         if success is False:
             result.set(None)
             return result
         offer_msg = self.create_offer_msg(offer)
-        commitment_msg = messages.TakerCommitment(offer.offer_id, offer_msg.hash, offer.timeout, 42)
+        commitment_msg = messages.TakerCommitment(offer.offer_id, offer_msg.hash, offer.timeout_date, 42)
         self._sign(commitment_msg)
         commitment_proof_msg = messages.CommitmentProof(commitment_msg.signature)
         self._global_sign(commitment_proof_msg)
@@ -188,17 +188,17 @@ class CommitmentServiceClientMock(object):
         return swap_completed_msg
 
     def create_offer_msg(self, offer):
-        # type: (Offer) -> OfferMsg
+        # type: (OfferDeprecated) -> OfferMsg
         if offer.type == OfferType.SELL:
-            return messages.SwapOffer(self.token_pair.counter_token, offer.counter_amount, self.token_pair.base_token,
-                                      offer.base_amount, offer.offer_id, offer.timeout)
+            return messages.SwapOffer(self.token_pair.quote_token, offer.quote_amount, self.token_pair.base_token,
+                                      offer.base_amount, offer.offer_id, offer.timeout_date)
         else:
-            return messages.SwapOffer(self.token_pair.base_token, offer.base_amount, self.token_pair.counter_token,
-                                      offer.counter_amount, offer.offer_id, offer.timeout)
+            return messages.SwapOffer(self.token_pair.base_token, offer.base_amount, self.token_pair.quote_token,
+                                      offer.quote_amount, offer.offer_id, offer.timeout_date)
 
     def report_swap_executed(self, offer_id):
         # type: (int) -> None
-        success = self._commitment_service_global.report_swap_executed(self, offer_id)
+        success = self._commitment_service_global.received_inbound_from_swap(self, offer_id)
         if success is True and self._commitment_service_global.swap_is_completed(offer_id):
             swap_completed_msg = self.create_swap_completed(offer_id)
             self.message_broker.broadcast(swap_completed_msg)

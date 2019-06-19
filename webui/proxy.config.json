@@ -1,0 +1,9 @@
+{
+    "/raidex": {
+        "target": "http://localhost:50001/",
+        "proxyTimeout": 600000,
+        "pathRewrite": {
+            "^/raidex": ""
+        }
+    }
+}

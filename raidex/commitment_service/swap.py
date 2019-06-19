@@ -1,5 +1,7 @@
+from eth_utils import keccak
+
 from raidex import messages
-from raidex.utils import timestamp
+from raidex.utils import timestamp, random_secret
 from raidex.commitment_service.refund import Refund
 from raidex.commitment_service.swap_state_machine import SwapStateMachine
 
@@ -45,11 +47,15 @@ class SwapCommitment(object):
         self.offer_id = offer_id
         self.maker_commitment_msg = None
         self.taker_commitment_msg = None
+        self.maker_commitment_proof = None
         self.maker_swap_execution_msg = None
         self.taker_swap_execution_msg = None
         self.maker_transfer_receipt = None
         self.taker_transfer_receipt = None
         self.terminated_state = None
+
+        self.secret = random_secret()
+        self.secret_hash = keccak(self.secret)
 
         self._state_machine = SwapStateMachine(self, auto_spawn_timeout)
 
@@ -70,8 +76,6 @@ class SwapCommitment(object):
         return self.taker_commitment_msg.sender
 
     def is_maker(self, address):
-        print("initiator: {} maker: {}".format(address, self.maker_address))
-
         return address == self.maker_address
 
     def is_taker(self, address):
@@ -91,12 +95,15 @@ class SwapCommitment(object):
         self._state_machine.timeout()
 
     def hand_swap_execution_msg(self, message):
+        print("hand swap execution message")
         self._state_machine.swap_execution_msg(msg=message)
 
     def hand_maker_commitment_msg(self, message):
+        print("hand_maker_commitment")
         self._state_machine.maker_commitment_msg(msg=message)
 
     def hand_taker_commitment_msg(self, message):
+        print("hand_taker_commitment")
         self._state_machine.taker_commitment_msg(msg=message)
 
     def hand_transfer_receipt(self, transfer_receipt):
@@ -112,11 +119,12 @@ class SwapCommitment(object):
         self.queue_send(swap_completed_message, None)
 
     def send_maker_commitment_proof(self):
-        commitment_proof_msg = messages.CommitmentProof(self.maker_commitment_msg.signature)
+        commitment_proof_msg = messages.CommitmentProof(self.maker_commitment_msg.signature, self.secret, self.secret_hash, self.offer_id)
+        self.maker_commitment_proof = commitment_proof_msg
         self.queue_send(commitment_proof_msg, self.maker_address)
 
     def send_taker_commitment_proof(self):
-        commitment_proof_msg = messages.CommitmentProof(self.taker_commitment_msg.signature)
+        commitment_proof_msg = messages.CommitmentProof(self.taker_commitment_msg.signature, self.secret, self.secret_hash, self.offer_id)
         self.queue_send(commitment_proof_msg, self.taker_address)
 
     def punish_maker(self):
@@ -132,13 +140,20 @@ class SwapCommitment(object):
     def refund_maker(self):
         # This has to go through!
         self.queue_refund(self.maker_transfer_receipt)
+        print(f'{type(self.offer_id)}, {self.offer_id}')
+        cancellation_proof_msg = messages.CancellationProof(self.offer_id, self.maker_commitment_proof)
+        self.queue_send(cancellation_proof_msg, self.maker_address)
 
     def refund_maker_with_fee(self):
+        print("refund maker")
         self.queue_refund(self.maker_transfer_receipt, claim_fee=True)
 
     def refund_taker_with_fee(self):
+        print("refund taker")
         self.queue_refund(self.taker_transfer_receipt, claim_fee=True)
 
+    def hand_cancellation_msg(self):
+        self._state_machine.timeout()
 
     #def __repr__(self):
     #    return '<%s(%s)>' % (self.__class__.__name__, )

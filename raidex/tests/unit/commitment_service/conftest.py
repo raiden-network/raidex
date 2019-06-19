@@ -8,7 +8,7 @@ from raidex.utils import timestamp
 from raidex.commitment_service.swap import SwapFactory
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.signing import Signer
-from raidex.raidex_node.trader.trader import (
+from raidex.trader_mock.trader import (
     TraderClientMock,
     Trader,
 )
@@ -97,7 +97,7 @@ def taker_commitment_msg():
     seconds_to_timeout = 0.1
     timeout = timestamp.time_plus(seconds_to_timeout)
     offer_id = 123
-    taker_commitment_msg = messages.TakerCommitment(offer_id=offer_id, offer_hash=keccak(offer_id),
+    taker_commitment_msg = messages.Commitment(offer_id=offer_id, offer_hash=keccak(offer_id),
                                                     timeout=timeout, amount=5)
     return taker_commitment_msg
 
