@@ -46,9 +46,9 @@ setup(
     version=version,
     description="",
     long_description=readme + '\n\n' + history,
-    author='ezdac',
-    author_email='max@brainbot.com',
-    url='https://github.com/brainbot-com/raidex',
+    author='luehrsFred',
+    author_email='frederik@brainbot.com',
+    url='https://github.com/raiden-network/raidex',
     packages=[
         'raidex',
     ],
@@ -59,13 +59,13 @@ setup(
         ]
     },
     include_package_data=True,
-    license='BSD',
+    license='MIT',
     zip_safe=False,
     keywords='raidex',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',
+        'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         "Programming Language :: Python :: 3",
         'Programming Language :: Python :: 3.6',
