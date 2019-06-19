@@ -5,67 +5,78 @@ codebase. It's here to help you understand what development practises we use her
 and what are the requirements for a Pull Request to be opened against Raidex
 
 - [Contributing](#contributing)
-  - [Creating an Issue](#creating-an-issue)
-  - [Creating a Pull Request](#creating-a-pull-request)
-- [Development environment setup](#development-environment-setup)
-- [Development Guidelines](#development-guidelines)
-  - [Coding Style](#coding-style)
-  - [Workflow](#workflow)
+  * [Creating an Issue](#creating-an-issue)
+    + [For Feature Requests](#for-feature-requests)
+    + [For Bugs](#for-bugs)
+  * [Creating a Pull Request](#creating-a-pull-request)
+    + [Prepare](#prepare)
+      - [Installation](#installation)
+      - [Test set-up](#test-set-up)
+    + [Implement](#implement)
+      - [Coding Style](#coding-style)
+      - [Writing a test](#writing-a-test)
+      - [Documentation](#documentation)
+      - [Commiting Rules](#commiting-rules)
+      - [Opening a pull request](#opening-a-pull-request)
+      - [Integrating Pull Requests](#integrating-pull-requests)
 
-## Contributing
+# Contributing
 
 There are two ways you can contribute to the development. You can either open
 an Issue or if you have programming abilities open a Pull Request.
 
-### Creating an Issue
+## Creating an Issue
 
 If you experience a problem while using the Raidex or want to request a feature
 then you should open an issue against the repository. All issues should
 contain:
 
-**For Feature Requests:**
+### For Feature Requests
 
 - A description of what you would like to see implemented.
 - An explanation of why you believe this would make a good addition to Raidex.
 
-**For Bugs:**
+### For Bugs
 
 - A short description of the problem.
 - Detailed description of your system, SDK version, environment (e.g. Metamask), Wallet version if you are using the wallet.
 - What was the exact unexpected thing that occured.
 - What you were expecting to happen instead.
 
-## Development environment setup
+## Creating a Pull Request
 
-You can check the [Readme](./readme.md#installation) 
+### Prepare
 
-### Testing
+#### Installation
 
-The unit tests use jest:
+You can check the [installation section of the readme](./readme.md#installation) how to install and run raidEX
 
-For the sdk you have to run the following:
+#### Test set-up
 
-```bash
-    cd raiden
-    npm run test
+\\ TODO
 
-```
+### Implement
 
-For the wallet:
+#### Coding Style
 
-```bash
-    cd raiden-wallet
-    npm run test:unit
-```
+\\ TODO
 
-Tests are split in unit tests, and integration tests. The first are faster to execute while
-the latter test the whole system but are slower to run.
+#### Writing a test
 
-### Testing on the CI
+When developing a feature, or a bug fix you should always start by writing a
+**test** for it, or by modifying existing tests to test for your feature.
+Once you see that test failing you should implement the feature and confirm
+that all your new tests pass.
 
-By default whenever you make a Pull Request the linter tests, format checks, unit tests and all the integration tests will run.
+Your addition to the test suite should call into the innermost level possible
+to test your feature/bugfix. In particular, integration tests should be avoided
+in favor of unit tests whenever possible.
 
-### Commiting Rules
+#### Documentation
+
+Code should be documented.
+
+#### Commiting Rules
 
 For an exhaustive guide read [this](http://chris.beams.io/posts/git-commit/)
 guide. It's all really good advice. Some rules that you should always follow though are:
@@ -79,35 +90,10 @@ information treat the first 80 characters as a title. Even Github itself does
 this. And the git history looks really nice and neat if these simple rules are
 followed.
 
-### Documentation
-
-Code should be documented.
-
-### Coding Style
-
-The code style is enforced by [prettier](https://prettier.io/) which means that in most of the cases you don't actually need to do anything more than running the appropriate task.
-
-To fix any fixable codestyle issue in either SDK or Wallet, you may just run the following command on the respective folder:
-
-```bash
-npm run lint
-```
-
-Linting plugins available for modern IDEs are also useful in early spotting any mistakes and help keep the code quality level.
-
-### Workflow
-
-When developing a feature, or a bug fix you should always start by writing a
-**test** for it, or by modifying existing tests to test for your feature.
-Once you see that test failing you should implement the feature and confirm
-that all your new tests pass.
-
-Your addition to the test suite should call into the innermost level possible
-to test your feature/bugfix. In particular, integration tests should be avoided
-in favor of unit tests whenever possible.
+#### Opening a pull request
 
 Afterwards you should open a Pull Request from your fork or feature branch
-against master. You will be given feedback from the core developers of raiden
+against master. You will be given feedback from the core developers of Raiden
 and you should try to incorporate that feedback into your branch. Once you do
 so and all tests pass your feature/fix will be merged.
 
