@@ -7,12 +7,12 @@
       alt='' 
       src="https://user-images.githubusercontent.com/35398162/59664605-a7aecb00-91b1-11e9-9d61-44adaf4db0a2.jpeg" /></a>
   <br/>
-   raidEX POC - A Decentralized Token Exchange Proof of Concept on Raiden
+   raidEX Proof of Concept
   <br/>
 </h2>
 
 <h4 align="center">
-   Proof of Concept for a decentralized exchange built on Ethereum and Raiden off-chain state channel technology
+   POC for a decentralized exchange built on Raiden state channel technology
 </h4>
 
 <p align="center">
@@ -26,12 +26,11 @@
   </a>
 </p>
 
-> **INFO:** The current raidEX version is a work in progress proof-of-concept to show how a DEX could be built on top of Raiden. 
+> **INFO** The current raidEX version is a work in progress proof-of-concept to show how a DEX could be built on top of Raiden. 
 
 ## Fixing the custodian issue
 
-While there are already decentralized exchanges, they are built on the blockchain and inherit the performance restrictions of global consensus systems, i.e. especially latency and limited transaction throughput, which result in low liquidity for these exchanges. These prevent them from being anywhere near practical for real world usage.
-
+While there are already decentralized exchanges, they are built on the blockchain and inherit the performance restrictions of the global consensus systems, i.e. especially latency and limited transaction throughput. This results in a low liquidity for these exchanges. 
 
 ## High throughput & low latency
 
