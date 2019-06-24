@@ -29,6 +29,7 @@ Notes:
 Notes: 
 - activate the virtual environment beforehand
  
+ **Commitment Service**
 
 If you want to run the Commitment Service by yourself.. 
 1) Run Raiden with the same keystore file for the Commitment Service.
@@ -51,7 +52,8 @@ Notes:
 - activate the virtual environment before starting raidex
 
 **WebUI**
-After installing all dependecies (see `./webui/README.md`), the WebUI can than be started
+
+After installing all dependecies (see `./webui/README.md`), the WebUI can then be started
 with:
  
 ```
@@ -62,7 +64,7 @@ ng serve
 
 ### General Notes
 
-- Currently only 1 trading pair is supported. The default trading pair is set to be WETH and Raiden Testnet Token (RTT) on Kovan Testnet.
-WETH Contract Address: `0xd0A1E359811322d97991E03f863a0C30C2cF029C`
-RTT Contract Address: `0x92276aD441CA1F3d8942d614a6c3c87592dd30bb`
+- Currently only 1 trading pair is supported. The default trading pair is set to be WETH and Raiden Testnet Token (RTT) on Kovan Testnet.  
+WETH Contract Address: `0xd0A1E359811322d97991E03f863a0C30C2cF029C`  
+RTT Contract Address: `0x92276aD441CA1F3d8942d614a6c3c87592dd30bb`  
 If you do want to use other trading pairs (not recommended yet) change the addresses in `*RAIDEX_DIR*/raidex/constants.py`
