@@ -1,5 +1,5 @@
-## Decentralized Token Exchange on Raiden
-
+## Decentralized Token Exchange on Raiden  
+### Installation
 1) please install raiden as stated in github.com/raiden-network/raiden/blob/master/docs/overview_and_guide.rst
 2) `git clone git@github.com:raiden-network/raidex.git`
 3) `cd raidex`
