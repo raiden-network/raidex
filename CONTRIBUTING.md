@@ -48,10 +48,6 @@ contain:
 
 You can check the [installation section of the readme](./readme.md#installation) how to install and run raidEX
 
-#### Test set-up
-
-\\ TODO
-
 ### Implement
 
 #### Coding Style
