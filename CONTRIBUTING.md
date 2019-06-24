@@ -56,7 +56,7 @@ You can check the [installation section of the readme](./readme.md#installation)
 
 #### Coding Style
 
-\\ TODO
+Raidex is written in python 3. Please follow the official Python style guide PEP8.
 
 #### Writing a test
 
