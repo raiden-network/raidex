@@ -10,6 +10,6 @@ export class AppComponent {
     public altText = 'raidEX';
     public imageUrl = 'raidexlogo.png';
     public title = 'Decentralised Exchange based on Raiden';
-    public markets = ['GNO/ETH', 'ETH/AUG'];
-    public selectedMarket = 'GNO/ETH';
+    public markets = ['RTT/WETH'];
+    public selectedMarket = 'RTT/WETH';
 }

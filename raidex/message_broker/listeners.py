@@ -1,7 +1,8 @@
 from contextlib import contextmanager
 from raidex.message_broker.message_broker import MessageBroker
 from raidex import messages
-from raidex.raidex_node.offer_book import OfferType, Offer
+from raidex.raidex_node.offer_book import OfferBookEntry
+from raidex.raidex_node.order.offer import OfferType, BasicOffer
 from raidex.raidex_node.trades import SwapCompleted
 
 
@@ -38,7 +39,9 @@ class MessageListener(object):
 
     def start(self):
         """Starts listening for new messages"""
+
         self.listener = self.message_broker.listen_on(self.topic, self._transform)
+        print(f"LISTEN ON TOPIC: {self.topic} , {self.__class__.__name__}")
 
     def stop(self):
         """Stops listening for new messages"""
@@ -52,14 +55,28 @@ class MessageListener(object):
 class TakerListener(MessageListener):
     """Listens for the Taker of the offer"""
 
-    def __init__(self, offer, message_broker, topic='broadcast'):
+    def __init__(self, offer, message_broker):
         self.offer = offer
-        MessageListener.__init__(self, message_broker, topic)
+        MessageListener.__init__(self, message_broker, message_broker.address)
 
     def _transform(self, message):
         if isinstance(message,
-                      messages.ProvenCommitment) and message.commitment.offer_id == self.offer.offer_id:  # TODO check more
-            return message.sender
+                      messages.ProvenOffer) and message.offer.offer_id == self.offer.offer_id:  # TODO check more
+            return message
+        else:
+            return None
+
+
+class CancellationListener(MessageListener):
+
+    def __init__(self, offer, message_broker):
+        self.offer = offer
+        MessageListener.__init__(self, message_broker, message_broker.address)
+
+    def _transform(self, message):
+        if isinstance(message,
+                      messages.CancellationProof):  # TODO check more
+            return message
         else:
             return None
 
@@ -75,8 +92,6 @@ class OfferListener(MessageListener):
         if not isinstance(message, messages.ProvenOffer):
             return None
         offer_msg = message.offer
-        commitment_msg = message.commitment
-        commitment_proof_msg = message.commitment_proof
 
         ask_token = offer_msg.ask_token
         bid_token = offer_msg.bid_token
@@ -84,15 +99,21 @@ class OfferListener(MessageListener):
         type_ = self.market.get_offer_type(ask_token, bid_token)
 
         if type_ is OfferType.BUY:
-            base_amount, counter_amount = offer_msg.ask_amount, offer_msg.bid_amount
+            base_amount, quote_amount = offer_msg.ask_amount, offer_msg.bid_amount
         elif type_ is OfferType.SELL:
-            base_amount, counter_amount = offer_msg.bid_amount, offer_msg.ask_amount
+            base_amount, quote_amount = offer_msg.bid_amount, offer_msg.ask_amount
         else:
             raise AssertionError("unknown market pair")
 
-        offer = Offer(type_, base_amount, counter_amount, offer_id=offer_msg.offer_id, timeout=offer_msg.timeout,
-                      maker_address=message.sender, commitment_amount=commitment_msg.amount)
-        return offer
+        offer = BasicOffer(offer_id=offer_msg.offer_id,
+                           offer_type=type_,
+                           base_amount=base_amount,
+                           quote_amount=quote_amount,
+                           timeout_date=offer_msg.timeout)
+
+        commitment_proof = message.commitment_proof
+        initiator = message.sender
+        return OfferBookEntry(offer, initiator, commitment_proof)
 
 
 class OfferTakenListener(MessageListener):
@@ -115,15 +136,22 @@ class SwapExecutionListener(MessageListener):
 class TakerCommitmentListener(MessageListener):
 
     def _transform(self, message):
-        if not isinstance(message, messages.TakerCommitment):
+        if not isinstance(message, messages.Commitment):
+            return None
+        return message
+
+class CancellationListener(MessageListener):
+
+    def _transform(self, message):
+        if not isinstance(message, messages.Cancellation):
             return None
         return message
 
 
-class MakerCommitmentListener(MessageListener):
+class CommitmentListener(MessageListener):
 
     def _transform(self, message):
-        if not isinstance(message, messages.MakerCommitment):
+        if not isinstance(message, messages.Commitment):
             return None
         return message
 
@@ -140,6 +168,6 @@ class SwapCompletedListener(MessageListener):
 class CommitmentProofListener(MessageListener):
 
     def _transform(self, message):
-        if not isinstance(message, messages.CommitmentProof):
+        if not isinstance(message, (messages.CommitmentProof, messages.CancellationProof)):
             return None
         return message

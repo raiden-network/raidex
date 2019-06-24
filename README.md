@@ -1,3 +1,4 @@
+
 <!-- PROJECT SHIELDS -->
 
 <h2 align="center">
@@ -11,9 +12,13 @@
   <br/>
 </h2>
 
+
+
+
 <h4 align="center">
    POC for a decentralized exchange built on Raiden state channel technology
 </h4>
+
 
 <p align="center">
   <a href="#getting-started">Getting Started</a> ∙
@@ -36,6 +41,7 @@ While there are already decentralized exchanges, they are built on the blockchai
 
 The mentioned performance restrictions are overcome by off-chain state technology, i.e. the Raiden Network for Ethereum. As raidEX is based on the Ethereum platform and the Raiden Network, it is fully interoperable and leverages synergies with tokens and apps in the Ethereum ecosystem.
 
+
 ## Table of Contents
 
 
@@ -43,45 +49,9 @@ The mentioned performance restrictions are overcome by off-chain state technolog
 
 // TODO: Adapt
 
-### [Raiden Light Client SDK](./raiden/README.md)
-
-This is a standalone Typescript library which contains all the low level machinery to interact with the Ethereum blockchain and the Raiden Network.
-
-Its target audience is blockchain and dApp developers looking into interacting with and performing payments through the Raiden Network from their apps. Targeting browsers and Node.js as initial platforms allows it to reach the majority of current and in-development dApps, as well as to work as a common language reference implementation for ports and re-implementations in other future languages and environments.
-
-Look at the [Raiden Light Client SDK folder of this repository](./raiden/README.md) for more information.
-
-### Raiden dApp
-
-The Raiden dApp is the demo and first dApp user of the SDK. It's a single page application (SPA) built on top of [Vue.js](https://vuejs.org/), [vuex](https://vuex.vuejs.org) and [vuetify](https://vuetifyjs.com) as UI framework which uses Material Design as the design guideline.
-
 ### Architecture diagram
 
-```
-            +-------------------+
-            |                   |
-            |   Raiden dApp   |
-            |                   |
-            |  vue/vuex/vuetify |
-            |                   |
-            +---------+---------+
-            |                   |
-            |    Raiden SDK     |
-            |                   |
-            +----+----+----+----+
-            |         |         |      +------------+
-         +--+  redux  +  epics  +------+ Matrix.org |
-         |  |         |         |      +-----+------+
-         |  +---------+-----+---+            |
-         |                  |          +-----+------+
-+--------+-------+   +------+------+   |   Raiden   |
-|  localStorage  |   |  ethers.js  |   |   Network  |
-+----------------+   +------+------+   +------------+
-                            |
-                     +------+------+
-                     |  ethereum   |
-                     +-------------+
-```
+
 
 ## Getting Started
 
@@ -102,27 +72,75 @@ To run the code in this repository, you must
 
 ## Installation
 
-1) `git clone https://github.com/brainbot-com/raidex.git`
-2) `cd raidex`
-3) Install with `python setup.py develop`.
+## Decentralized Token Exchange on Raiden  
+### Installation
+1) please install raiden as stated in github.com/raiden-network/raiden/blob/master/docs/overview_and_guide.rst
+2) `git clone git@github.com:raiden-network/raidex.git`
+3) `cd raidex`
 
-### Run
+It’s advised to create a virtualenv for Raidex (requires **python3.6**) and install all python dependencies there.
 
-The easiest way to test the functionality of raidex is achieved with a special command that mocks all 
-the networking activity as well as the commitment-service in one process.
-Additionally, different types of bots can be started, to introduce some trading activity.
+4) Install with `python setup.py develop`.
 
-```
-raidex --mock-networking --api --bots liquidity random manipulator
-```
+### Getting started
 
-After installing all dependecies (see `./webui/README.md`), the WebUI can than be started
+
+For the current version, seperate programs need to be run before starting raidex.
+
+
+**Raiden**
+
+1) Run Raiden as described in https://raiden-network.readthedocs.io/en/stable/overview_and_guide.html#firing-it-up
+
+Notes:
+- Run Raiden with the same keystore file as your raidex node later on.
+
+**Message Broker** 
+
+1) Open your raidex directory 
+2) Run the Message Broker with `python raidex/message_broker/server.py`
+
+Notes: 
+- activate the virtual environment beforehand
+ 
+ **Commitment Service**
+
+If you want to run the Commitment Service by yourself.. 
+1) Run Raiden with the same keystore file for the Commitment Service.
+2) Start the Commitment Service with `python raidex/commitment_service/__main__.py --trader-port *PATH_TO_RAIDEN_NODE* --keyfile *PATH_TO_KEYFILE* --pwfile *PATH_TO_PASSWORD_FILE*`
+
+If you do have a Commitment Service instance running, you can skip the above steps.
+
+Notes:
+- make sure you have an open raiden channel with the commitment service address. Top up the channel to be able to pay the fees.
+- activate the virtual environment before running the step 2)
+
+**Raidex**
+
+1) Start Raidex Node with `raidex --api --keyfile=*PATH_TO_KEYFILE* --pwfile=*PATH_TO_PASSWORD_FILE* --trader-port=*PORT_TO_RAIDEN_NODE*  --api-port=*RAIDEX_API_PORT*`
+
+Notes:
+
+- Run a Raiden instance with the same keystore
+- Run the programs as stated above
+- activate the virtual environment before starting raidex
+
+**WebUI**
+
+After installing all dependecies (see `./webui/README.md`), the WebUI can then be started
 with:
  
 ```
 cd webui
 ng serve
 ```
+
+### General Notes
+
+- Currently only 1 trading pair is supported. The default trading pair is set to be WETH and Raiden Testnet Token (RTT) on Kovan Testnet.  
+WETH Contract Address: `0xd0A1E359811322d97991E03f863a0C30C2cF029C`  
+RTT Contract Address: `0x92276aD441CA1F3d8942d614a6c3c87592dd30bb`  
+If you do want to use other trading pairs (not recommended yet) change the addresses in `*RAIDEX_DIR*/raidex/constants.py`
 
 
 ## Contributing
@@ -148,3 +166,6 @@ Mail: contact@raiden.network
 *The Raiden project is led by brainbot labs Est.*
 
 > Disclaimer: Please note, that even though we do our best to ensure the quality and accuracy of the information provided, this publication may contain views and opinions, errors and omissions for which the content creator(s) and any represented organization cannot be held liable. The wording and concepts regarding financial terminology (e.g. “payments”, “checks”, “currency”, “transfer” [of value]) are exclusively used in an exemplary way to describe technological principles and do not necessarily conform to the real world or legal equivalents of these terms and concepts.
+
+
+

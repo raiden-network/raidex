@@ -2,7 +2,7 @@ import random
 from itertools import chain, repeat
 from gevent import Greenlet, sleep
 import structlog
-from raidex.raidex_node.offer_book import OfferType
+from raidex.raidex_node.order.offer import OfferType
 
 random.seed(0)
 

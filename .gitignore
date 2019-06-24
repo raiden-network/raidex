@@ -38,3 +38,7 @@ webui/typings
 
 #virutalenv
 venv/*
+
+#coverage
+raidex/tests/htmlcov*
+raidex/tests/.coverage
