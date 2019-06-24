@@ -72,8 +72,6 @@ To run the code in this repository, you must
 
 ## Installation
 
-## Decentralized Token Exchange on Raiden  
-### Installation
 1) please install raiden as stated in github.com/raiden-network/raiden/blob/master/docs/overview_and_guide.rst
 2) `git clone git@github.com:raiden-network/raidex.git`
 3) `cd raidex`
@@ -82,20 +80,20 @@ It’s advised to create a virtualenv for Raidex (requires **python3.6**) and in
 
 4) Install with `python setup.py develop`.
 
-### Getting started
+## Run
 
 
 For the current version, seperate programs need to be run before starting raidex.
 
 
-**Raiden**
+### Raiden
 
 1) Run Raiden as described in https://raiden-network.readthedocs.io/en/stable/overview_and_guide.html#firing-it-up
 
 Notes:
 - Run Raiden with the same keystore file as your raidex node later on.
 
-**Message Broker** 
+### Message Broker 
 
 1) Open your raidex directory 
 2) Run the Message Broker with `python raidex/message_broker/server.py`
@@ -103,8 +101,8 @@ Notes:
 Notes: 
 - activate the virtual environment beforehand
  
- **Commitment Service**
-
+ ### Commitment Service
+ 
 If you want to run the Commitment Service by yourself.. 
 1) Run Raiden with the same keystore file for the Commitment Service.
 2) Start the Commitment Service with `python raidex/commitment_service/__main__.py --trader-port *PATH_TO_RAIDEN_NODE* --keyfile *PATH_TO_KEYFILE* --pwfile *PATH_TO_PASSWORD_FILE*`
@@ -115,7 +113,7 @@ Notes:
 - make sure you have an open raiden channel with the commitment service address. Top up the channel to be able to pay the fees.
 - activate the virtual environment before running the step 2)
 
-**Raidex**
+### Raidex
 
 1) Start Raidex Node with `raidex --api --keyfile=*PATH_TO_KEYFILE* --pwfile=*PATH_TO_PASSWORD_FILE* --trader-port=*PORT_TO_RAIDEN_NODE*  --api-port=*RAIDEX_API_PORT*`
 
@@ -125,7 +123,7 @@ Notes:
 - Run the programs as stated above
 - activate the virtual environment before starting raidex
 
-**WebUI**
+### WebUI
 
 After installing all dependecies (see `./webui/README.md`), the WebUI can then be started
 with:
