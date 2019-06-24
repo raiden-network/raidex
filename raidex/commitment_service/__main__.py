@@ -4,7 +4,6 @@ from gevent.event import Event
 import structlog
 
 from raidex.commitment_service.node import CommitmentService
-from raidex.raidex_node.transport.client import MessageBrokerClient
 
 structlog.configure()
 
@@ -28,10 +27,12 @@ def main():
 
     args = parser.parse_args()
 
-    message_broker = MessageBrokerClient(host=args.broker_host, port=args.broker_port)
-    commitment_service = CommitmentService.build_service(message_broker,
-                                                         keyfile=args.keyfile,
+    commitment_service = CommitmentService.build_service(keyfile=args.keyfile,
                                                          pw_file=args.pwfile,
+                                                         message_broker_host=args.broker_host,
+                                                         message_broker_port=args.broker_port,
+                                                         trader_host=args.trader_host,
+                                                         trader_port=args.trader_port,
                                                          fee_rate=0)
     commitment_service.start()
 
