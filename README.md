@@ -47,26 +47,32 @@ The mentioned performance restrictions are overcome by off-chain state technolog
 ### Overview
 raidEX consists of several components
 - Commitment Service
-- Message Broker (Order Book)
+- Order Book
 - raidEX nodes
 - Raiden nodes
+- Message Broker
 
 > Insert diagram
 
-### Commitment Service (CS)
+### Commitment Service
 
-When two parties want to engage in a trade the commitment service guides the communication between them. When signing the agreement the CS acts as a notary. Finally, it settles the trade by revealing the secret to the HTLC of the parties' payments via the raiden network.
+When two parties want to engage in a trade the commitment service guides the communication between them. 
 
-### Message Broker (Order Book)
+When signing the agreement it acts as a notary. Finally, it settles the trade by revealing the secret to the HTLC of the parties' payments via the raiden network.
 
-The message broker is a simple sub/pub model to send messages around. A public broadcast acts as the order book. 
+### Order Book
+
+Each raidEX node builds its own decentralized order book. It receives and publishes new orders from/to a public broadcast channel distributed via the message broker.
 
 ### raidEX nodes
-The raidEX node is the core instance implementing the raidEX protocol. When necessary it communicates with its respective raiden node, triggering payments and acknowledging when payments have been received. On the other end it communicates to other raidex nodes or the commitment service via the message broker. 
+The raidEX node is the core instance implementing the raidEX protocol. It communicates with its respective raiden node, triggering payments and acknowledging when payments have been received. On the other end it communicates to other raidex nodes or the commitment service via the message broker. 
 
 ### Raiden nodes
 Every raidEX node need an underlying raiden node to transfer value. It is used to exchange assets via the raiden network or to pay fees to the commitment service.
 
+### Message Broker
+
+The message broker is a simple sub/pub model to exchange messages. raidEX nodes communicate via the message broker with the commitment service and to other raidEX nodes. It also reads and writes to/from the order book broadcast.
 
 ## Getting Started
 
