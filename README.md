@@ -95,7 +95,7 @@ Install with
 
 For the current version Raiden, the Message Broker and the Commitment Service need to run before starting raidex.
 
-#### Raiden
+#### Start Raiden
 
 Start Raiden as described in the [Raiden Installation Guide](https://raiden-network.readthedocs.io/en/stable/overview_and_guide.html#firing-it-up).
 
@@ -103,7 +103,7 @@ Start Raiden as described in the [Raiden Installation Guide](https://raiden-netw
 
 > Question: Any commands for the keystore file? Commitment Service
 
-#### Message Broker 
+#### Start the Message Broker 
 
 Open your raidex directory 
 
@@ -117,7 +117,7 @@ Run the Message Broker with
 
 `python raidex/message_broker/server.py`
  
-#### Commitment Service
+#### Start the Commitment Service
 
 > **Info:** Run the Commitment Service with the same keystore file as Raiden
 
@@ -133,7 +133,7 @@ Open a Raiden Channel with the commitment service
 
 Top up the Raiden Channel to pay fees
 
-#### Raidex
+#### Start Raidex
 
 Activate the virtual environment
 
@@ -143,7 +143,7 @@ Start the Raidex Node
 
 `raidex --api --keyfile=*PATH_TO_KEYFILE* --pwfile=*PATH_TO_PASSWORD_FILE* --trader-port=*PORT_TO_RAIDEN_NODE*  --api-port=*RAIDEX_API_PORT*`
 
-#### WebUI
+#### Access the WebUI
 
 > Remark: It is already included in Raiden (can we remove it?)
 
