@@ -53,13 +53,20 @@ raidEX consists of several components
 
 > Insert diagram
 
-### Commitment Service
+### Commitment Service (CS)
+
+When two parties want to engage in a trade the commitment service guides the communication between them. When signing the agreement the CS acts as a notary. Finally, it settles the trade by revealing the secret to the HTLC of the parties' payments via the raiden network.
 
 ### Message Broker (Order Book)
 
+The message broker is a simple sub/pub model to send messages around. A public broadcast acts as the order book. 
+
 ### raidEX nodes
+The raidEX node is the core instance implementing the raidEX protocol. When necessary it communicates with its respective raiden node, triggering payments and acknowledging when payments have been received. On the other end it communicates to other raidex nodes or the commitment service via the message broker. 
 
 ### Raiden nodes
+Every raidEX node need an underlying raiden node to transfer value. It is used to exchange assets via the raiden network or to pay fees to the commitment service.
+
 
 ## Getting Started
 
@@ -88,12 +95,29 @@ Clone the repository from Github
 
 Create a virtualenv for Raidex (requires **python3.6**) and install all python dependencies there.
 
+```
+python3.6 -m venv venv
+source venv/bin/activate
+```
+
 Install with 
 `python setup.py develop`.
 
 ### Run
 
-For the current version Raiden, the Message Broker and the Commitment Service need to run before starting raidex.
+For the current version Raiden, the Message Broker and the Commitment Service need to run before starting the raidex node. Currently the Raidex Node is configured to be used in Kovan Testnet.
+
+#### Start the Message Broker 
+
+In your raidex directory..
+
+```
+#Activate the virtual environment
+source  venv/bin/activate
+
+#Run the Message Broker with 
+python raidex/message_broker/server.py
+```
 
 #### Start Raiden
 
@@ -101,47 +125,48 @@ Start Raiden as described in the [Raiden Installation Guide](https://raiden-netw
 
 > **Info:** Run Raiden with the same keystore file as your raidex node later on.
 
-> Question: Any commands for the keystore file? Commitment Service
+If you want to run the commitment service by yourself, you need to start a second raiden node for the commitment service. Please see below.
 
-#### Start the Message Broker 
-
-Open your raidex directory 
-
-> Question: Is there a command for this?
-
-Activate the virtual environment
-
-> Question: Is there a command for this?
-
-Run the Message Broker with 
-
-`python raidex/message_broker/server.py`
- 
 #### Start the Commitment Service
 
 > **Info:** Run the Commitment Service with the same keystore file as Raiden
 
+Run a Raiden Node for the commitment service as described above. Choose a different port and keystore for the commitment service.
+
 Start the Commitment Service 
 
-`python raidex/commitment_service/__main__.py --trader-port *PATH_TO_RAIDEN_NODE* --keyfile *PATH_TO_KEYFILE* --pwfile *PATH_TO_PASSWORD_FILE*`
+```
+# go to raidex directory
+cd raidex
 
-Activate the virtual environment
+# activate virtual environment
+source venv/bin/activate
 
-> Question: Is there a command for this?
+# run the commitment service
+python raidex/commitment_service/__main__.py --trader-port *PATH_TO_RAIDEN_NODE* --keyfile *PATH_TO_KEYFILE* --pwfile *PATH_TO_PASSWORD_FILE*`
+```
 
-Open a Raiden Channel with the commitment service
+#### Create Raiden Channels to the Commitment Service
 
-Top up the Raiden Channel to pay fees
+In order to be able to pay the fees to the Commitment Service a Raiden Channel from the user's node to the CS Node must be created and topped up. A convinient way to create channels is via accessing the Raiden WebUI (Default: http://localhost:5001). Currently fees are being payed in Raiden Testnet Token (RTT) (Please see General Notes).
+
+Open a channel and deposit RTT as describen in https://raiden-network.readthedocs.io/en/stable/webui_tutorial.html
+
 
 #### Start Raidex
 
-Activate the virtual environment
+After running the Raiden Node, the message broker and the commitment service you are good to go to start the raidex node. 
 
-> Question: Is there a command for this?
+```
+# go to raidex directory
+cd raidex
 
-Start the Raidex Node
+# activate virtual environment
+source venv/bin/activate
 
-`raidex --api --keyfile=*PATH_TO_KEYFILE* --pwfile=*PATH_TO_PASSWORD_FILE* --trader-port=*PORT_TO_RAIDEN_NODE*  --api-port=*RAIDEX_API_PORT*`
+# start the Raidex Node
+raidex --api --keyfile=*PATH_TO_KEYFILE* --pwfile=*PATH_TO_PASSWORD_FILE* --trader-port=*PORT_TO_RAIDEN_NODE*  --api-port=*RAIDEX_API_PORT*
+```
 
 #### Access the WebUI
 
@@ -157,12 +182,22 @@ ng serve
 
 Start the WebUI as described in the [Web Application Tutorial](https://raiden-network.readthedocs.io/en/stable/webui_tutorial.html)
 
-#### General Notes
+### General Notes
 
-Currently only 1 trading pair is supported. The default trading pair is set to be WETH and Raiden Testnet Token (RTT) on Kovan Testnet
+The Raidex Project is currently configured to be used on the Kovan Testnet. It is recommended to test and play around there.
+
+If you do not have Kovan Ether (KETH) you can get them here https://faucet.kovan.network/
+To get Wrapped Eth (WETH) send the wished amount of KETH to the WETH contract address (see below)
+
+
+Currently raidex supports the use of one trading pair. The default trading pair is set to be WETH and Raiden Testnet Token (RTT) on Kovan Testnet
 - WETH Contract Address: `0xd0A1E359811322d97991E03f863a0C30C2cF029C`  
-- RTT Contract Address: `0x92276aD441CA1F3d8942d614a6c3c87592dd30bb`  
+- RTT Contract Address: `0x92276aD441CA1F3d8942d614a6c3c87592dd30bb`
 If you do want to use other trading pairs (not recommended yet) change the addresses in `*RAIDEX_DIR*/raidex/constants.py`
+
+Fees to the commitment service are paid in Raiden Testnet Token (RTT) which can be minted. > link to how to mint token?
+
+
 
 ## Contributing
 
