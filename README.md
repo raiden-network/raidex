@@ -118,9 +118,11 @@ For the current version Raiden, the Message Broker and the Commitment Service ne
 
 #### Start the Message Broker 
 
-In your raidex directory..
 
 ```
+# go to raidex directory
+cd raidex
+
 #Activate the virtual environment
 source  venv/bin/activate
 
@@ -177,9 +179,7 @@ source venv/bin/activate
 raidex --api --keyfile=*PATH_TO_KEYFILE* --pwfile=*PATH_TO_PASSWORD_FILE* --trader-port=*PORT_TO_RAIDEN_NODE*  --api-port=*RAIDEX_API_PORT*
 ```
 
-#### Access the WebUI
-
-> Remark: It is already included in Raiden (can we remove it?)
+#### Access the raidEX WebUI
 
 After installing all dependecies (see `./webui/README.md`), the WebUI can then be started
 with:
