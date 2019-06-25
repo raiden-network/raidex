@@ -72,9 +72,8 @@ To run the code in this repository, you must
 
 ## Installation
 
-1) please install raiden as stated in github.com/raiden-network/raiden/blob/master/docs/overview_and_guide.rst
-2) `git clone git@github.com:raiden-network/raidex.git`
-3) `cd raidex`
+1) `git clone git@github.com:raiden-network/raidex.git`
+2) `cd raidex`
 
 It’s advised to create a virtualenv for Raidex (requires **python3.6**) and install all python dependencies there.
 
