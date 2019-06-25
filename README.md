@@ -72,58 +72,72 @@ To run the code in this repository, you must
 
 ## Installation
 
-1) please install raiden as stated in github.com/raiden-network/raiden/blob/master/docs/overview_and_guide.rst
-2) `git clone git@github.com:raiden-network/raidex.git`
-3) `cd raidex`
+Clone the repository from Github
 
-It’s advised to create a virtualenv for Raidex (requires **python3.6**) and install all python dependencies there.
+`git clone git@github.com:raiden-network/raidex.git`
 
-4) Install with `python setup.py develop`.
+`cd raidex`
+
+Create a virtualenv for Raidex (requires **python3.6**) and install all python dependencies there.
+
+Install with 
+`python setup.py develop`.
 
 ## Run
 
-
-For the current version, seperate programs need to be run before starting raidex.
-
+For the current version Raiden, the Message Broker and the Commitment Service need to run before starting raidex.
 
 ### Raiden
 
-1) Run Raiden as described in https://raiden-network.readthedocs.io/en/stable/overview_and_guide.html#firing-it-up
+Start Raiden as described in the [Raiden Installation Guide](https://raiden-network.readthedocs.io/en/stable/overview_and_guide.html#firing-it-up).
 
-Notes:
-- Run Raiden with the same keystore file as your raidex node later on.
+> **Info:** Run Raiden with the same keystore file as your raidex node later on.
+
+> Question: Any commands for the keystore file? Commitment Service
 
 ### Message Broker 
 
-1) Open your raidex directory 
-2) Run the Message Broker with `python raidex/message_broker/server.py`
+Open your raidex directory 
 
-Notes: 
-- activate the virtual environment beforehand
+> Question: Is there a command for this?
+
+Activate the virtual environment
+
+> Question: Is there a command for this?
+
+Run the Message Broker with 
+
+`python raidex/message_broker/server.py`
  
- ### Commitment Service
- 
-If you want to run the Commitment Service by yourself.. 
-1) Run Raiden with the same keystore file for the Commitment Service.
-2) Start the Commitment Service with `python raidex/commitment_service/__main__.py --trader-port *PATH_TO_RAIDEN_NODE* --keyfile *PATH_TO_KEYFILE* --pwfile *PATH_TO_PASSWORD_FILE*`
+### Commitment Service
 
-If you do have a Commitment Service instance running, you can skip the above steps.
+> **Info:** Run the Commitment Service with the same keystore file as Raiden
 
-Notes:
-- make sure you have an open raiden channel with the commitment service address. Top up the channel to be able to pay the fees.
-- activate the virtual environment before running the step 2)
+Start the Commitment Service 
+
+`python raidex/commitment_service/__main__.py --trader-port *PATH_TO_RAIDEN_NODE* --keyfile *PATH_TO_KEYFILE* --pwfile *PATH_TO_PASSWORD_FILE*`
+
+Activate the virtual environment
+
+> Question: Is there a command for this?
+
+Open a Raiden Channel with the commitment service
+
+Top up the Raiden Channel to pay fees
 
 ### Raidex
 
-1) Start Raidex Node with `raidex --api --keyfile=*PATH_TO_KEYFILE* --pwfile=*PATH_TO_PASSWORD_FILE* --trader-port=*PORT_TO_RAIDEN_NODE*  --api-port=*RAIDEX_API_PORT*`
+Activate the virtual environment
 
-Notes:
+> Question: Is there a command for this?
 
-- Run a Raiden instance with the same keystore
-- Run the programs as stated above
-- activate the virtual environment before starting raidex
+Start the Raidex Node
+
+`raidex --api --keyfile=*PATH_TO_KEYFILE* --pwfile=*PATH_TO_PASSWORD_FILE* --trader-port=*PORT_TO_RAIDEN_NODE*  --api-port=*RAIDEX_API_PORT*`
 
 ### WebUI
+
+> Remark: It is already included in Raiden (can we remove it?)
 
 After installing all dependecies (see `./webui/README.md`), the WebUI can then be started
 with:
@@ -133,13 +147,14 @@ cd webui
 ng serve
 ```
 
+Start the WebUI as described in the [Web Application Tutorial](https://raiden-network.readthedocs.io/en/stable/webui_tutorial.html)
+
 ### General Notes
 
-- Currently only 1 trading pair is supported. The default trading pair is set to be WETH and Raiden Testnet Token (RTT) on Kovan Testnet.  
-WETH Contract Address: `0xd0A1E359811322d97991E03f863a0C30C2cF029C`  
-RTT Contract Address: `0x92276aD441CA1F3d8942d614a6c3c87592dd30bb`  
+Currently only 1 trading pair is supported. The default trading pair is set to be WETH and Raiden Testnet Token (RTT) on Kovan Testnet
+- WETH Contract Address: `0xd0A1E359811322d97991E03f863a0C30C2cF029C`  
+- RTT Contract Address: `0x92276aD441CA1F3d8942d614a6c3c87592dd30bb`  
 If you do want to use other trading pairs (not recommended yet) change the addresses in `*RAIDEX_DIR*/raidex/constants.py`
-
 
 ## Contributing
 
