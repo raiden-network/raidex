@@ -139,6 +139,12 @@ WETH Contract Address: `0xd0A1E359811322d97991E03f863a0C30C2cF029C`
 RTT Contract Address: `0x92276aD441CA1F3d8942d614a6c3c87592dd30bb`  
 If you do want to use other trading pairs (not recommended yet) change the addresses in `*RAIDEX_DIR*/raidex/constants.py`
 
+## Testing
+
+`pytest raidex/tests/`
+
+Notes: 
+- activate the virtual environment beforehand
 
 ## Contributing
 
