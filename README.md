@@ -71,7 +71,7 @@ Each raidEX node builds its own decentralized order book. It receives and publis
 The raidEX node is the core instance implementing the raidEX protocol. It communicates with its respective raiden node, triggering payments and acknowledging when payments have been received. On the other end it communicates to other raidex nodes or the commitment service via the message broker. 
 
 ### Raiden nodes
-Every raidEX node need an underlying raiden node to transfer value. It is used to exchange assets via the raiden network or to pay fees to the commitment service.
+Every raidEX node as well as the commitment service need an underlying raiden node to transfer value. It is used to exchange assets via the raiden network or to deposit to the commitment service.
 
 ### Message Broker
 
@@ -93,7 +93,7 @@ If you didn't use Raiden before, you can
 To run the code in this repository, you must
 * [Install Raiden](https://raiden-network.readthedocs.io/en/stable/overview_and_guide.html)
 
-* The Raidex Project is currently configured to be used on the Kovan Testnet. It is recommended to test and play around there.
+* The Raidex project is currently configured to be used on the Kovan Testnet. It is recommended to test and play around there.
 
 * Get Kovan Ether (KETH) here https://faucet.kovan.network/
 
@@ -107,22 +107,21 @@ If you do want to use other trading pairs (not recommended yet) change the addre
 
 
 * Fees to the commitment service are paid in Raiden Testnet Token (RTT) which can be minted.  
-https://github.com/raiden-network/raiden-contracts/blob/master/raiden_contracts/utils/mint_tokens.py 
-
+https://github.com/raiden-network/raiden-contracts/blob/master/raiden_contracts/utils/mint_tokens.py
 
 ### Installation
 
 
 Clone the repository from Github
 
-
-`git clone git@github.com:raiden-network/raidex.git`
-
+```
+git clone git@github.com:raiden-network/raidex.git`
+```
 
 Create a virtualenv for Raidex (requires **python3.6**) and install all python dependencies there.
 
 ```
-# go to raidex directory
+# go to the raidex directory
 cd raidex
 
 # create virtual environment
@@ -141,11 +140,13 @@ python setup.py develop
 
 For the current version Raiden, the Message Broker and the Commitment Service need to run before starting the raidex node. Currently the Raidex Node is configured to be used in Kovan Testnet.
 
+> **Info:** In order to have a full trading experience it is necessary to run at least two raidEX nodes (traders). Each node relies on its own raiden node instance. Also the commitment service needs its own raiden node. Please make sure to use different port settings for all instances and use unique keystores for every node including the commitment service.
+
 #### Start the Message Broker 
 
 
 ```
-# go to raidex directory
+# go to the raidex directory
 cd raidex
 
 #Activate the virtual environment
@@ -172,7 +173,7 @@ Run a Raiden Node for the commitment service as described above. Choose a differ
 Start the Commitment Service 
 
 ```
-# go to raidex directory
+# go to the raidex directory
 cd raidex
 
 # activate virtual environment
@@ -184,9 +185,9 @@ python raidex/commitment_service/__main__.py --trader-port *PATH_TO_RAIDEN_NODE*
 
 #### Create Raiden Channels to the Commitment Service
 
-In order to be able to pay the fees to the Commitment Service a Raiden Channel from the user's node to the CS Node must be created and topped up. A convinient way to create channels is via accessing the Raiden WebUI (Default: http://localhost:5001). Currently fees are being payed in Raiden Testnet Token (RTT) (Please see General Notes).
+In order to be able to pay the fees to the Commitment Service a Raiden Channel from the user's node to the CS Node must be created and topped up. A convinient way to create channels is via accessing the Raiden WebUI (By default http://localhost:5001). Currently fees are being payed in Raiden Testnet Token (RTT) (Please see General Notes).
 
-Open a channel and deposit RTT as describen in https://raiden-network.readthedocs.io/en/stable/webui_tutorial.html
+Open a channel and deposit RTT as described in https://raiden-network.readthedocs.io/en/stable/webui_tutorial.html
 
 
 #### Start Raidex
@@ -194,7 +195,7 @@ Open a channel and deposit RTT as describen in https://raiden-network.readthedoc
 After running the Raiden Node, the message broker and the commitment service you are good to go to start the raidex node. 
 
 ```
-# go to raidex directory
+# go to the raidex directory
 cd raidex
 
 # activate virtual environment
@@ -217,15 +218,19 @@ ng serve
 Start the WebUI as described in the [Web Application Tutorial](https://raiden-network.readthedocs.io/en/stable/webui_tutorial.html)
 
 
-
-
 ## Testing
+For testing please use pytest
 
-`pytest raidex/tests/`
+```
+# go to the raidex directory
+cd raidex
 
-Notes: 
-- activate the virtual environment beforehand
+# activate virtual environment
+source venv/bin/activate
 
+# run tests
+pytest raidex/tests/
+```
 
 ## Contributing
 
@@ -250,6 +255,3 @@ Mail: contact@raiden.network
 *The Raiden project is led by brainbot labs Est.*
 
 > Disclaimer: Please note, that even though we do our best to ensure the quality and accuracy of the information provided, this publication may contain views and opinions, errors and omissions for which the content creator(s) and any represented organization cannot be held liable. The wording and concepts regarding financial terminology (e.g. “payments”, “checks”, “currency”, “transfer” [of value]) are exclusively used in an exemplary way to describe technological principles and do not necessarily conform to the real world or legal equivalents of these terms and concepts.
-
-
-
