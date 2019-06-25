@@ -59,7 +59,9 @@ raidEX consists of several components
 When two parties want to engage in a trade the commitment service synchronizes the communication between them from the order creation until the settlement of a trade.  
 It is a trusted third party depository where traders provide a security that they are intending to engage in an exchange. On misbehavior this deposit could get slashed by the commitment service. 
 It acts as a notary upon commitment signing and settles the trade eventually by revealing the secret to the HTLC of the parties' payments via the raiden network.  
-In the happy case the commitment service returns the deposits minus a little fee for the service.
+In the happy case the commitment service returns the deposits minus a little fee for the service.  
+The intended goal is to reduce as much influence as possible from the commitment service. In the end it should only synchronize the communication and penalize on misbehavior.  
+For more information, see: https://github.com/raiden-network/raidex/issues/94
 
 ### Order Book
 
