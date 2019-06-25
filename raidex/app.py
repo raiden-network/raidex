@@ -60,7 +60,6 @@ class App:
                                   quote_token_addr=None,
                                   message_broker_host='127.0.0.1',
                                   message_broker_port=5000,
-                                  mock_trading_activity=False,
                                   trader_host='127.0.0.1',
                                   trader_port=5001,
                                   offer_lifetime=None):

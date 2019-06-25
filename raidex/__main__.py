@@ -48,7 +48,7 @@ def main():
 
     if args.mock_networking is True:
         message_broker = MessageBroker()
-        commitment_service = CommitmentService.build_from_mock(message_broker, fee_rate=1)
+        commitment_service = CommitmentService.build_service(message_broker, fee_rate=1)
         raidex_app = App.build_from_mocks(message_broker,
                                           commitment_service.address,
                                           base_token_addr=args.token_address,

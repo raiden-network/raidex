@@ -87,21 +87,30 @@ To run the code in this repository, you must
 
 ### Installation
 
+
 Clone the repository from Github
+
 
 `git clone git@github.com:raiden-network/raidex.git`
 
-`cd raidex`
 
 Create a virtualenv for Raidex (requires **python3.6**) and install all python dependencies there.
 
 ```
+# go to raidex directory
+cd raidex
+
+# create virtual environment
 python3.6 -m venv venv
+
+#activate virtual environment
 source venv/bin/activate
 ```
 
 Install with 
-`python setup.py develop`.
+```
+python setup.py develop
+```
 
 ### Run
 

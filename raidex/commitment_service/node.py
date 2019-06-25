@@ -1,6 +1,7 @@
 import structlog
 from gevent.queue import PriorityQueue, Queue
 
+from raidex.raidex_node.transport.client import MessageBrokerClient
 from raidex.raidex_node.trader.client import TraderClient
 from raidex.account import Account
 from raidex.signing import Signer
@@ -15,8 +16,7 @@ from raidex.commitment_service.tasks import (
 
 from eth_utils import to_checksum_address
 
-CS_MOCK_KEYFILE='/home/fred/fred/work/brainbot/raidex/keystore/charlie-cs'
-CS_MOCK_PW_FILE='/home/fred/fred/work/brainbot/raidex/keystore/pw/pw'
+
 KOVAN_RTT_ADDRESS = '0x92276aD441CA1F3d8942d614a6c3c87592dd30bb'
 
 log = structlog.get_logger('commitment_service')
@@ -65,14 +65,25 @@ class CommitmentService(object):
         return to_checksum_address(self.address)
 
     @classmethod
-    def build_from_mock(cls, message_broker, fee_rate=None):
+    def build_service(cls,
+                      keyfile=None,
+                      pw_file=None,
+                      message_broker_host='127.0.0.1',
+                      message_broker_port=5000,
+                      trader_host='127.0.0.1',
+                      trader_port=5003,
+                      fee_rate=None):
 
-        pw = open(CS_MOCK_PW_FILE, 'r').read()
+        pw = pw_file.read()
         if pw != '':
             pw = pw.splitlines()[0]
-        acc = Account.load(path=CS_MOCK_KEYFILE, password=pw)
+        acc = Account.load(file=keyfile, password=pw)
         signer = Signer.from_account(acc)
-        message_broker_client = message_broker
-        trader_client = TraderClient(signer.canonical_address, host='localhost', port=5003, api_version='v1', commitment_amount=10)
+        message_broker_client = MessageBrokerClient(host=message_broker_host, port=message_broker_port)
+        trader_client = TraderClient(signer.canonical_address,
+                                     host=trader_host,
+                                     port=trader_port,
+                                     api_version='v1',
+                                     commitment_amount=10)
 
         return cls(signer, message_broker_client, trader_client, fee_rate)
