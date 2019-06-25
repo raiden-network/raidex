@@ -204,8 +204,16 @@ Currently raidex supports the use of one trading pair. The default trading pair 
 - RTT Contract Address: `0x92276aD441CA1F3d8942d614a6c3c87592dd30bb`
 If you do want to use other trading pairs (not recommended yet) change the addresses in `*RAIDEX_DIR*/raidex/constants.py`
 
+
 Fees to the commitment service are paid in Raiden Testnet Token (RTT) which can be minted. > link to how to mint token?
 
+
+## Testing
+
+`pytest raidex/tests/`
+
+Notes: 
+- activate the virtual environment beforehand
 
 
 ## Contributing
