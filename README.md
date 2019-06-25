@@ -172,9 +172,9 @@ python setup.py develop
 
 ### Run
 
-For the current version Raiden, the Message Broker and the Commitment Service need to run before starting the raidEX node. Currently the raidEX Node is configured to be used in Kovan Testnet.
+For the current version, Raiden, the Message Broker and the Commitment Service need to run before starting the raidEX node. Currently the raidEX Node is configured to be used in Kovan Testnet.
 
-> **Info:** In order to have a full trading experience it is necessary to run at least two raidEX nodes (traders). Each node relies on its own raiden node instance. Also the commitment service needs its own raiden node. Please make sure to use different port settings for all instances and use unique keystores for every node including the commitment service.
+> **Info:** In order to have a full trading experience it is necessary to run at least two raidEX nodes (traders). Each node relies on its own raiden node instance. Also the commitment service needs its own raiden node running. Please make sure to use different port settings for all instances and use unique keystores for every raidEX node including the commitment service.
 
 #### Start the Message Broker 
 
@@ -195,7 +195,7 @@ Start Raiden as described in the [Raiden Installation Guide](https://raiden-netw
 
 > **Info:** Run Raiden with the same keystore file as your corresponding raidEX node later on.
 
-If you want to run the commitment service by yourself, you need to start a second Raiden Node for the commitment service. Please see below.
+If you want to run the commitment service by yourself, you need to start a new Raiden Node for the commitment service.
 
 #### Start the Commitment Service
 
@@ -218,7 +218,7 @@ python raidex/commitment_service/__main__.py --trader-port *PATH_TO_RAIDEN_NODE*
 
 #### Create Raiden Channels to the Commitment Service
 
-In order to be able to pay the fees to the Commitment Service a Raiden Channel from the user's node to the CS Node must be created and topped up. A convinient way to create channels is using the Raiden WebUI (by default http://localhost:5001). Currently fees are getting payed in Raiden Testnet Token (RTT).
+In order to be able to pay the fees to the Commitment Service a Raiden Channel from the user's node to the commitment service node must be created and topped up. A convinient way to create channels is using the Raiden WebUI (by default http://localhost:5001). Currently fees are getting payed in Raiden Testnet Token (RTT).
 
 Open a channel to the CS and deposit RTT as described in [Raiden WebUI Tutorial](https://raiden-network.readthedocs.io/en/stable/webui_tutorial.html)
 
