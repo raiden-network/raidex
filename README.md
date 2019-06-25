@@ -92,7 +92,23 @@ If you didn't use Raiden before, you can
 
 To run the code in this repository, you must
 * [Install Raiden](https://raiden-network.readthedocs.io/en/stable/overview_and_guide.html)
-* [Create an account, get some testnet ETH and tokens](https://github.com/raiden-network/workshop/)
+
+* The Raidex Project is currently configured to be used on the Kovan Testnet. It is recommended to test and play around there.
+
+* Get Kovan Ether (KETH) here https://faucet.kovan.network/
+
+* To get Wrapped Eth (WETH) send the wished amount of KETH to the WETH contract address (see below)
+
+
+Currently raidex supports the use of one trading pair. The default trading pair is set to be WETH and Raiden Testnet Token (RTT) on Kovan Testnet
+- WETH Contract Address: `0xd0A1E359811322d97991E03f863a0C30C2cF029C`  
+- RTT Contract Address: `0x92276aD441CA1F3d8942d614a6c3c87592dd30bb`
+If you do want to use other trading pairs (not recommended yet) change the addresses in `*RAIDEX_DIR*/raidex/constants.py`
+
+
+* Fees to the commitment service are paid in Raiden Testnet Token (RTT) which can be minted.  
+https://github.com/raiden-network/raiden-contracts/blob/master/raiden_contracts/utils/mint_tokens.py 
+
 
 ### Installation
 
@@ -200,21 +216,7 @@ ng serve
 
 Start the WebUI as described in the [Web Application Tutorial](https://raiden-network.readthedocs.io/en/stable/webui_tutorial.html)
 
-### General Notes
 
-The Raidex Project is currently configured to be used on the Kovan Testnet. It is recommended to test and play around there.
-
-If you do not have Kovan Ether (KETH) you can get them here https://faucet.kovan.network/
-To get Wrapped Eth (WETH) send the wished amount of KETH to the WETH contract address (see below)
-
-
-Currently raidex supports the use of one trading pair. The default trading pair is set to be WETH and Raiden Testnet Token (RTT) on Kovan Testnet
-- WETH Contract Address: `0xd0A1E359811322d97991E03f863a0C30C2cF029C`  
-- RTT Contract Address: `0x92276aD441CA1F3d8942d614a6c3c87592dd30bb`
-If you do want to use other trading pairs (not recommended yet) change the addresses in `*RAIDEX_DIR*/raidex/constants.py`
-
-
-Fees to the commitment service are paid in Raiden Testnet Token (RTT) which can be minted. > link to how to mint token?
 
 
 ## Testing
