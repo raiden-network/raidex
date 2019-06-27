@@ -28,7 +28,7 @@
   </a>
 </p>
 
-> **INFO** The current raidEX version is a work in progress proof-of-concept to show how a DEX could be built on top of Raiden. 
+> **INFO** The current raidEX version is a work in progress proof-of-concept to investigate how a DEX could be built on top of Raiden. 
 
 ## Fixing the custodian issue
 
