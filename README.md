@@ -28,7 +28,7 @@
   </a>
 </p>
 
-> **INFO** The current raidEX version is a work in progress proof-of-concept to investigate how a DEX could be built on top of Raiden. 
+> **INFO** The current raidEX version is a work in progress proof-of-concept to investigate how a DEX could be built on top of Raiden. It is **not** production ready and should absolutely not be used with mainnet funds!
 
 ## Fixing the custodian issue
 
