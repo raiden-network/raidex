@@ -80,7 +80,7 @@ def handle_offer_published(data_manager: DataManager, event: OfferPublishedState
 def handle_commitment_proof(data_manager: DataManager, offer, state_change: CommitmentProofStateChange):
     commitment_proof = state_change.commitment_proof
 
-    offer.receive_commitment_proof(commitment_proof)
+    offer.receive_commitment_proof(proof=commitment_proof)
     message_target = None
 
     if offer.offer_id in data_manager.matches:
@@ -114,7 +114,7 @@ def handle_transfer_received(data_manager: DataManager, state_change: TransferRe
     offer_id = state_change.raiden_event.identifier
 
     match = data_manager.matches[offer_id]
-    match.received_inbound(state_change.raiden_event)
+    match.received_inbound(raiden_event=state_change.raiden_event)
 
     if match.offer.state == 'completed':
         data_manager.timeout_handler.clean_up_timeout(offer_id)

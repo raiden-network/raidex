@@ -67,7 +67,6 @@ def main():
                                                    message_broker_port=args.broker_port,
                                                    trader_host=args.trader_host,
                                                    trader_port=args.trader_port,
-                                                   mock_trading_activity=args.mock,
                                                    offer_lifetime=args.offer_lifetime)
 
     raidex_app.start()

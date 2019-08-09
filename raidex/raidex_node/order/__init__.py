@@ -4,12 +4,13 @@ from transitions.extensions.nesting import NestedState
 from transitions.extensions import HierarchicalMachine as Machine
 
 from raidex.raidex_node.order.offer import Offer
+from raidex.raidex_node.order import events as dispatch
 
-ENTER_UNPROVED = Offer.on_enter_unproved.__name__
-ENTER_PUBLISHED = Offer.on_enter_published.__name__
+ENTER_UNPROVED = dispatch.on_enter_unproved
+ENTER_PUBLISHED = dispatch.on_enter_published
 ENTER_PROVED = Offer.set_proof.__name__
-ENTER_CANCELLATION = Offer.on_enter_cancellation.__name__
-ENTER_WAIT_FOR_REFUND = Offer.initiate_refund.__name__
+ENTER_CANCELLATION = dispatch.on_enter_cancellation
+ENTER_WAIT_FOR_REFUND = dispatch.initiate_refund
 AFTER_STATE_CHANGE = Offer.log_state.__name__
 
 
@@ -96,5 +97,6 @@ TRANSITIONS = [
 fsm_offer = OfferMachine(states=OFFER_STATES,
                          transitions=TRANSITIONS,
                          initial=OPEN,
-                         after_state_change=AFTER_STATE_CHANGE)
+                         after_state_change=AFTER_STATE_CHANGE,
+                         send_event=True)
 

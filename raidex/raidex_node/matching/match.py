@@ -48,7 +48,7 @@ class Match:
         self.on_enter_exchanging()
 
     def received_inbound(self, raiden_event):
-        self.offer.received_inbound(raiden_event)
+        self.offer.received_inbound(raiden_event=raiden_event)
         self.completed()
 
     def completed(self):

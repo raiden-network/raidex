@@ -100,20 +100,10 @@ class Offer(BasicOffer):
             return True
         return False
 
-    def on_enter_unproved(self):
-        dispatch_events([CommitEvent(offer=self)])
+    def set_proof(self, event_data):
 
-    def set_proof(self, proof):
-        self.proof = proof
-
-    def on_enter_published(self):
-        dispatch_events([CommitmentProvedEvent(offer=self)])
-
-    def initiate_refund(self, raiden_event):
-        dispatch_events([ReceivedInboundEvent(offer=self, raiden_event=raiden_event)])
-
-    def on_enter_cancellation(self):
-        dispatch_events([CancellationRequestEvent(offer=self)])
+        if 'proof' in event_data.kwargs:
+            self.proof = event_data.kwargs['proof']
 
     def log_state(self, *args):
         if hasattr(self, 'state'):
