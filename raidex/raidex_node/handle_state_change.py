@@ -35,7 +35,7 @@ def handle_state_change(raidex_node, state_change):
     if isinstance(state_change, ChannelStatusStateChange):
         handle_channel_status_update(raidex_node, state_change)
     if isinstance(state_change, MakeChannelStateChange):
-        handle_make_channel(raidex_node, state_change)
+        handle_make_channel(state_change)
 
 
 def handle_offer_state_change(data_manager: DataManager, state_change: OfferStateChange):

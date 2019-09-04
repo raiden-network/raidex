@@ -55,11 +55,12 @@ export class AppComponent {
         let has_cs_channel = false
 
         this.channels.forEach((channel) =>{
-                if(channel.partner_address == this.cs_address)
+                if(channel.partner_address == this.cs_address && channel.total_deposit > 1)
                     has_cs_channel = true
             });
         return has_cs_channel
     }
+
 
     showDialog(): void {
 
