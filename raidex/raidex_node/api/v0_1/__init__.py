@@ -13,7 +13,7 @@ def build_blueprint(raidex):
     blueprint.add_url_rule('/orders/limit', view_func=LimitOrders.as_view('limit_orders', raidex), methods=['GET', 'POST'])
     blueprint.add_url_rule('/orders/limit/<int:order_id>', view_func=LimitOrders.as_view('limit_orders_id', raidex),
                            methods=['DELETE'])
-    blueprint.add_url_rule('/channels', view_func=Channels.as_view('channels', raidex), methods=['GET'])
+    blueprint.add_url_rule('/channels', view_func=Channels.as_view('channels', raidex), methods=['GET', 'POST'])
 
     blueprint.register_error_handler(400, bad_request)
     blueprint.register_error_handler(404, not_found)
