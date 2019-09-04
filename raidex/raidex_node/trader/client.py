@@ -23,6 +23,8 @@ from raidex.utils.gevent_helpers import make_async
 from raidex.raidex_node.architecture.event_architecture import Processor
 import structlog
 
+from raidex.constants import RAIDEN_POLL_INTERVAL
+
 log = structlog.get_logger('trader client')
 
 
@@ -204,7 +206,7 @@ class TraderClient(Processor):
                         if transformed_event is not None:
                             event_queue_async.put(transformed_event)
 
-        Greenlet.spawn(poll, target=request_events, args=(events,), step=0.75, poll_forever=True)
+        Greenlet.spawn(poll, target=request_events, args=(events,), step=RAIDEN_POLL_INTERVAL, poll_forever=True)
 
         return listener
 
