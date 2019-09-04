@@ -5,9 +5,10 @@ import { Order } from '../model/order';
 import { Trade } from '../model/trade';
 import { PriceBin } from '../model/pricebin';
 import { Offer } from '../model/offer';
+import { Channel } from '../model/channel'
 import * as format from '../utils/format';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { ApiResponse, OffersData, OrderResponse } from '../model/responses';
+import { ApiResponse, OffersData, OrderResponse, ChannelResponse } from '../model/responses';
 
 @Injectable()
 export class RaidexService {
@@ -142,6 +143,33 @@ export class RaidexService {
         return errors.pipe(
             map((error) => console.error(message + (error.message || error))),
             delay(20000)
+        );
+    }
+
+    public getChannels() {
+        return timer(0, 500).pipe(
+            mergeMap(() => this.http.get<ApiResponse<Array<ChannelResponse>>>(`${this.api}/markets/dummy/channels`).pipe(
+                map((response) => {
+                    const data = response.data;
+
+                    return data.map((elem) => new Channel(
+                        elem.partner_address,
+                        elem.token_address,
+                        elem.total_deposit
+                    ));
+                }))),
+            retryWhen((errors) => this.printErrorAndRetry('Could not get Channels', errors)));
+    }
+
+    public makeChannelAndDeposit(address: string, token_address: string, deposit: number): Observable<boolean> {
+        const data = {
+            'partner_address': address,
+            'token_address': '0x92276aD441CA1F3d8942d614a6c3c87592dd30bb',
+            'deposit': deposit,
+        };
+        const options = new HttpHeaders().set('Content-Type', 'application/json');
+        return this.http.post<ApiResponse<boolean>>(`${this.api}/markets/dummy/channels`, data, {headers: options}).pipe(
+            map((response) => response.data), catchError(RaidexService.handleError)
         );
     }
 

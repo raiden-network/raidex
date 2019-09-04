@@ -14,7 +14,9 @@ import { OffersTableComponent } from './components/offers-table/offers-table.com
 import { OrdersTableComponent } from './components/limit-order-table/limit-order-table.component';
 import { HttpClientModule } from '@angular/common/http';
 import { MaterialComponentModule } from './modules/material-components/material-component.module';
+import { MatDialogModule } from '@angular/material'
 import { ZingPriceTimeSeriesComponent } from './components/zing-pricechart/zing-pricechart.component';
+import { ConfirmationDialogComponent } from './components/confirmation-dialog/confirmation-dialog.component';
 
 @NgModule({
     declarations: [
@@ -26,7 +28,8 @@ import { ZingPriceTimeSeriesComponent } from './components/zing-pricechart/zing-
         ZingPriceTimeSeriesComponent,
         TradesTableComponent,
         OffersTableComponent,
-        OrdersTableComponent
+        OrdersTableComponent,
+        ConfirmationDialogComponent
     ],
     imports: [
         BrowserModule,
@@ -36,11 +39,17 @@ import { ZingPriceTimeSeriesComponent } from './components/zing-pricechart/zing-
         DataTableModule,
         SharedModule,
         GrowlModule,
-        MaterialComponentModule
+        MaterialComponentModule,
+        MatDialogModule
     ],
     providers: [RaidexService],
-    bootstrap: [AppComponent]
+    bootstrap: [AppComponent],
+    entryComponents:[ConfirmationDialogComponent],
 })
 
 export class AppModule {
+
+
+
+
 }

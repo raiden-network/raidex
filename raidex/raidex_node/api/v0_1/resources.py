@@ -163,3 +163,45 @@ class LimitOrders(MethodView):
             data=order_id
         )
         return jsonify(dict_)
+
+
+class Channels(MethodView):
+
+    def __init__(self, raidex_node: RaidexNode):
+        self.raidex_node = raidex_node
+
+    def get(self):
+        channels = self.raidex_node.get_channels()
+
+        dict_ = dict(
+                    data=[
+                        dict(
+                            partner_address=channel['partner_address'],
+                            token_address=channel['token_address'],
+                            total_deposit=channel['total_deposit'],
+                            balance=channel['balance'],
+                        ) for channel in channels
+                    ]
+                )
+
+        return jsonify(dict_)
+
+    def post(self):
+        kwargs = request.get_json()
+
+        partner_address = kwargs['partner_address']
+        token_address = kwargs['token_address']
+        deposit = kwargs['deposit']
+
+        data = dict()
+        data['event'] = 'MakeChannel'
+        data['partner_address'] = partner_address
+        data['token_address'] = token_address
+        data['total_deposit'] = deposit
+
+        on_api_call(self.raidex_node, data)
+
+        dict_ = dict(
+            data=True
+        )
+        return jsonify(dict_)

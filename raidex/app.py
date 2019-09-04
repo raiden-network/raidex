@@ -14,7 +14,7 @@ from raidex.raidex_node.trader.listener.handle_events import handle_event as rai
 from raidex.raidex_node.trader.listener.raiden_listener import RaidenListener
 from raidex.raidex_node.architecture.event_architecture import event_dispatch, state_change_dispatch
 from raidex.raidex_node.handle_state_change import handle_state_change
-from raidex.raidex_node.trader.listener.listen_for_events import raiden_poll
+from raidex.raidex_node.trader.listener.listen_for_events import raiden_poll, raiden_poll_channel
 
 
 class App:
@@ -24,6 +24,7 @@ class App:
         self.trader = trader
         self.raiden_listener = RaidenListener(trader)
         self.raiden_poll = raiden_poll(trader)
+        self.raiden_poll_channels = raiden_poll_channel(trader)
         self.cs_client = cs_client
         self.transport = transport
         self.market = market
@@ -46,6 +47,7 @@ class App:
         # start task for updating the balance of the trader:
         self.trader.start()
         self.raiden_poll.start()
+        self.raiden_poll_channels.start()
         event_dispatch.start_consumer_tasks()
         state_change_dispatch.start_consumer_tasks()
 

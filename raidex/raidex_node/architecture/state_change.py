@@ -90,3 +90,13 @@ class PaymentFailedStateChange(StateChange):
 class TransferReceivedStateChange(StateChange):
     def __init__(self, raiden_event):
         self.raiden_event = raiden_event
+
+
+class ChannelStatusStateChange(StateChange):
+    def __init__(self, channel_raw_data):
+        self.channel_raw_data = channel_raw_data
+
+
+class MakeChannelStateChange(StateChange):
+    def __init__(self, data):
+        self.data = data
