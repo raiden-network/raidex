@@ -1,6 +1,10 @@
 
 from raidex.raidex_node.raidex_node import RaidexNode
-from raidex.raidex_node.architecture.state_change import NewLimitOrderStateChange, CancelLimitOrderStateChange
+from raidex.raidex_node.architecture.state_change import (
+    NewLimitOrderStateChange,
+    CancelLimitOrderStateChange,
+    MakeChannelStateChange,
+)
 from raidex.utils.random import create_random_32_bytes_id
 from raidex.raidex_node.architecture.event_architecture import dispatch_state_changes
 
@@ -13,6 +17,8 @@ def on_api_call(raidex_node: RaidexNode, data):
         return handle_new_limit_order(data)
     if event_name == 'CancelLimitOrder':
         return handle_cancel_limit_order(raidex_node, data)
+    if event_name == 'MakeChannel':
+        return handle_make_channel(data)
 
 
 def handle_new_limit_order(data):
@@ -36,3 +42,7 @@ def handle_cancel_limit_order(raidex_node: RaidexNode, data):
         return data['order_id']
 
     raise Exception
+
+
+def handle_make_channel(data):
+    dispatch_state_changes(MakeChannelStateChange(data))

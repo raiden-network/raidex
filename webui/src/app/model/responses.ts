@@ -18,3 +18,9 @@ export interface OrderResponse {
     readonly open: Boolean;
     readonly canceled: Boolean;
 }
+
+export interface ChannelResponse {
+    readonly partner_address: string;
+    readonly token_address: string;
+    readonly total_deposit: number;
+}

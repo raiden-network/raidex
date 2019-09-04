@@ -1,5 +1,5 @@
 from flask import Blueprint
-from raidex.raidex_node.api.v0_1.resources import Offers, LimitOrders, Trades, PriceChartBin
+from raidex.raidex_node.api.v0_1.resources import Offers, LimitOrders, Trades, PriceChartBin, Channels
 from raidex.raidex_node.api.v0_1.errors import bad_request, internal_error, not_found
 
 
@@ -13,6 +13,7 @@ def build_blueprint(raidex):
     blueprint.add_url_rule('/orders/limit', view_func=LimitOrders.as_view('limit_orders', raidex), methods=['GET', 'POST'])
     blueprint.add_url_rule('/orders/limit/<int:order_id>', view_func=LimitOrders.as_view('limit_orders_id', raidex),
                            methods=['DELETE'])
+    blueprint.add_url_rule('/channels', view_func=Channels.as_view('channels', raidex), methods=['GET'])
 
     blueprint.register_error_handler(400, bad_request)
     blueprint.register_error_handler(404, not_found)

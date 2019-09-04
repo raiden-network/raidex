@@ -7,6 +7,8 @@ from raidex.raidex_node.transport.events import SendProvenOfferEvent
 from raidex.raidex_node.matching.match import MatchFactory
 from raidex.raidex_node.architecture.data_manager import DataManager
 from raidex.constants import OFFER_THRESHOLD_TIME
+from raidex.raidex_node.trader.events import MakeChannelEvent
+from raidex.raidex_node.raidex_node import RaidexNode
 
 
 logger = structlog.get_logger('StateChangeHandler')
@@ -30,6 +32,10 @@ def handle_state_change(raidex_node, state_change):
         handle_taker_call(data_manager, state_change)
     if isinstance(state_change, TransferReceivedStateChange):
         handle_transfer_received(data_manager, state_change)
+    if isinstance(state_change, ChannelStatusStateChange):
+        handle_channel_status_update(raidex_node, state_change)
+    if isinstance(state_change, MakeChannelStateChange):
+        handle_make_channel(raidex_node, state_change)
 
 
 def handle_offer_state_change(data_manager: DataManager, state_change: OfferStateChange):
@@ -120,3 +126,17 @@ def handle_transfer_received(data_manager: DataManager, state_change: TransferRe
         data_manager.timeout_handler.clean_up_timeout(offer_id)
         from raidex.raidex_node.order import fsm_offer
         fsm_offer.remove_model(match.offer)
+
+
+def handle_channel_status_update(raidex_node: RaidexNode, state_change: ChannelStatusStateChange):
+    raidex_node.raiden_info.set_channels(state_change.channel_raw_data)
+
+
+def handle_make_channel(state_change):
+
+    make_channel_event = MakeChannelEvent(
+        partner_address=state_change.data['partner_address'],
+        token_address=state_change.data['token_address'],
+        total_deposit=state_change.data['total_deposit']
+    )
+    dispatch_events([make_channel_event])

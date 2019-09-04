@@ -12,6 +12,12 @@ class ExpectInboundEvent(RaidenListenerEvent):
         self.identifier = identifier
 
 
+class ChannelFilterEvent(RaidenListenerEvent):
+
+    def __init__(self, channel_data_raw):
+        self.channel_data_raw = channel_data_raw
+
+
 # Events coming from Raiden
 class RaidenEvent(RaidenListenerEvent):
     pass
@@ -42,3 +48,9 @@ class PaymentReceivedEvent(RaidenEvent):
             self.amount,
             self.identifier,
         )
+
+
+class ChannelStatusRaidenEvent(RaidenEvent):
+
+    def __init__(self, channel_data):
+        self.channel_data = channel_data

@@ -7,8 +7,10 @@ from raidex.raidex_node.architecture.state_change import StateChange
 from raidex.raidex_node.offer_book import OfferBook
 from raidex.raidex_node.listener_tasks import OfferBookTask
 from raidex.raidex_node.trades import TradesView
+from raidex.raidex_node.trader.raiden_info import RaidenInfo
 from raidex.raidex_node.offer_grouping import group_offers, group_trades_from, make_price_bins, get_n_recent_trades
 from raidex.raidex_node.architecture.data_manager import DataManager
+from raidex.constants import CS_ADDRESS
 
 monkey.patch_all()
 log = structlog.get_logger('node')
@@ -34,12 +36,12 @@ class RaidexNode(Processor):
 
         self._get_trades = self._trades_view.trades
         self.data_manager = DataManager(self.offer_book, token_pair)
+        self.raiden_info = RaidenInfo()
 
     def start(self):
         log.info('Starting raidex node')
         OfferBookTask(self.offer_book, self.token_pair, self.message_broker).start()
-        #OfferTakenTask(self.offer_book, self._trades_view, self.message_broker).start()
-        #SwapCompletedTask(self._trades_view, self.message_broker).start()
+        self.raiden_info.start()
 
     def _process_finished_limit_order(self, order_task):
         value = order_task.get(block=False)
@@ -122,3 +124,9 @@ class RaidexNode(Processor):
             total_volume = sum([t.offer.amount for t in trades])
             return sum([t.offer.price * t.offer.amount for t in trades]) / total_volume
 
+    def get_channels(self):
+        return self.raiden_info.get_channels()
+
+    @property
+    def commitment_service_address(self):
+        return CS_ADDRESS

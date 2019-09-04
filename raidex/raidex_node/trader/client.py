@@ -147,6 +147,19 @@ class TraderClient(Processor):
             self.commitment_balance -= amount
         return result
 
+    def make_channel(self, partner_address, token_address, total_deposit):
+
+        body = {
+            'partner_address': partner_address,
+            'token_address': token_address,
+            'total_deposit': total_deposit,
+            'settle_timeout': 500
+        }
+
+        requests.put(f'{self.apiUrl}/channels', headers={'Content-Type': 'application/json', },
+                     json=body)
+
+
     def listen_for_events(self, transform=None):
         """Starts listening for new messages on this topic
 

@@ -17,4 +17,11 @@ class SwapInitEvent(TraderEvent):
         self.match = match
 
 
+class MakeChannelEvent(TraderEvent):
+
+    def __init__(self, partner_address, token_address, total_deposit):
+        self.partner_address = partner_address
+        self.token_address = token_address
+        self.total_deposit = total_deposit
+
 
