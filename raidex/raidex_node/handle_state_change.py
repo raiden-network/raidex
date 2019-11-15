@@ -139,4 +139,6 @@ def handle_make_channel(state_change):
         token_address=state_change.data['token_address'],
         total_deposit=state_change.data['total_deposit']
     )
+
+    print(make_channel_event)
     dispatch_events([make_channel_event])

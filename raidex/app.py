@@ -24,7 +24,7 @@ class App:
         self.trader = trader
         self.raiden_listener = RaidenListener(trader)
         self.raiden_poll = raiden_poll(trader)
-        self.raiden_poll_channels = raiden_poll_channel(trader)
+        self.raiden_poll_channels = raiden_poll_channel(trader, 3)
         self.cs_client = cs_client
         self.transport = transport
         self.market = market

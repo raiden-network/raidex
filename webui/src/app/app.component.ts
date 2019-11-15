@@ -72,9 +72,11 @@ export class AppComponent {
             dialogConfig.data = {
                 title: 'Connection To Commitment Service',
                 message:
-                    `There is no Channel to the commitment service open. <b>${
-                        (this.cs_address)}</b>
-                        ` + `Do you want to open a channel and deposit 10 Token?</b>.`,
+                    `There is no Channel to the commitment service open. You need to have a direct channel to the CS in order to pay your security deposit.<br><br>
+
+                    Address: <b>${(this.cs_address)}</b><br>
+                    Mininum deposit: <b>10 RTT </b><br><br>
+                    Please confirm to open a channel and deposit the required amount.`,
                 actionInformation: {
                     partner_address: this.cs_address,
                     token_address: '0x92276aD441CA1F3d8942d614a6c3c87592dd30bb',

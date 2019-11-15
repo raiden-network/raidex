@@ -13,11 +13,10 @@ from raidex.commitment_service.tasks import (
     SwapExecutionTask,
     TransferReceivedTask,
 )
+from raidex.constants import GOERLI_RXT_ADDRESS
 
 from eth_utils import to_checksum_address
 
-
-KOVAN_RTT_ADDRESS = '0x92276aD441CA1F3d8942d614a6c3c87592dd30bb'
 
 log = structlog.get_logger('commitment_service')
 log_swaps = structlog.get_logger('commitment_service.asset_swaps')
