@@ -8,12 +8,12 @@ from raidex.app import App
 from raidex.message_broker.message_broker import MessageBroker
 from raidex.commitment_service.node import CommitmentService
 from raidex.raidex_node.bots import LiquidityProvider, RandomWalker, Manipulator
+from raidex.constants import RTT_ADDRESS, WETH_ADDRESS, CS_ADDRESS
 
 structlog.configure()
 #':WARNING,bots.manipulator:DEBUG'
 
-KOVAN_WETH_ADDRESS = '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
-CS_ADDRESS = '0xEDC5f296a70096EB49f55681237437cbd249217A'
+
 
 
 def main():
@@ -42,7 +42,7 @@ def main():
                                                   'ng bots.\
                                                   <Options:\"liquidity\", \"random\", \"manipulator\">')
     parser.add_argument('--token-address', type=str, help='Token address of token to trade against WETH on kovan',
-                        default='0x92276aD441CA1F3d8942d614a6c3c87592dd30bb')
+                        default=RTT_ADDRESS)
 
     args = parser.parse_args()
 
@@ -52,7 +52,7 @@ def main():
         raidex_app = App.build_from_mocks(message_broker,
                                           commitment_service.address,
                                           base_token_addr=args.token_address,
-                                          quote_token_addr=KOVAN_WETH_ADDRESS,
+                                          quote_token_addr=WETH_ADDRESS,
                                           keyfile=args.keyfile,
                                           pw_file=args.pwfile,
                                           offer_lifetime=args.offer_lifetime)
@@ -62,13 +62,12 @@ def main():
                                                    pw_file=args.pwfile,
                                                    cs_address=CS_ADDRESS,
                                                    base_token_addr=args.token_address,
-                                                   quote_token_addr=KOVAN_WETH_ADDRESS,
+                                                   quote_token_addr=WETH_ADDRESS,
                                                    message_broker_host=args.broker_host,
                                                    message_broker_port=args.broker_port,
                                                    trader_host=args.trader_host,
                                                    trader_port=args.trader_port,
                                                    offer_lifetime=args.offer_lifetime)
-
     raidex_app.start()
 
     if args.api is True:

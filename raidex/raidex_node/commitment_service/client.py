@@ -10,7 +10,7 @@ from raidex.raidex_node.trader.events import TransferEvent
 from raidex.raidex_node.trader.listener.events import ExpectInboundEvent
 from raidex.utils.address import binary_address
 from raidex.raidex_node.order.offer import Offer
-from raidex.constants import KOVAN_RTT_ADDRESS
+from raidex.constants import FEE_ADDRESS
 
 
 log = structlog.get_logger('node.commitment_service')
@@ -58,7 +58,7 @@ class CommitmentServiceClient(Processor):
         dispatch_events([cancellation_request_event])
 
     def _transfer_commitment_event(self, offer_id, commitment_amount):
-        return TransferEvent(KOVAN_RTT_ADDRESS,
+        return TransferEvent(FEE_ADDRESS,
                              self.commitment_service_address,
                              commitment_amount,
                              offer_id)
