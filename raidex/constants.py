@@ -1,5 +1,3 @@
-from math import pow
-
 from eth_utils import keccak
 from raidex.raidex_node.matching.matching_algorithm import match_limit
 

@@ -177,6 +177,7 @@ class SwapOffer(RLPHashable):
             pex(h),
         )
 
+
 class Commitment(Signed):
 
     fields = [
