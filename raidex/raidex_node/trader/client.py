@@ -158,6 +158,7 @@ class TraderClient(Processor):
             'settle_timeout': 500
         }
 
+
         requests.put(f'{self.apiUrl}/channels', headers={'Content-Type': 'application/json', },
                      json=body)
 

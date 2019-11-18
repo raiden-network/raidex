@@ -5,6 +5,7 @@ from raidex.raidex_node.transport.client import MessageBrokerClient
 from raidex.raidex_node.trader.client import TraderClient
 from raidex.account import Account
 from raidex.signing import Signer
+from raidex.constants import FEE_ADDRESS, COMMITMENT_AMOUNT
 from raidex.commitment_service.tasks import (
     RefundTask,
     MessageSenderTask,
@@ -56,7 +57,7 @@ class CommitmentService(object):
         CancellationRequestTask(self.swaps, self.message_broker, self.address).start()
         SwapExecutionTask(self.swaps, self.message_broker, self.address).start()
         TransferReceivedTask(self.swaps, self.trader_client).start()
-        RefundTask(self.trader_client, self.refund_queue, KOVAN_RTT_ADDRESS, self.fee_rate).start()
+        RefundTask(self.trader_client, self.refund_queue, FEE_ADDRESS, self.fee_rate).start()
         MessageSenderTask(self.message_broker, self.message_queue, self._sign).start()
 
     @property
@@ -83,6 +84,6 @@ class CommitmentService(object):
                                      host=trader_host,
                                      port=trader_port,
                                      api_version='v1',
-                                     commitment_amount=10)
+                                     commitment_amount=COMMITMENT_AMOUNT)
 
         return cls(signer, message_broker_client, trader_client, fee_rate)

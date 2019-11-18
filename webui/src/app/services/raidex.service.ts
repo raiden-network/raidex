@@ -164,7 +164,7 @@ export class RaidexService {
     public makeChannelAndDeposit(address: string, token_address: string, deposit: number): Observable<boolean> {
         const data = {
             'partner_address': address,
-            'token_address': '0x92276aD441CA1F3d8942d614a6c3c87592dd30bb',
+            'token_address': '0xe6ff467647e65e80e70597fC43a74Ea698c678A2',
             'deposit': deposit,
         };
         const options = new HttpHeaders().set('Content-Type', 'application/json');

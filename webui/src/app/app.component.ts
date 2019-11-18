@@ -75,12 +75,12 @@ export class AppComponent {
                     `There is no Channel to the commitment service open. You need to have a direct channel to the CS in order to pay your security deposit.<br><br>
 
                     Address: <b>${(this.cs_address)}</b><br>
-                    Mininum deposit: <b>10 RTT </b><br><br>
+                    Mininum deposit: <b>10 RXT </b><br><br>
                     Please confirm to open a channel and deposit the required amount.`,
                 actionInformation: {
                     partner_address: this.cs_address,
-                    token_address: '0x92276aD441CA1F3d8942d614a6c3c87592dd30bb',
-                    deposit: '10000'
+                    token_address: '0xA0195E88F732ff6379642eB702302dFae6EA7bC4',
+                    deposit: '10000000000000000000'
                     }
                 };
 

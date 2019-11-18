@@ -1,3 +1,5 @@
+from math import pow
+
 from eth_utils import keccak
 from raidex.raidex_node.matching.matching_algorithm import match_limit
 
@@ -36,3 +38,4 @@ WETH_ADDRESS = TOKEN_ADDRESSES[DEFAULT_TESTNET]['weth']
 GOERLI_RXT_ADDRESS = '0xe6ff467647e65e80e70597fC43a74Ea698c678A2'
 
 CS_ADDRESS = '0xEDC5f296a70096EB49f55681237437cbd249217A'
+COMMITMENT_AMOUNT = pow(10, 18)

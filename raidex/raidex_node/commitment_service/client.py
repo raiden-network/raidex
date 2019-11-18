@@ -10,7 +10,7 @@ from raidex.raidex_node.trader.events import TransferEvent
 from raidex.raidex_node.trader.listener.events import ExpectInboundEvent
 from raidex.utils.address import binary_address
 from raidex.raidex_node.order.offer import Offer
-from raidex.constants import FEE_ADDRESS
+from raidex.constants import FEE_ADDRESS, COMMITMENT_AMOUNT
 
 
 log = structlog.get_logger('node.commitment_service')
@@ -37,7 +37,7 @@ class CommitmentServiceClient(Processor):
         self.commitment_service_address = binary_address(commitment_service_address)
         self.fee_rate = fee_rate
         self.message_broker = message_broker
-        self.commitment_amount = 1
+        self.commitment_amount = COMMITMENT_AMOUNT
         self.market = market
 
         CommitmentProofTask(CommitmentProofListener(self.message_broker, topic=self.node_address)).start()
