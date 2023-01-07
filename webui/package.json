@@ -49,7 +49,7 @@
     "zone.js": "0.8.28"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "~0.12.0",
+    "@angular-devkit/build-angular": "~15.0.5",
     "@types/d3-array": "1.0.5",
     "@types/jquery": "2.0.40",
     "@types/node": "7.0.13",
